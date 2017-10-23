@@ -102,6 +102,11 @@ extern UInt32 g_req_per_query;
 extern UInt32 g_field_per_tuple;
 extern UInt32 g_init_parallelism;
 
+// EXPERIMENT
+extern double g_contention_perc;
+extern UInt32 g_pos_in_txn;
+extern UInt32 g_txn_length;
+
 // TPCC
 extern UInt32 g_num_wh;
 extern double g_perc_payment;

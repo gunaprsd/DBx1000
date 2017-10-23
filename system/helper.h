@@ -159,7 +159,7 @@ public:
 
 int get_thdid_from_txnid(uint64_t txnid);
 
-// key_to_part() is only for ycsb
+// key_to_part() is only for ycsb and experiment
 uint64_t key_to_part(uint64_t key);
 uint64_t get_part_id(void * addr);
 // TODO can the following two functions be merged?

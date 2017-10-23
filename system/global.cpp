@@ -59,6 +59,10 @@ double g_perc_payment = PERC_PAYMENT;
 bool g_wh_update = WH_UPDATE;
 char * output_file = NULL;
 
+double g_contention_perc = CONTENTION_PERC;
+UInt32 g_pos_in_txn = POS_IN_TXN;
+UInt32 g_txn_length = REQ_PER_QUERY;
+
 map<string, string> g_params;
 
 #if TPCC_SMALL

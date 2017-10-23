@@ -4,6 +4,7 @@
 #include "wl.h"
 #include "table.h"
 #include "ycsb_query.h"
+#include "experiment_query.h"
 #include "tpcc_query.h"
 #include "tpcc_helper.h"
 
@@ -21,6 +22,8 @@ Query_queue::init(workload * h_wl) {
 
 #if WORKLOAD == YCSB	
 	ycsb_query::calculateDenom();
+#elif WORKLOAD == EXPERIMENT
+	experiment_query::calculateDenom();
 #elif WORKLOAD == TPCC
 	assert(tpcc_buffer != NULL);
 #endif
@@ -34,6 +37,50 @@ Query_queue::init(workload * h_wl) {
 		pthread_join(p_thds[i], NULL);
 	int64_t end = get_server_clock();
 	printf("Query Queue Init Time %f\n", 1.0 * (end - begin) / 1000000000UL);
+
+//	uint64_t request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
+// #if true
+// 	ofstream fout;
+// 	fout.open("graph.csv", fstream::trunc);
+// 	for(uint32_t i = 0; i < g_thread_cnt; i++) {
+// 		for(uint32_t j = 0; j < request_cnt; j++) {
+// #if WORKLOAD == YCSB
+// 			uint64_t current_tid = i * request_cnt + j;
+// 			ycsb_query * current = &all_queries[i]->queries[j];
+// 			fout << current_tid;
+// 			for(uint32_t k = 0; k < g_thread_cnt; k++) {
+// 				for(uint64_t l = 0; l < request_cnt; l++) {
+// 					ycsb_query * other = &all_queries[k]->queries[l];
+// 					//check whether there is any conflict
+// 					bool conflict = false;
+// 					for (UInt32 tmp1 = 0; tmp1 < g_req_per_query; tmp1 ++) {
+// 						ycsb_request * req1 = &current->requests[tmp1];
+// 						for (UInt32 tmp2 = 0; tmp2 < g_req_per_query; tmp2 ++) {
+// 							ycsb_request * req2 = &other->requests[tmp2];
+// 							if(req1->key == req2->key) {
+// 								conflict = true;
+// 								break;
+// 							}
+// 						}
+// 						if(conflict)
+// 							break;	
+// 					}
+// 					if(conflict)
+// 					{
+// 						uint64_t other_tid = k * request_cnt + l;
+// 						fout << ", "  << other_tid; 
+// 					}
+// 				}
+// 			}
+// 			fout << endl;
+// #elif WORKLOAD == EXPERIMENT
+// #endif
+// 		}
+// 	}
+// 	fout.close();
+// 	printf("Written Graph File!\n");
+// 	exit(0);
+// #endif
 }
 
 void 
@@ -70,8 +117,10 @@ Query_thd::init(workload * h_wl, int thread_id) {
 	q_idx = 0;
 	request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
 #if WORKLOAD == YCSB	
-	queries = (ycsb_query *) 
-		mem_allocator.alloc(sizeof(ycsb_query) * request_cnt, thread_id);
+	queries = (ycsb_query *) mem_allocator.alloc(sizeof(ycsb_query) * request_cnt, thread_id);
+	srand48_r(thread_id + 1, &buffer);
+#elif WORKLOAD == EXPERIMENT
+	queries = (experiment_query *) mem_allocator.alloc(sizeof(experiment_query) * request_cnt, thread_id);
 	srand48_r(thread_id + 1, &buffer);
 #elif WORKLOAD == TPCC
 	queries = (tpcc_query *) _mm_malloc(sizeof(tpcc_query) * request_cnt, 64);
@@ -79,6 +128,9 @@ Query_thd::init(workload * h_wl, int thread_id) {
 	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
 #if WORKLOAD == YCSB	
 		new(&queries[qid]) ycsb_query();
+		queries[qid].init(thread_id, h_wl, this);
+#elif WORKLOAD == EXPERIMENT	
+		new(&queries[qid]) experiment_query();
 		queries[qid].init(thread_id, h_wl, this);
 #elif WORKLOAD == TPCC
 		new(&queries[qid]) tpcc_query();

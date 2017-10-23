@@ -9,6 +9,7 @@
 #include "occ.h"
 #include "vll.h"
 #include "ycsb_query.h"
+#include "experiment_query.h"
 #include "tpcc_query.h"
 #include "mem_alloc.h"
 #include "test.h"
@@ -166,6 +167,7 @@ RC thread_t::run() {
 		INC_STATS(get_thd_id(), run_time, timespan);
 		INC_STATS(get_thd_id(), latency, timespan);
 		//stats.add_lat(get_thd_id(), timespan);
+
 		if (rc == RCOK) {
 			INC_STATS(get_thd_id(), txn_cnt, 1);
 			stats.commit(get_thd_id());
@@ -174,7 +176,7 @@ RC thread_t::run() {
 			INC_STATS(get_thd_id(), time_abort, timespan);
 			INC_STATS(get_thd_id(), abort_cnt, 1);
 			stats.abort(get_thd_id());
-			m_txn->abort_cnt ++;
+			m_txn->abort_cnt++;
 		}
 
 		if (rc == FINISH)

@@ -2,6 +2,7 @@
 #include "row.h"
 #include "wl.h"
 #include "ycsb.h"
+#include "experiment.h"
 #include "thread.h"
 #include "mem_alloc.h"
 #include "occ.h"

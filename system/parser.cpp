@@ -37,7 +37,11 @@ void print_usage() {
 	printf("\t-TuINT      ; WH_UPDATE\n");
 	printf("  [TEST]:\n");
 	printf("\t-Ar         ; Test READ_WRITE\n");
-	printf("\t-Ac         ; Test CONFLIT\n");
+	printf("\t-Ac         ; Test CONFLICT\n");
+	printf("  [EXPERIMENT]:\n");
+	printf("\t-EcFLOAT	  ; CONTENTION_PERC\n");
+	printf("\t-EpINT	  ; POS_IN_TXN\n");
+	printf("\t-ElINT	  ; TXN_LENGTH\n");
 }
 
 void parser(int argc, char * argv[]) {
@@ -110,16 +114,13 @@ void parser(int argc, char * argv[]) {
 				g_test_case = READ_WRITE;
 			if (argv[i][2] == 'c')
 				g_test_case = CONFLICT;
-		}
-		else if (argv[i][1] == 'o') {
+		} else if (argv[i][1] == 'o') {
 			i++;
 			output_file = argv[i];
-		}
-		else if (argv[i][1] == 'h') {
+		} else if (argv[i][1] == 'h') {
 			print_usage();
 			exit(0);
-		} 
-		else if (argv[i][1] == '-') {
+		} else if (argv[i][1] == '-') {
 			string line(&argv[i][2]);
 			size_t pos = line.find("="); 
 			assert(pos != string::npos);
@@ -127,9 +128,18 @@ void parser(int argc, char * argv[]) {
 			string value = line.substr(pos + 1, line.length());
 			assert(g_params.find(name) != g_params.end());
 			g_params[name] = value;
-		}
-		else
+		} else if (argv[i][1] == 'E') {
+			if (argv[i][2] == 'p')
+				g_pos_in_txn = atoi( &argv[i][3] );
+			else if (argv[i][2] == 'l')
+				g_req_per_query = atoi( &argv[i][3] );
+			else if (argv[i][2] == 'c') 
+				g_contention_perc = atof( &argv[i][3] );
+			else 
+				assert(false);
+		} else {
 			assert(false);
+		}
 	}
 	if (g_thread_cnt < g_init_parallelism)
 		g_init_parallelism = g_thread_cnt;

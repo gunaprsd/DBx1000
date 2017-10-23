@@ -1,7 +1,7 @@
 #include <sched.h>
 #include "global.h"
 #include "helper.h"
-#include "ycsb.h"
+#include "experiment.h"
 #include "wl.h"
 #include "thread.h"
 #include "table.h"
@@ -16,19 +16,19 @@
 #include "mem_alloc.h"
 #include "query.h"
 
-int ycsb_wl::next_tid;
+int experiment_wl::next_tid;
 
-RC ycsb_wl::init() 
+RC experiment_wl::init() 
 {
 	workload::init();
 	next_tid = 0;
 	char * cpath = getenv("GRAPHITE_HOME");
 	string path;
 	if (cpath == NULL) 
-		path = "./benchmarks/YCSB_schema.txt";
+		path = "./benchmarks/EXPERIMENT_schema.txt";
 	else { 
 		path = string(cpath);
-		path += "/tests/apps/dbms/YCSB_schema.txt";
+		path += "/tests/apps/dbms/EXPERIMENT_schema.txt";
 	}
 	init_schema( path );
 	
@@ -37,7 +37,7 @@ RC ycsb_wl::init()
 	return RCOK;
 }
 
-RC ycsb_wl::init_schema(string schema_file) 
+RC experiment_wl::init_schema(string schema_file) 
 {
 	workload::init_schema(schema_file);
 	the_table = tables["MAIN_TABLE"]; 	
@@ -45,13 +45,13 @@ RC ycsb_wl::init_schema(string schema_file)
 	return RCOK;
 }
 	
-int ycsb_wl::key_to_part(uint64_t key) 
+int experiment_wl::key_to_part(uint64_t key) 
 {
 	uint64_t rows_per_part = g_synth_table_size / g_part_cnt;
 	return key / rows_per_part;
 }
 
-RC ycsb_wl::init_table() 
+RC experiment_wl::init_table() 
 {
 	RC rc;
     uint64_t total_row = 0;
@@ -89,13 +89,13 @@ RC ycsb_wl::init_table()
         }
     }
 	ins_done:
-    	printf("[YCSB] Table \"MAIN_TABLE\" initialized.\n");
+    	printf("[EXPERIMENT] Table \"MAIN_TABLE\" initialized.\n");
     	return RCOK;
 
 }
 
 // init table in parallel
-void ycsb_wl::init_table_parallel() 
+void experiment_wl::init_table_parallel() 
 {
 	enable_thread_mem_pool = true;
 	pthread_t p_thds[g_init_parallelism - 1];
@@ -114,7 +114,7 @@ void ycsb_wl::init_table_parallel()
 	mem_allocator.unregister();
 }
 
-void * ycsb_wl::init_table_slice() 
+void * experiment_wl::init_table_slice() 
 {
 	UInt32 tid = ATOM_FETCH_ADD(next_tid, 1);
 	// set cpu affinity
@@ -160,11 +160,11 @@ void * ycsb_wl::init_table_slice()
 	return NULL;
 }
 
-RC ycsb_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd)
+RC experiment_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd)
 {
-	txn_manager = (ycsb_txn_man *)
-		_mm_malloc( sizeof(ycsb_txn_man), 64 );
-	new(txn_manager) ycsb_txn_man();
+	txn_manager = (experiment_txn_man *)
+		_mm_malloc( sizeof(experiment_txn_man), 64 );
+	new(txn_manager) experiment_txn_man();
 	txn_manager->init(h_thd, this, h_thd->get_thd_id());
 	return RCOK;
 }

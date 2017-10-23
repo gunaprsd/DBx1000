@@ -16,7 +16,7 @@
 // # of transactions to run for warmup
 #define WARMUP						0
 // YCSB or TPCC
-#define WORKLOAD 					YCSB
+#define WORKLOAD 					EXPERIMENT
 // print the transaction latency distribution
 #define PRT_LAT_DISTR				false
 #define STATS_ENABLE				true
@@ -39,7 +39,7 @@
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL, TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
-#define CC_ALG 						TICTOC
+#define CC_ALG 						MVCC
 #define ISOLATION_LEVEL 			SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.
@@ -64,6 +64,7 @@
 #define DL_LOOP_TRIAL				100	// 1 us
 #define NO_DL						KEY_ORDER
 #define TIMEOUT						1000000 // 1ms
+
 // [TIMESTAMP]
 #define TS_TWR						false
 #define TS_ALLOC					TS_CAS
@@ -109,21 +110,29 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 			100000
+#define MAX_TXN_PER_PART 			200000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
-// ==== [YCSB] ====
+
+// === [EXPERIMENT & TPCC]
 #define INIT_PARALLELISM			40
-#define SYNTH_TABLE_SIZE 			(1024 * 1024 * 10)
-#define ZIPF_THETA 					0.6
-#define READ_PERC 					0.9
-#define WRITE_PERC 					0.1
+#define SYNTH_TABLE_SIZE 			10 * 1024 * 1024
+#define READ_PERC 					0.5
+#define WRITE_PERC 					0.5
 #define SCAN_PERC 					0
 #define SCAN_LEN					20
+
+// ==== [EXPERIMENT] ===
+#define CONTENTION_PERC				1.0
+#define POS_IN_TXN					1
+
+// ==== [YCSB] ====
+#define ZIPF_THETA 					0.1
 #define PART_PER_TXN 				1
 #define PERC_MULTI_PART				1
 #define REQ_PER_QUERY				16
 #define FIELD_PER_TUPLE				10
+
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
@@ -193,6 +202,7 @@ extern TestCases					g_test_case;
 #define YCSB						1
 #define TPCC						2
 #define TEST						3
+#define EXPERIMENT					4
 // Concurrency Control Algorithm
 #define NO_WAIT						1
 #define WAIT_DIE					2

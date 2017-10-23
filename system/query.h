@@ -6,6 +6,7 @@
 class workload;
 class ycsb_query;
 class tpcc_query;
+class experiment_query;
 
 class base_query {
 public:
@@ -23,6 +24,8 @@ public:
 	int q_idx;
 #if WORKLOAD == YCSB
 	ycsb_query * queries;
+#elif WORKLOAD == EXPERIMENT
+	experiment_query * queries;
 #else 
 	tpcc_query * queries;
 #endif

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "experiment.h"
 #include "ycsb.h"
 #include "tpcc.h"
 #include "test.h"
@@ -34,6 +35,8 @@ int main(int argc, char* argv[])
 			m_wl = new ycsb_wl; break;
 		case TPCC :
 			m_wl = new tpcc_wl; break;
+		case EXPERIMENT :
+			m_wl = new experiment_wl; break;
 		case TEST :
 			m_wl = new TestWorkload; 
 			((TestWorkload *)m_wl)->tick();
@@ -97,7 +100,7 @@ int main(int argc, char* argv[])
 	int64_t endtime = get_server_clock();
 	
 	if (WORKLOAD != TEST) {
-		printf("PASS! SimTime = %ld\n", endtime - starttime);
+		printf("Total Runtime = %f secs\n", ((double)(endtime - starttime))/(1000 * 1000 * 1000));
 		if (STATS_ENABLE)
 			stats.print();
 	} else {

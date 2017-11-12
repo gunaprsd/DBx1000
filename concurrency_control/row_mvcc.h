@@ -1,6 +1,6 @@
 #pragma once
 
-class table_t;
+class Table;
 class Catalog;
 class txn_man;
 
@@ -13,7 +13,7 @@ struct WriteHisEntry {
 	bool valid;		// whether the entry contains a valid version
 	bool reserved; 	// when valid == false, whether the entry is reserved by a P_REQ 
 	ts_t ts;
-	row_t * row;
+	Row * row;
 };
 
 struct ReqEntry {
@@ -27,20 +27,20 @@ struct ReqEntry {
 
 class Row_mvcc {
 public:
-	void init(row_t * row);
-	RC access(txn_man * txn, TsType type, row_t * row);
+	void init(Row * row);
+	Status access(txn_man * txn, TsType type, Row * row);
 private:
  	pthread_mutex_t * latch;
 	volatile bool blatch;
 
-	row_t * _row;
+	Row * _row;
 
-	RC conflict(TsType type, ts_t ts, uint64_t thd_id = 0);
+	Status conflict(TsType type, ts_t ts, uint64_t thd_id = 0);
 	void update_buffer(txn_man * txn, TsType type);
 	void buffer_req(TsType type, txn_man * txn, bool served);
 
 	// Invariant: all valid entries in _requests have greater ts than any entry in _write_history 
-	row_t * 		_latest_row;
+	Row * 		_latest_row;
 	ts_t			_latest_wts;
 	ts_t			_oldest_wts;
 	WriteHisEntry * _write_history;
@@ -63,7 +63,7 @@ private:
 	// list = 0: _write_history
 	// list = 1: _requests
 	void double_list(uint32_t list);
-	row_t * reserveRow(ts_t ts, txn_man * txn);
+	Row * reserveRow(ts_t ts, txn_man * txn);
 };
 
 #endif

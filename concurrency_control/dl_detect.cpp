@@ -2,7 +2,7 @@
 #include "global.h"
 #include "helper.h"
 #include "txn.h"
-#include "row.h"
+#include "Row.h"
 #include "manager.h"
 #include "mem_alloc.h"
 

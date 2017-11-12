@@ -4,25 +4,25 @@
 #include "wl.h"
 #include "txn.h"
 
-class table_t;
+class Table;
 class INDEX;
 class tpcc_query;
 
-class tpcc_wl : public workload {
+class tpcc_wl : public Workload {
 public:
-	RC init();
-	RC init_table();
-	RC init_schema(const char * schema_file);
-	RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
-	table_t * 		t_warehouse;
-	table_t * 		t_district;
-	table_t * 		t_customer;
-	table_t *		t_history;
-	table_t *		t_neworder;
-	table_t *		t_order;
-	table_t *		t_orderline;
-	table_t *		t_item;
-	table_t *		t_stock;
+	Status init();
+	Status init_table();
+	Status init_schema(const char * schema_file);
+	Status get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
+	Table * 		t_warehouse;
+	Table * 		t_district;
+	Table * 		t_customer;
+	Table *		t_history;
+	Table *		t_neworder;
+	Table *		t_order;
+	Table *		t_orderline;
+	Table *		t_item;
+	Table *		t_stock;
 
 	INDEX * 	i_item;
 	INDEX * 	i_warehouse;
@@ -62,15 +62,15 @@ private:
 class tpcc_txn_man : public txn_man
 {
 public:
-	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
-	RC run_txn(base_query * query);
+	void init(thread_t * h_thd, Workload * h_wl, uint64_t part_id); 
+	Status run_txn(base_query * query);
 private:
 	tpcc_wl * _wl;
-	RC run_payment(tpcc_query * m_query);
-	RC run_new_order(tpcc_query * m_query);
-	RC run_order_status(tpcc_query * query);
-	RC run_delivery(tpcc_query * query);
-	RC run_stock_level(tpcc_query * query);
+	Status run_payment(tpcc_query * m_query);
+	Status run_new_order(tpcc_query * m_query);
+	Status run_order_status(tpcc_query * query);
+	Status run_delivery(tpcc_query * query);
+	Status run_stock_level(tpcc_query * query);
 };
 
 #endif

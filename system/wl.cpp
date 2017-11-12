@@ -1,19 +1,20 @@
 #include "global.h"
 #include "helper.h"
 #include "wl.h"
-#include "row.h"
-#include "table.h"
-#include "index_hash.h"
-#include "index_btree.h"
-#include "catalog.h"
+
+#include "../storage/BTreeIndex.h"
+#include "../storage/HashIndex.h"
+#include "../storage/Table.h"
+#include "Row.h"
+#include "Catalog.h"
 #include "mem_alloc.h"
 
-RC workload::init() {
+Status Workload::init() {
 	sim_done = false;
-	return RCOK;
+	return OK;
 }
 
-RC workload::init_schema(string schema_file) {
+Status Workload::init_schema(string schema_file) {
     assert(sizeof(uint64_t) == 8);
     assert(sizeof(double) == 8);	
 	string line;
@@ -23,7 +24,7 @@ RC workload::init_schema(string schema_file) {
 		if (line.compare(0, 6, "TABLE=") == 0) {
 			string tname;
 			tname = &line[6];
-			schema = (Catalog *) _mm_malloc(sizeof(Catalog), CL_SIZE);
+			schema = (Catalog *) _mm_malloc(sizeof(Catalog), CACHE_LINE_SIZE);
 			getline(fin, line);
 			int col_count = 0;
 			// Read all fields for this table.
@@ -32,7 +33,7 @@ RC workload::init_schema(string schema_file) {
 				lines.push_back(line);
 				getline(fin, line);
 			}
-			schema->init( tname.c_str(), lines.size() );
+			schema->initialize( tname.c_str(), lines.size() );
 			for (UInt32 i = 0; i < lines.size(); i++) {
 				string line = lines[i];
 			    size_t pos = 0;
@@ -56,11 +57,11 @@ RC workload::init_schema(string schema_file) {
 					elem_num ++;
 				}
 				assert(elem_num == 3);
-                schema->add_col((char *)name.c_str(), size, (char *)type.c_str());
+                schema->add_column((char *)name.c_str(), size, (char *)type.c_str());
 				col_count ++;
 			}
-			table_t * cur_tab = (table_t *) _mm_malloc(sizeof(table_t), CL_SIZE);
-			cur_tab->init(schema);
+			Table * cur_tab = (Table *) _mm_malloc(sizeof(Table), CACHE_LINE_SIZE);
+			cur_tab->initialize(schema);
 			tables[tname] = cur_tab;
         } else if (!line.compare(0, 6, "INDEX=")) {
 			string iname;
@@ -88,43 +89,43 @@ RC workload::init_schema(string schema_file) {
 			}
 #if INDEX_STRUCT == IDX_HASH
 	#if WORKLOAD == YCSB
-			index->init(part_cnt, tables[tname], g_synth_table_size * 2);
+			index->initialize(part_cnt, tables[tname], g_synth_table_size * 2);
 	#elif WORKLOAD == EXPERIMENT
-			index->init(part_cnt, tables[tname], g_synth_table_size * 2);
+			index->initialize(part_cnt, tables[tname], g_synth_table_size * 2);
 	#elif WORKLOAD == TPCC
 			assert(tables[tname] != NULL);
-			index->init(part_cnt, tables[tname], stoi( items[1] ) * part_cnt);
+			index->initialize(part_cnt, tables[tname], stoi( items[1] ) * part_cnt);
 	#endif
 #else
-			index->init(part_cnt, tables[tname]);
+			index->initialize(part_cnt, tables[tname]);
 #endif
 			indexes[iname] = index;
 		}
     }
 	fin.close();
-	return RCOK;
+	return OK;
 }
 
 
 
-void workload::index_insert(string index_name, uint64_t key, row_t * row) {
+void Workload::index_insert(string index_name, uint64_t key, Row * row) {
 	assert(false);
 	INDEX * index = (INDEX *) indexes[index_name];
 	index_insert(index, key, row);
 }
 
-void workload::index_insert(INDEX * index, uint64_t key, row_t * row, int64_t part_id) {
+void Workload::index_insert(INDEX * index, uint64_t key, Row * row, int64_t part_id) {
 	uint64_t pid = part_id;
 	if (part_id == -1)
 		pid = get_part_id(row);
-	itemid_t * m_item =
-		(itemid_t *) mem_allocator.alloc( sizeof(itemid_t), pid );
-	m_item->init();
-	m_item->type = DT_row;
+	Record * m_item =
+		(Record *) mem_allocator.alloc( sizeof(Record), pid );
+	m_item->initialize();
+	m_item->type = DT_ROW;
 	m_item->location = row;
 	m_item->valid = true;
 
-    assert( index->index_insert(key, m_item, pid) == RCOK );
+    assert( index->index_insert(key, m_item, pid) == OK );
 }
 
 

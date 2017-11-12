@@ -1,10 +1,10 @@
 #include "txn.h"
-#include "row.h"
+#include "Row.h"
 #include "row_occ.h"
 #include "mem_alloc.h"
 
 void 
-Row_occ::init(row_t * row) {
+Row_occ::init(Row * row) {
 	_row = row;
 	int part_id = row->get_part_id();
 	_latch = (pthread_mutex_t *) 
@@ -14,16 +14,16 @@ Row_occ::init(row_t * row) {
 	blatch = false;
 }
 
-RC
+Status
 Row_occ::access(txn_man * txn, TsType type) {
-	RC rc = RCOK;
+	Status rc = OK;
 	pthread_mutex_lock( _latch );
 	if (type == R_REQ) {
 		if (txn->start_ts < wts)
 			rc = Abort;
 		else { 
 			txn->cur_row->copy(_row);
-			rc = RCOK;
+			rc = OK;
 		}
 	} else 
 		assert(false);
@@ -43,7 +43,7 @@ Row_occ::validate(uint64_t ts) {
 }
 
 void
-Row_occ::write(row_t * data, uint64_t ts) {
+Row_occ::write(Row * data, uint64_t ts) {
 	_row->copy(data);
 	if (PER_ROW_VALID) {
 		assert(ts > wts);

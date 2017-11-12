@@ -35,7 +35,7 @@ dbms benchmark has the following parameters in the config file. Parameters with 
   PART_CNT		: number of logical partitions in the system
   THREAD_CNT	: number of threads running at the same time
   PAGE_SIZE		: memory page size
-  CL_SIZE		: cache line size
+  CACHE_LINE_SIZE		: cache line size
   WARMUP		: number of transactions to run for warmup
 
   WORKLOAD		: workload supported (TPCC or YCSB)

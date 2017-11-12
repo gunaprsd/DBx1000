@@ -1,14 +1,15 @@
 #include "query.h"
 #include "ycsb_query.h"
+
+#include "../storage/Table.h"
 #include "mem_alloc.h"
 #include "wl.h"
 #include "ycsb.h"
-#include "table.h"
 
 uint64_t ycsb_query::the_n = 0;
 double ycsb_query::denom = 0;
 
-void ycsb_query::init(uint64_t thd_id, workload * h_wl, Query_thd * query_thd) 
+void ycsb_query::init(uint64_t thd_id, Workload * h_wl, Query_thd * query_thd) 
 {
 	_query_thd = query_thd;
 	requests = (ycsb_request *) mem_allocator.alloc(sizeof(ycsb_request) * g_req_per_query, thd_id);
@@ -56,7 +57,7 @@ uint64_t ycsb_query::zipf(uint64_t n, double theta)
 	return 1 + (uint64_t)(n * pow(eta*u -eta + 1, alpha));
 }
 
-void ycsb_query::gen_requests(uint64_t thd_id, workload * h_wl) {
+void ycsb_query::gen_requests(uint64_t thd_id, Workload * h_wl) {
 	#if CC_ALG == HSTORE
 		assert(g_virtual_part_cnt == g_part_cnt);
 	#endif

@@ -3,15 +3,18 @@
 #include "mem_alloc.h"
 #include "time.h"
 
-bool itemid_t::operator==(const itemid_t &other) const {
+bool Record::operator==(const Record &other) const
+{
 	return (type == other.type && location == other.location);
 }
 
-bool itemid_t::operator!=(const itemid_t &other) const {
+bool Record::operator!=(const Record &other) const
+{
 	return !(*this == other);
 }
 
-void itemid_t::operator=(const itemid_t &other){
+void Record::operator=(const Record &other)
+{
 	this->valid = other.valid;
 	this->type = other.type;
 	this->location = other.location;
@@ -19,17 +22,20 @@ void itemid_t::operator=(const itemid_t &other){
 	assert(this->valid);
 }
 
-void itemid_t::init() {
+void Record::initialize()
+{
 	valid = false;
 	location = 0;
 	next = NULL;
 }
 
-int get_thdid_from_txnid(uint64_t txnid) {
+int get_thdid_from_txnid(uint64_t txnid)
+{
 	return txnid % g_thread_cnt;
 }
 
-uint64_t get_part_id(void * addr) {
+uint64_t get_part_id(void * addr)
+{
 	return ((uint64_t)addr / PAGE_SIZE) % g_part_cnt; 
 }
 

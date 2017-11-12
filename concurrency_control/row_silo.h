@@ -1,6 +1,6 @@
 #pragma once 
 
-class table_t;
+class Table;
 class Catalog;
 class txn_man;
 struct TsReqEntry;

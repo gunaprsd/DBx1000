@@ -5,7 +5,7 @@
 #include "helper.h"
 #include "query.h"
 
-class workload;
+class Workload;
 
 // items of new order transaction
 struct Item_no {
@@ -16,7 +16,7 @@ struct Item_no {
 
 class tpcc_query : public base_query {
 public:
-	void init(uint64_t thd_id, workload * h_wl);
+	void init(uint64_t thd_id, Workload * h_wl);
 	TPCCTxnType type;
 	/**********************************************/	
 	// common txn input for both payment & new-order

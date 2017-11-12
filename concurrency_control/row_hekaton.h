@@ -1,7 +1,7 @@
 #pragma once
 #include "row_mvcc.h"
 
-class table_t;
+class Table;
 class Catalog;
 class txn_man;
 

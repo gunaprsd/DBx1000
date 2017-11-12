@@ -1,10 +1,10 @@
-#include "row.h"
+#include "Row.h"
 #include "row_vll.h"
 #include "global.h"
 #include "helper.h"
 
 void 
-Row_vll::init(row_t * row) {
+Row_vll::init(Row * row) {
 	_row = row;
 	cs = 0;
 	cx = 0;

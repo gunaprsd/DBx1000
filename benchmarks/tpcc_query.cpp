@@ -1,12 +1,13 @@
 #include "query.h"
 #include "tpcc_query.h"
+
+#include "../storage/Table.h"
 #include "tpcc.h"
 #include "tpcc_helper.h"
 #include "mem_alloc.h"
 #include "wl.h"
-#include "table.h"
 
-void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
+void tpcc_query::init(uint64_t thd_id, Workload * h_wl) {
 	double x = (double)(rand() % 100) / 100.0;
 	part_to_access = (uint64_t *) 
 		mem_allocator.alloc(sizeof(uint64_t) * g_part_cnt, thd_id);

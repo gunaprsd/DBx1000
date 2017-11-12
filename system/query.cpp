@@ -1,8 +1,9 @@
 #include <sched.h>
 #include "query.h"
+
+#include "../storage/Table.h"
 #include "mem_alloc.h"
 #include "wl.h"
-#include "table.h"
 #include "ycsb_query.h"
 #include "experiment_query.h"
 #include "tpcc_query.h"
@@ -14,7 +15,7 @@
 int Query_queue::_next_tid;
 
 void 
-Query_queue::init(workload * h_wl) {
+Query_queue::init(Workload * h_wl) {
 	all_queries = new Query_thd * [g_thread_cnt];
 	_wl = h_wl;
 	_next_tid = 0;
@@ -112,7 +113,7 @@ Query_queue::threadInitQuery(void * This) {
 /*************************************************/
 
 void 
-Query_thd::init(workload * h_wl, int thread_id) {
+Query_thd::init(Workload * h_wl, int thread_id) {
 	uint64_t request_cnt;
 	q_idx = 0;
 	request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;

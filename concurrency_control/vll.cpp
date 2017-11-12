@@ -1,14 +1,15 @@
 #include "vll.h"
+
+#include "../storage/Table.h"
 #include "txn.h"
-#include "table.h"
-#include "row.h"
+#include "Row.h"
 #include "row_vll.h"
 #include "ycsb_query.h"
 #include "ycsb.h"
 #include "experiment_query.h"
 #include "experiment.h"
 #include "wl.h"
-#include "catalog.h"
+#include "Catalog.h"
 #include "mem_alloc.h"
 #if CC_ALG == VLL
 

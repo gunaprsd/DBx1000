@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 	if (g_cc_alg == DL_DETECT) 
 		dl_detector.init();
 	printf("mem_allocator initialized!\n");
-	workload * m_wl;
+	Workload * m_wl;
 	switch (WORKLOAD) {
 		case YCSB :
 			m_wl = new ycsb_wl; break;

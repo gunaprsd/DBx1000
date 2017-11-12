@@ -15,7 +15,7 @@ struct DepThd {
 	pthread_mutex_t lock; 
 	volatile int64_t txnid; 				// -1 means invalid
 	int num_locks;				// the # of locks that txn is currently holding
-	char pad[2 * CL_SIZE - sizeof(int64_t) - sizeof(pthread_mutex_t) - sizeof(std::list<uint64_t>) - sizeof(int)];
+	char pad[2 * CACHE_LINE_SIZE - sizeof(int64_t) - sizeof(pthread_mutex_t) - sizeof(std::list<uint64_t>) - sizeof(int)];
 };
 
 // shared data for a particular deadlock detection

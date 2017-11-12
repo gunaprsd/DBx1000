@@ -9,7 +9,7 @@
 // each transaction only accesses 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			1
 #define PAGE_SIZE					4096 
-#define CL_SIZE						64
+#define CACHE_LINE_SIZE						64
 // CPU_FREQ is used to get accurate timing info 
 #define CPU_FREQ 					2 	// in GHz/s
 
@@ -100,7 +100,7 @@
 // Logging
 /***********************************************/
 #define LOG_COMMAND					false
-#define LOG_REDO					false
+#define LOG_REDO						false
 #define LOG_BATCH_TIME				10 // in ms
 
 /***********************************************/

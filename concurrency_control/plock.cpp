@@ -16,13 +16,13 @@ void PartMan::init() {
 	pthread_mutex_init( &latch, NULL );
 }
 
-RC PartMan::lock(txn_man * txn) {
-	RC rc;
+Status PartMan::lock(txn_man * txn) {
+	Status rc;
 
 	pthread_mutex_lock( &latch );
 	if (owner == NULL) {
 		owner = txn;
-		rc = RCOK;
+		rc = OK;
 	} else if (owner->get_ts() < txn->get_ts()) {
 		int i;
 		assert(waiter_cnt < g_thread_cnt);
@@ -83,8 +83,8 @@ void Plock::init() {
 		part_mans[i]->init();
 }
 
-RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
-	RC rc = RCOK;
+Status Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
+	Status rc = OK;
 	ts_t starttime = get_sys_clock();
 	UInt32 i;
 	for (i = 0; i < part_cnt; i ++) {
@@ -109,7 +109,7 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 	}
 	assert(txn->ready_part == 0);
 	INC_TMP_STATS(txn->get_thd_id(), time_man, get_sys_clock() - starttime);
-	return RCOK;
+	return OK;
 }
 
 void Plock::unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {

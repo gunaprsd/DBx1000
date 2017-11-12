@@ -1,12 +1,12 @@
 #include "test.h"
-#include "row.h"
+#include "Row.h"
 
-void TestTxnMan::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
+void TestTxnMan::init(thread_t * h_thd, Workload * h_wl, uint64_t thd_id) {
 	txn_man::init(h_thd, h_wl, thd_id);
 	_wl = (TestWorkload *) h_wl;
 }
 
-RC TestTxnMan::run_txn(int type, int access_num) {
+Status TestTxnMan::run_txn(int type, int access_num) {
 	switch(type) {
 	case READ_WRITE :
 		return testReadwrite(access_num);
@@ -17,13 +17,13 @@ RC TestTxnMan::run_txn(int type, int access_num) {
 	}
 }
 
-RC TestTxnMan::testReadwrite(int access_num) {
-	RC rc = RCOK;
-	itemid_t * m_item;
+Status TestTxnMan::testReadwrite(int access_num) {
+	Status rc = OK;
+	Record * m_item;
 
 	m_item = index_read(_wl->the_index, 0, 0);
-	row_t * row = ((row_t *)m_item->location);
-	row_t * row_local = get_row(row, WR);
+	Row * row = ((Row *)m_item->location);
+	Row * row_local = get_row(row, WR);
 	if (access_num == 0) {			
 		char str[] = "hello";
 		row_local->set_value(0, 1234);
@@ -48,22 +48,22 @@ RC TestTxnMan::testReadwrite(int access_num) {
 	}
 	rc = finish(rc);
 	if (access_num == 0)
-		return RCOK;
+		return OK;
 	else 
 		return FINISH;
 }
 
-RC 
+Status 
 TestTxnMan::testConflict(int access_num)
 {
-	RC rc = RCOK;
-	itemid_t * m_item;
+	Status rc = OK;
+	Record * m_item;
 
-	idx_key_t key;
+	KeyId key;
 	for (key = 0; key < 1; key ++) {
 		m_item = index_read(_wl->the_index, key, 0);
-		row_t * row = ((row_t *)m_item->location);
-		row_t * row_local; 
+		Row * row = ((Row *)m_item->location);
+		Row * row_local; 
 		row_local = get_row(row, WR);
 		if (row_local) {
 			char str[] = "hello";

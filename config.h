@@ -5,11 +5,11 @@
 // Simulation + Hardware
 /***********************************************/
 #define THREAD_CNT					4
-#define PART_CNT					1 
+#define PART_CNT						1
 // each transaction only accesses 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
-#define VIRTUAL_PART_CNT			1
+#define VIRTUAL_PART_CNT				1
 #define PAGE_SIZE					4096 
-#define CL_SIZE						64
+#define CACHE_LINE_SIZE						64
 // CPU_FREQ is used to get accurate timing info 
 #define CPU_FREQ 					2 	// in GHz/s
 
@@ -19,7 +19,7 @@
 #define WORKLOAD 					EXPERIMENT
 // print the transaction latency distribution
 #define PRT_LAT_DISTR				false
-#define STATS_ENABLE				true
+#define STATS_ENABLE					true
 #define TIME_ENABLE					true 
 
 #define MEM_ALLIGN					8 
@@ -40,7 +40,7 @@
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL, TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
 #define CC_ALG 						MVCC
-#define ISOLATION_LEVEL 			SERIALIZABLE
+#define ISOLATION_LEVEL 				SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.
 #define KEY_ORDER					false
@@ -85,7 +85,7 @@
 #define TICTOC_MV					false
 #define WR_VALIDATION_SEPARATE		true
 #define WRITE_PERMISSION_LOCK		false
-#define ATOMIC_TIMESTAMP			"false"
+#define ATOMIC_TIMESTAMP				"false"
 // [TICTOC, SILO]
 #define VALIDATION_LOCK				"no-wait" // no-wait or waiting
 #define PRE_ABORT					"true"
@@ -101,7 +101,7 @@
 // Logging
 /***********************************************/
 #define LOG_COMMAND					false
-#define LOG_REDO					false
+#define LOG_REDO						false
 #define LOG_BATCH_TIME				10 // in ms
 
 /***********************************************/
@@ -183,14 +183,14 @@ extern TestCases					g_test_case;
 // DEBUG info
 /***********************************************/
 #define WL_VERB						true
-#define IDX_VERB					false
+#define IDX_VERB						false
 #define VERB_ALLOC					true
 
 #define DEBUG_LOCK					false
 #define DEBUG_TIMESTAMP				false
 #define DEBUG_SYNTH					false
-#define DEBUG_ASSERT				false
-#define DEBUG_CC					false //true
+#define DEBUG_ASSERT					false
+#define DEBUG_CC						false //true
 
 /***********************************************/
 // Constant

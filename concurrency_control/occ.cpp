@@ -22,8 +22,8 @@ void OptCC::init() {
 	lock_all = false;
 }
 
-RC OptCC::validate(txn_man * txn) {
-	RC rc;
+Status OptCC::validate(txn_man * txn) {
+	Status rc;
 #if PER_ROW_VALID
 	rc = per_row_validate(txn);
 #else
@@ -32,9 +32,9 @@ RC OptCC::validate(txn_man * txn) {
 	return rc;
 }
 
-RC 
+Status 
 OptCC::per_row_validate(txn_man * txn) {
-	RC rc = RCOK;
+	Status rc = OK;
 #if CC_ALG == OCC
 	// sort all rows accessed in primary key order.
 	// TODO for migration, should first sort by partition id
@@ -71,8 +71,8 @@ OptCC::per_row_validate(txn_man * txn) {
 		// advance the global timestamp and get the end_ts
 		txn->end_ts = glob_manager->get_ts( txn->get_thd_id() );
 		// write to each row and update wts
-		txn->cleanup(RCOK);
-		rc = RCOK;
+		txn->cleanup(OK);
+		rc = OK;
 	} else {
 		txn->cleanup(Abort);
 		rc = Abort;
@@ -84,8 +84,8 @@ OptCC::per_row_validate(txn_man * txn) {
 	return rc;
 }
 
-RC OptCC::central_validate(txn_man * txn) {
-	RC rc;
+Status OptCC::central_validate(txn_man * txn) {
+	Status rc;
 	uint64_t start_tn = txn->start_ts;
 	uint64_t finish_tn;
 	set_ent ** finish_active;
@@ -136,7 +136,7 @@ RC OptCC::central_validate(txn_man * txn) {
 	}
 final:
 	if (valid) 
-		txn->cleanup(RCOK);
+		txn->cleanup(OK);
 	mem_allocator.free(rset, sizeof(set_ent));
 
 	if (!readonly) {
@@ -165,7 +165,7 @@ final:
 		pthread_mutex_unlock( &latch );
 	}
 	if (valid) {
-		rc = RCOK;
+		rc = OK;
 	} else {
 		txn->cleanup(Abort);
 		rc = Abort;
@@ -173,13 +173,13 @@ final:
 	return rc;
 }
 
-RC OptCC::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {
+Status OptCC::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {
 	wset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
 	rset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
 	wset->set_size = txn->wr_cnt;
 	rset->set_size = txn->row_cnt - txn->wr_cnt;
-	wset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * wset->set_size, 0);
-	rset->rows = (row_t **) mem_allocator.alloc(sizeof(row_t *) * rset->set_size, 0);
+	wset->rows = (Row **) mem_allocator.alloc(sizeof(Row *) * wset->set_size, 0);
+	rset->rows = (Row **) mem_allocator.alloc(sizeof(Row *) * rset->set_size, 0);
 	wset->txn = txn;
 	rset->txn = txn;
 
@@ -193,7 +193,7 @@ RC OptCC::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {
 
 	assert(n == wset->set_size);
 	assert(m == rset->set_size);
-	return RCOK;
+	return OK;
 }
 
 bool OptCC::test_valid(set_ent * set1, set_ent * set2) {

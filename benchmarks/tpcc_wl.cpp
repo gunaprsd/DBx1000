@@ -1,20 +1,20 @@
+#include "../storage/BTreeIndex.h"
+#include "../storage/HashIndex.h"
+#include "../storage/Table.h"
 #include "global.h"
 #include "helper.h"
 #include "tpcc.h"
 #include "wl.h"
 #include "thread.h"
-#include "table.h"
-#include "index_hash.h"
-#include "index_btree.h"
 #include "tpcc_helper.h"
-#include "row.h"
+#include "Row.h"
 #include "query.h"
 #include "txn.h"
 #include "mem_alloc.h"
 #include "tpcc_const.h"
 
-RC tpcc_wl::init() {
-	workload::init();
+Status tpcc_wl::init() {
+	Workload::init();
 	string path = "./benchmarks/";
 #if TPCC_SMALL
 	path += "TPCC_short_schema.txt";
@@ -26,11 +26,11 @@ RC tpcc_wl::init() {
 	cout << "TPCC schema initialized" << endl;
 	init_table();
 	next_tid = 0;
-	return RCOK;
+	return OK;
 }
 
-RC tpcc_wl::init_schema(const char * schema_file) {
-	workload::init_schema(schema_file);
+Status tpcc_wl::init_schema(const char * schema_file) {
+	Workload::init_schema(schema_file);
 	t_warehouse = tables["WAREHOUSE"];
 	t_district = tables["DISTRICT"];
 	t_customer = tables["CUSTOMER"];
@@ -47,10 +47,10 @@ RC tpcc_wl::init_schema(const char * schema_file) {
 	i_customer_id = indexes["CUSTOMER_ID_IDX"];
 	i_customer_last = indexes["CUSTOMER_LAST_IDX"];
 	i_stock = indexes["STOCK_IDX"];
-	return RCOK;
+	return OK;
 }
 
-RC tpcc_wl::init_table() {
+Status tpcc_wl::init_table() {
 	num_wh = g_num_wh;
 
 /******** fill in data ************/
@@ -74,22 +74,22 @@ RC tpcc_wl::init_table() {
 		pthread_join(p_thds[i], NULL);
 
 	printf("TPCC Data Initialization Complete!\n");
-	return RCOK;
+	return OK;
 }
 
-RC tpcc_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
+Status tpcc_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
 	txn_manager = (tpcc_txn_man *) _mm_malloc( sizeof(tpcc_txn_man), 64);
 	new(txn_manager) tpcc_txn_man();
 	txn_manager->init(h_thd, this, h_thd->get_thd_id());
-	return RCOK;
+	return OK;
 }
 
 // TODO ITEM table is assumed to be in partition 0
 void tpcc_wl::init_tab_item() {
 	for (UInt32 i = 1; i <= g_max_items; i++) {
-		row_t * row;
+		Row * row;
 		uint64_t row_id;
-		t_item->get_new_row(row, 0, row_id);
+		t_item->new_row(row, 0, row_id);
 		row->set_primary_key(i);
 		row->set_value(I_ID, i);
 		row->set_value(I_IM_ID, URand(1L,10000L, 0));
@@ -110,9 +110,9 @@ void tpcc_wl::init_tab_item() {
 
 void tpcc_wl::init_tab_wh(uint32_t wid) {
 	assert(wid >= 1 && wid <= g_num_wh);
-	row_t * row;
+	Row * row;
 	uint64_t row_id;
-	t_warehouse->get_new_row(row, 0, row_id);
+	t_warehouse->new_row(row, 0, row_id);
 	row->set_primary_key(wid);
 
 	row->set_value(W_ID, wid);
@@ -143,9 +143,9 @@ void tpcc_wl::init_tab_wh(uint32_t wid) {
 
 void tpcc_wl::init_tab_dist(uint64_t wid) {
 	for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
-		row_t * row;
+		Row * row;
 		uint64_t row_id;
-		t_district->get_new_row(row, 0, row_id);
+		t_district->new_row(row, 0, row_id);
 		row->set_primary_key(did);
 		
 		row->set_value(D_ID, did);
@@ -179,9 +179,9 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 void tpcc_wl::init_tab_stock(uint64_t wid) {
 	
 	for (UInt32 sid = 1; sid <= g_max_items; sid++) {
-		row_t * row;
+		Row * row;
 		uint64_t row_id;
-		t_stock->get_new_row(row, 0, row_id);
+		t_stock->new_row(row, 0, row_id);
 		row->set_primary_key(sid);
 		row->set_value(S_I_ID, sid);
 		row->set_value(S_W_ID, wid);
@@ -219,9 +219,9 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 	assert(g_cust_per_dist >= 1000);
 	for (UInt32 cid = 1; cid <= g_cust_per_dist; cid++) {
-		row_t * row;
+		Row * row;
 		uint64_t row_id;
-		t_customer->get_new_row(row, 0, row_id);
+		t_customer->new_row(row, 0, row_id);
 		row->set_primary_key(cid);
 
 		row->set_value(C_ID, cid);		
@@ -282,9 +282,9 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 }
 
 void tpcc_wl::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
-	row_t * row;
+	Row * row;
 	uint64_t row_id;
-	t_history->get_new_row(row, 0, row_id);
+	t_history->new_row(row, 0, row_id);
 	row->set_primary_key(0);
 	row->set_value(H_C_ID, c_id);
 	row->set_value(H_C_D_ID, d_id);
@@ -305,9 +305,9 @@ void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 	uint64_t perm[g_cust_per_dist]; 
 	init_permutation(perm, wid); /* initialize permutation of customer numbers */
 	for (UInt32 oid = 1; oid <= g_cust_per_dist; oid++) {
-		row_t * row;
+		Row * row;
 		uint64_t row_id;
-		t_order->get_new_row(row, 0, row_id);
+		t_order->new_row(row, 0, row_id);
 		row->set_primary_key(oid);
 		uint64_t o_ol_cnt = 1;
 		uint64_t cid = perm[oid - 1]; //get_permutation();
@@ -328,7 +328,7 @@ void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 		// ORDER-LINE	
 #if !TPCC_SMALL
 		for (uint32_t ol = 1; ol <= o_ol_cnt; ol++) {
-			t_orderline->get_new_row(row, 0, row_id);
+			t_orderline->new_row(row, 0, row_id);
 			row->set_value(OL_O_ID, oid);
 			row->set_value(OL_D_ID, did);
 			row->set_value(OL_W_ID, wid);
@@ -350,7 +350,7 @@ void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 #endif
 		// NEW ORDER
 		if (oid > 2100) {
-			t_neworder->get_new_row(row, 0, row_id);
+			t_neworder->new_row(row, 0, row_id);
 			row->set_value(NO_O_ID, oid);
 			row->set_value(NO_D_ID, did);
 			row->set_value(NO_W_ID, wid);

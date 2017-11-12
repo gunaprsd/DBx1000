@@ -1,5 +1,5 @@
 #include "manager.h"
-#include "row.h"
+#include "Row.h"
 #include "txn.h"
 #include "pthread.h"
 
@@ -87,17 +87,17 @@ void Manager::set_txn_man(txn_man * txn) {
 }
 
 
-uint64_t Manager::hash(row_t * row) {
+uint64_t Manager::hash(Row * row) {
 	uint64_t addr = (uint64_t)row / MEM_ALLIGN;
     return (addr * 1103515247 + 12345) % BUCKET_CNT;
 }
  
-void Manager::lock_row(row_t * row) {
+void Manager::lock_row(Row * row) {
 	int bid = hash(row);
 	pthread_mutex_lock( &mutexes[bid] );	
 }
 
-void Manager::release_row(row_t * row) {
+void Manager::release_row(Row * row) {
 	int bid = hash(row);
 	pthread_mutex_unlock( &mutexes[bid] );
 }

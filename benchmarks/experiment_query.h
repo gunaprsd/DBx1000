@@ -5,7 +5,7 @@
 #include "helper.h"
 #include "query.h"
 
-class workload;
+class Workload;
 class Query_thd;
 // Each experiment_query contains several experiment_requests, 
 // each of which is a RD, WR to a single table
@@ -21,15 +21,15 @@ public:
 
 class experiment_query : public base_query {
 public:
-	void init(uint64_t thd_id, workload * h_wl) { assert(false); };
-	void init(uint64_t thd_id, workload * h_wl, Query_thd * query_thd);
+	void init(uint64_t thd_id, Workload * h_wl) { assert(false); };
+	void init(uint64_t thd_id, Workload * h_wl, Query_thd * query_thd);
 	static void calculateDenom();
 
 	uint64_t request_cnt;
 	experiment_request * requests;
 
 private:
-	void gen_requests(uint64_t thd_id, workload * h_wl);
+	void gen_requests(uint64_t thd_id, Workload * h_wl);
 	// for Zipfian distribution
 	static double zeta(uint64_t n, double theta);
 	uint64_t zipf(uint64_t n, double theta);

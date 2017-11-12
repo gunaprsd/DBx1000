@@ -9,19 +9,12 @@
 /************************************************/
 // atomic operations
 /************************************************/
-#define ATOM_ADD(dest, value) \
-	__sync_fetch_and_add(&(dest), value)
-#define ATOM_SUB(dest, value) \
-	__sync_fetch_and_sub(&(dest), value)
-// returns true if cas is successful
-#define ATOM_CAS(dest, oldval, newval) \
-	__sync_bool_compare_and_swap(&(dest), oldval, newval)
-#define ATOM_ADD_FETCH(dest, value) \
-	__sync_add_and_fetch(&(dest), value)
-#define ATOM_FETCH_ADD(dest, value) \
-	__sync_fetch_and_add(&(dest), value)
-#define ATOM_SUB_FETCH(dest, value) \
-	__sync_sub_and_fetch(&(dest), value)
+#define ATOM_ADD(dest, value) __sync_fetch_and_add(&(dest), value)
+#define ATOM_SUB(dest, value) __sync_fetch_and_sub(&(dest), value)
+#define ATOM_CAS(dest, oldval, newval) __sync_bool_compare_and_swap(&(dest), oldval, newval)
+#define ATOM_ADD_FETCH(dest, value) __sync_add_and_fetch(&(dest), value)
+#define ATOM_FETCH_ADD(dest, value) __sync_fetch_and_add(&(dest), value)
+#define ATOM_SUB_FETCH(dest, value) __sync_sub_and_fetch(&(dest), value)
 
 #define COMPILER_BARRIER asm volatile("" ::: "memory");
 //#define PAUSE { __asm__ ( "pause;" ); }
@@ -106,8 +99,8 @@
 	if (g_part_alloc || THREAD_ALLOC) { \
 		for (UInt32 i = 0; i < size; i ++) {\
 			UInt32 padsize = sizeof(type) * (scale); \
-			if (g_mem_pad && padsize % CL_SIZE != 0) \
-				padsize += CL_SIZE - padsize % CL_SIZE; \
+			if (g_mem_pad && padsize % CACHE_LINE_SIZE != 0) \
+				padsize += CACHE_LINE_SIZE - padsize % CACHE_LINE_SIZE; \
 			name[i] = (type *) mem_allocator.alloc(padsize, i); \
 			for (UInt32 j = 0; j < scale; j++) \
 				new (&name[i][j]) type(); \
@@ -125,8 +118,8 @@
 	if (g_part_alloc) { \
 		for (UInt32 i = 0; i < size; i ++) {\
 			int padsize = sizeof(type); \
-			if (g_mem_pad && padsize % CL_SIZE != 0) \
-				padsize += CL_SIZE - padsize % CL_SIZE; \
+			if (g_mem_pad && padsize % CACHE_LINE_SIZE != 0) \
+				padsize += CACHE_LINE_SIZE - padsize % CACHE_LINE_SIZE; \
 			name[i] = (type *) mem_allocator.alloc(padsize, i); \
 			new (name[i]) type(); \
 		}\
@@ -136,25 +129,36 @@
 	for (UInt32 i = 0; i < size; i++) \
 		*name[i] = value; \
 
-enum Data_type {DT_table, DT_page, DT_row };
+enum DataType {DT_TABLE, DT_PAGE, DT_ROW, UNKNOWN };
 
-// TODO currently, only DR_row supported
+// TODO currently, only DR_ROW supported
 // data item type. 
-class itemid_t {
+class Record {
 public:
-	itemid_t() { };
-	itemid_t(Data_type type, void * loc) {
+	Record() {
+		this->type = UNKNOWN;
+		this->location = NULL;
+		this->next = NULL;
+		this->valid = false;
+	};
+
+	Record(DataType type, void * loc) {
         this->type = type;
         this->location = loc;
+        this->next = NULL;
+        this->valid = false;
     };
-	Data_type type;
-	void * location; // points to the table | page | row
-	itemid_t * next;
-	bool valid;
-	void init();
-	bool operator==(const itemid_t &other) const;
-	bool operator!=(const itemid_t &other) const;
-	void operator=(const itemid_t &other);
+
+	void 		initialize();
+	bool 		operator==(const Record &other) const;
+	bool 		operator!=(const Record &other) const;
+	void 		operator=(const Record &other);
+
+
+	DataType 	type;
+	void * 		location; // points to the table | page | row
+	bool 		valid;
+	Record * 	next;
 };
 
 int get_thdid_from_txnid(uint64_t txnid);

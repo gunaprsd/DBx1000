@@ -1,6 +1,6 @@
 //#include "mvcc.h"
 #include "txn.h"
-#include "row.h"
+#include "Row.h"
 #include "manager.h"
 #include "row_mvcc.h"
 #include "mem_alloc.h"
@@ -8,7 +8,7 @@
 
 #if CC_ALG == MVCC
 
-void Row_mvcc::init(row_t * row) {
+void Row_mvcc::init(Row * row) {
 	_row = row;
 	_his_len = 4;
 	_req_len = _his_len;
@@ -94,8 +94,8 @@ Row_mvcc::double_list(uint32_t list)
 	}
 }
 
-RC Row_mvcc::access(txn_man * txn, TsType type, row_t * row) {
-	RC rc = RCOK;
+Status Row_mvcc::access(txn_man * txn, TsType type, Row * row) {
+	Status rc = OK;
 	ts_t ts = txn->get_ts();
 uint64_t t1 = get_sys_clock();
 	if (g_central_man)
@@ -128,13 +128,13 @@ INC_STATS(txn->get_thd_id(), debug4, t2 - t1);
 				txn->ts_ready = false;
 			} else { 
 				// should just read
-				rc = RCOK;
+				rc = OK;
 				txn->cur_row = _latest_row;
 				if (ts > _max_served_rts)
 					_max_served_rts = ts;
 			}
 		} else {
-			rc = RCOK;
+			rc = OK;
 			// ts is between _oldest_wts and _latest_wts, should find the correct version
 			uint32_t the_ts = 0;
 		   	uint32_t the_i = _his_len;
@@ -160,14 +160,14 @@ INC_STATS(txn->get_thd_id(), debug4, t2 - t1);
 			buffer_req(P_REQ, txn, false);
 			txn->ts_ready = false;
 		} else {
-			rc = RCOK;
-			row_t * res_row = reserveRow(ts, txn);
+			rc = OK;
+			Row * res_row = reserveRow(ts, txn);
 			assert(res_row);
 			res_row->copy(_latest_row);
 			txn->cur_row = res_row;
 		}
 	} else if (type == W_REQ) {
-		rc = RCOK;
+		rc = OK;
 		assert(ts > _latest_wts);
 		assert(row == _write_history[_prewrite_his_id].row);
 		_write_history[_prewrite_his_id].valid = true;
@@ -195,7 +195,7 @@ INC_STATS(txn->get_thd_id(), debug3, get_sys_clock() - t2);
 	return rc;
 }
 
-row_t *
+Row *
 Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 {
 	assert(!_exists_prewrite);
@@ -218,7 +218,7 @@ Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 		}
 		// some entries can be garbage collected.
 		if (idx != _his_len) {
-			row_t * temp = _row;
+			Row * temp = _row;
 			_row = _write_history[idx].row;
 			_write_history[idx].row = temp;
 			_oldest_wts = max_recycle_ts;
@@ -265,7 +265,7 @@ Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 		}
 		assert(idx < _his_len);
 	}
-	row_t * row;
+	Row * row;
 	if (idx == _his_len) { 
 		if (_his_len >= g_thread_cnt) {
 			// all entries are taken. recycle the oldest version if _his_len is too long already
@@ -298,8 +298,8 @@ Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 	assert(idx != _his_len);
 	// some entries are not taken. But the row of that entry is NULL.
 	if (!_write_history[idx].row) {
-		_write_history[idx].row = (row_t *) _mm_malloc(sizeof(row_t), 64);
-		_write_history[idx].row->init(MAX_TUPLE_SIZE);
+		_write_history[idx].row = (Row *) _mm_malloc(sizeof(Row), 64);
+		_write_history[idx].row->initialize(MAX_TUPLE_SIZE);
 	}
 	_write_history[idx].valid = false;
 	_write_history[idx].reserved = true;
@@ -336,7 +336,7 @@ void Row_mvcc::update_buffer(txn_man * txn, TsType type) {
 		// return one pending P_REQ
 		else if (_requests[i].valid && _requests[i].ts == next_pre_ts) {
 			assert(_requests[i].type == P_REQ);
-			row_t * res_row = reserveRow(_requests[i].ts, txn);
+			Row * res_row = reserveRow(_requests[i].ts, txn);
 			assert(res_row);
 			res_row->copy(_latest_row);
 			_requests[i].valid = false;

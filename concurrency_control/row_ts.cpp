@@ -1,11 +1,11 @@
 #include "txn.h"
-#include "row.h"
+#include "Row.h"
 #include "row_ts.h"
 #include "mem_alloc.h"
 #include "manager.h"
 #include "stdint.h"
 
-void Row_ts::init(row_t * row) {
+void Row_ts::init(Row * row) {
 	_row = row;
 	uint64_t part_id = row->get_part_id();
 	wts = 0;
@@ -31,7 +31,7 @@ TsReqEntry * Row_ts::get_req_entry() {
 void Row_ts::return_req_entry(TsReqEntry * entry) {
 	if (entry->row != NULL) {
 		entry->row->free_row();
-		mem_allocator.free(entry->row, sizeof(row_t));
+		mem_allocator.free(entry->row, sizeof(Row));
 	}
 	mem_allocator.free(entry, sizeof(TsReqEntry));
 }
@@ -46,7 +46,7 @@ void Row_ts::return_req_list(TsReqEntry * list) {
 	}
 }
 
-void Row_ts::buffer_req(TsType type, txn_man * txn, row_t * row)
+void Row_ts::buffer_req(TsType type, txn_man * txn, Row * row)
 {
 	TsReqEntry * req_entry = get_req_entry();
 	assert(req_entry != NULL);
@@ -148,8 +148,8 @@ ts_t Row_ts::cal_min(TsType type) {
 	return new_min_pts;
 }
 
-RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
-	RC rc = RCOK;
+Status Row_ts::access(txn_man * txn, TsType type, Row * row) {
+	Status rc = OK;
 	ts_t ts = txn->get_ts();
 	if (g_central_man)
 		glob_manager->lock_row(_row);
@@ -168,7 +168,7 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 			txn->cur_row->copy(_row);
 			if (rts < ts)
 				rts = ts;
-			rc = RCOK;
+			rc = OK;
 		}
 	} else if (type == P_REQ) {
 		if (ts < rts) {
@@ -176,19 +176,19 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 		} else {
 #if TS_TWR
 			buffer_req(P_REQ, txn, NULL);
-			rc = RCOK;
+			rc = OK;
 #else 
 			if (ts < wts) {
 				rc = Abort;
 			} else {
 				buffer_req(P_REQ, txn, NULL);
-				rc = RCOK;
+				rc = OK;
 			}
 #endif
 		}
 	} else if (type == W_REQ) {
 		// write requests are always accepted.
-		rc = RCOK;
+		rc = OK;
 #if TS_TWR
 		// according to TWR, this write is already stale, ignore. 
 		if (ts < wts) {
@@ -197,7 +197,7 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 			update_buffer();
 			return_req_entry(req);
 			row->free_row();
-			mem_allocator.free(row, sizeof(row_t));
+			mem_allocator.free(row, sizeof(Row));
 			goto final;
 		}
 #else
@@ -221,7 +221,7 @@ RC Row_ts::access(txn_man * txn, TsType type, row_t * row) {
 			return_req_entry(req);
 			// the "row" is freed after hard copy to "_row"
 			row->free_row();
-			mem_allocator.free(row, sizeof(row_t));
+			mem_allocator.free(row, sizeof(Row));
 		}
 	} else if (type == XP_REQ) {
 		TsReqEntry * req = debuffer_req(P_REQ, txn);

@@ -10,11 +10,11 @@ struct LockEntry {
 
 class Row_lock {
 public:
-	void init(row_t * row);
+	void init(Row * row);
 	// [DL_DETECT] txnids are the txn_ids that current txn is waiting for.
-    RC lock_get(lock_t type, txn_man * txn);
-    RC lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt);
-    RC lock_release(txn_man * txn);
+    Status lock_get(lock_t type, txn_man * txn);
+    Status lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt);
+    Status lock_release(txn_man * txn);
 	
 private:
     pthread_mutex_t * latch;
@@ -23,7 +23,7 @@ private:
 	bool 		conflict_lock(lock_t l1, lock_t l2);
 	LockEntry * get_entry();
 	void 		return_entry(LockEntry * entry);
-	row_t * _row;
+	Row * _row;
     lock_t lock_type;
     UInt32 owner_cnt;
     UInt32 waiter_cnt;

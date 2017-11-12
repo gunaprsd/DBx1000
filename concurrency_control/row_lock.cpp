@@ -1,10 +1,10 @@
-#include "row.h"
+#include "Row.h"
 #include "txn.h"
 #include "row_lock.h"
 #include "mem_alloc.h"
 #include "manager.h"
 
-void Row_lock::init(row_t * row) {
+void Row_lock::init(Row * row) {
 	_row = row;
 	owners = NULL;
 	waiters_head = NULL;
@@ -20,15 +20,15 @@ void Row_lock::init(row_t * row) {
 
 }
 
-RC Row_lock::lock_get(lock_t type, txn_man * txn) {
+Status Row_lock::lock_get(lock_t type, txn_man * txn) {
 	uint64_t *txnids = NULL;
 	int txncnt = 0;
 	return lock_get(type, txn, txnids, txncnt);
 }
 
-RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt) {
+Status Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt) {
 	assert (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE);
-	RC rc;
+	Status rc;
 	int part_id =_row->get_part_id();
 	if (g_central_man)
 		glob_manager->lock_row(_row);
@@ -129,7 +129,7 @@ RC Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt
 		lock_type = type;
 		if (CC_ALG == DL_DETECT) 
 			ASSERT(waiters_head == NULL);
-        rc = RCOK;
+        rc = OK;
 	}
 final:
 	
@@ -162,7 +162,7 @@ final:
 }
 
 
-RC Row_lock::lock_release(txn_man * txn) {	
+Status Row_lock::lock_release(txn_man * txn) {	
 
 	if (g_central_man)
 		glob_manager->lock_row(_row);
@@ -224,7 +224,7 @@ RC Row_lock::lock_release(txn_man * txn) {
 	else
 		pthread_mutex_unlock( latch );
 
-	return RCOK;
+	return OK;
 }
 
 bool Row_lock::conflict_lock(lock_t l1, lock_t l2) {

@@ -14,7 +14,7 @@
 #include "mem_alloc.h"
 #include "test.h"
 
-void thread_t::init(uint64_t thd_id, workload * workload) {
+void thread_t::init(uint64_t thd_id, Workload * workload) {
 	_thd_id = thd_id;
 	_wl = workload;
 	srand48_r((_thd_id + 1) * get_sys_clock(), &buffer);
@@ -32,7 +32,7 @@ void thread_t::set_host_cid(uint64_t cid) { _host_cid = cid; }
 uint64_t thread_t::get_cur_cid() { return _cur_cid; }
 void thread_t::set_cur_cid(uint64_t cid) {_cur_cid = cid; }
 
-RC thread_t::run() {
+Status thread_t::run() {
 #if !NOGRAPHITE
 	_thd_id = CarbonGetTileId();
 #endif
@@ -47,10 +47,10 @@ RC thread_t::run() {
 
 	myrand rdm;
 	rdm.init(get_thd_id());
-	RC rc = RCOK;
+	Status rc = OK;
 	txn_man * m_txn;
 	rc = _wl->get_txn_man(m_txn, this);
-	assert (rc == RCOK);
+	assert (rc == OK);
 	glob_manager->set_txn_man(m_txn);
 
 	base_query * m_query = NULL;
@@ -89,7 +89,7 @@ RC thread_t::run() {
 						break;
 				}
 			} else {
-				if (rc == RCOK)
+				if (rc == OK)
 					m_query = query_queue->get_next_query( _thd_id );
 			}
 		}
@@ -107,7 +107,7 @@ RC thread_t::run() {
 				|| CC_ALG == TIMESTAMP) 
 			m_txn->set_ts(get_next_ts());
 
-		rc = RCOK;
+		rc = OK;
 #if CC_ALG == HSTORE
 		if (WORKLOAD == TEST) {
 			uint64_t part_to_access[1] = {0};
@@ -124,7 +124,7 @@ RC thread_t::run() {
 		// results should be the same.
 		m_txn->start_ts = get_next_ts(); 
 #endif
-		if (rc == RCOK) 
+		if (rc == OK) 
 		{
 #if CC_ALG != VLL
 			if (WORKLOAD == TEST)
@@ -168,7 +168,7 @@ RC thread_t::run() {
 		INC_STATS(get_thd_id(), latency, timespan);
 		//stats.add_lat(get_thd_id(), timespan);
 
-		if (rc == RCOK) {
+		if (rc == OK) {
 			INC_STATS(get_thd_id(), txn_cnt, 1);
 			stats.commit(get_thd_id());
 			txn_cnt ++;
@@ -216,9 +216,9 @@ thread_t::get_next_ts() {
 	}
 }
 
-RC thread_t::runTest(txn_man * txn)
+Status thread_t::runTest(txn_man * txn)
 {
-	RC rc = RCOK;
+	Status rc = OK;
 	if (g_test_case == READ_WRITE) {
 		rc = ((TestTxnMan *)txn)->run_txn(g_test_case, 0);
 #if CC_ALG == OCC
@@ -230,11 +230,11 @@ RC thread_t::runTest(txn_man * txn)
 	}
 	else if (g_test_case == CONFLICT) {
 		rc = ((TestTxnMan *)txn)->run_txn(g_test_case, 0);
-		if (rc == RCOK)
+		if (rc == OK)
 			return FINISH;
 		else 
 			return rc;
 	}
 	assert(false);
-	return RCOK;
+	return OK;
 }

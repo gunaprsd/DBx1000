@@ -115,7 +115,7 @@ extern char * output_file;
 extern UInt32 g_max_items;
 extern UInt32 g_cust_per_dist;
 
-enum RC { RCOK, Commit, Abort, WAIT, ERROR, FINISH};
+enum Status { OK, Commit, Abort, WAIT, ERROR, FINISH};
 
 /* Thread */
 typedef uint64_t txnid_t;
@@ -133,8 +133,10 @@ typedef uint64_t pgid_t; // page id
 enum latch_t {LATCH_EX, LATCH_SH, LATCH_NONE};
 // accessing type determines the latch type on nodes
 enum idx_acc_t {INDEX_INSERT, INDEX_READ, INDEX_NONE};
-typedef uint64_t idx_key_t; // key id for index
-typedef uint64_t (*func_ptr)(idx_key_t);	// part_id func_ptr(index_key);
+typedef uint64_t KeyId; // key id for index
+typedef int64_t PartId;
+typedef uint64_t ThreadId;
+typedef uint64_t (*func_ptr)(KeyId);	// part_id func_ptr(index_key);
 
 /* general concurrency control */
 enum access_t {RD, WR, XP, SCAN};
@@ -153,7 +155,7 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #if (INDEX_STRUCT == IDX_BTREE)
 #define INDEX		index_btree
 #else  // IDX_HASH
-#define INDEX		IndexHash
+#define INDEX		HashIndex
 #endif
 
 /************************************************/

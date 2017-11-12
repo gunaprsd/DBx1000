@@ -1,59 +1,59 @@
+#include "../storage/BTreeIndex.h"
+#include "../storage/HashIndex.h"
+#include "../storage/Table.h"
 #include "test.h"
-#include "table.h"
-#include "row.h"
+#include "Row.h"
 #include "mem_alloc.h"
-#include "index_hash.h"
-#include "index_btree.h"
 #include "thread.h"
 
-RC TestWorkload::init() {
-	workload::init();
+Status TestWorkload::init() {
+	Workload::init();
 	string path;
 	path = "./benchmarks/TEST_schema.txt";
 	init_schema( path.c_str() );
 
 	init_table();
-	return RCOK;
+	return OK;
 }
 
-RC TestWorkload::init_schema(const char * schema_file) {
-	workload::init_schema(schema_file);
+Status TestWorkload::init_schema(const char * schema_file) {
+	Workload::init_schema(schema_file);
 	the_table = tables["MAIN_TABLE"]; 	
 	the_index = indexes["MAIN_INDEX"];
-	return RCOK;
+	return OK;
 }
 
-RC TestWorkload::init_table() {
-	RC rc = RCOK;
+Status TestWorkload::init_table() {
+	Status rc = OK;
 	for (int rid = 0; rid < 10; rid ++) {
-		row_t * new_row = NULL;
+		Row * new_row = NULL;
 		uint64_t row_id;
 		int part_id = 0;
-        rc = the_table->get_new_row(new_row, part_id, row_id); 
-		assert(rc == RCOK);
+        rc = the_table->new_row(new_row, part_id, row_id); 
+		assert(rc == OK);
 		uint64_t primary_key = rid;
 		new_row->set_primary_key(primary_key);
         new_row->set_value(0, rid);
         new_row->set_value(1, 0);
         new_row->set_value(2, 0);
-        itemid_t * m_item = (itemid_t *) mem_allocator.alloc( sizeof(itemid_t), part_id );
+        Record * m_item = (Record *) mem_allocator.alloc( sizeof(Record), part_id );
 		assert(m_item != NULL);
-		m_item->type = DT_row;
+		m_item->type = DT_ROW;
 		m_item->location = new_row;
 		m_item->valid = true;
 		uint64_t idx_key = primary_key;
-        rc = the_index->index_insert(idx_key, m_item, 0);
-        assert(rc == RCOK);
+        rc = the_index->insert(idx_key, m_item, 0);
+        assert(rc == OK);
     }
 	return rc;
 }
 
-RC TestWorkload::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
+Status TestWorkload::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
 	txn_manager = (TestTxnMan *)
 		mem_allocator.alloc( sizeof(TestTxnMan), h_thd->get_thd_id() );
 	new(txn_manager) TestTxnMan();
 	txn_manager->init(h_thd, this, h_thd->get_thd_id());
-	return RCOK;
+	return OK;
 }
 
 void TestWorkload::summarize() {

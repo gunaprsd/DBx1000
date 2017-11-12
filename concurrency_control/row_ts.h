@@ -1,28 +1,28 @@
 #ifndef ROW_TS_H
 #define ROW_TS_H
 
-class table_t;
+class Table;
 class Catalog;
 class txn_man;
 struct TsReqEntry {
 	txn_man * txn;
 	// for write requests, need to have a copy of the data to write.
-	row_t * row;
-	itemid_t * item;
+	Row * row;
+	Record * item;
 	ts_t ts;
 	TsReqEntry * next;
 };
 
 class Row_ts {
 public:
-	void init(row_t * row);
-	RC access(txn_man * txn, TsType type, row_t * row);
+	void init(Row * row);
+	Status access(txn_man * txn, TsType type, Row * row);
 
 private:
  	pthread_mutex_t * latch;
 	bool blatch;
 
-	void buffer_req(TsType type, txn_man * txn, row_t * row);
+	void buffer_req(TsType type, txn_man * txn, Row * row);
 	TsReqEntry * debuffer_req(TsType type, txn_man * txn);
 	TsReqEntry * debuffer_req(TsType type, ts_t ts);
 	TsReqEntry * debuffer_req(TsType type, txn_man * txn, ts_t ts);
@@ -32,7 +32,7 @@ private:
 	void return_req_entry(TsReqEntry * entry);
  	void return_req_list(TsReqEntry * list);
 
-	row_t * _row;
+	Row * _row;
 	ts_t wts;
     ts_t rts;
     ts_t min_wts;

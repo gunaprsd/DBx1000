@@ -5,17 +5,17 @@
 #include "txn.h"
 #include "wl.h"
 
-class TestWorkload : public workload
+class TestWorkload : public Workload
 {
 public:
-	RC init();
-	RC init_table();
-	RC init_schema(const char * schema_file);
-	RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
+	Status init();
+	Status init_table();
+	Status init_schema(const char * schema_file);
+	Status get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
 	void summarize();
 	void tick() { time = get_sys_clock(); };
 	INDEX * the_index;
-	table_t * the_table;
+	Table * the_table;
 private:
 	uint64_t time;
 };
@@ -23,12 +23,12 @@ private:
 class TestTxnMan : public txn_man 
 {
 public:
-	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
-	RC run_txn(int type, int access_num);
-	RC run_txn(base_query * m_query) { assert(false); };
+	void init(thread_t * h_thd, Workload * h_wl, uint64_t part_id); 
+	Status run_txn(int type, int access_num);
+	Status run_txn(base_query * m_query) { assert(false); };
 private:
-	RC testReadwrite(int access_num);
-	RC testConflict(int access_num);
+	Status testReadwrite(int access_num);
+	Status testConflict(int access_num);
 	
 	TestWorkload * _wl;
 };

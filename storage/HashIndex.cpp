@@ -1,45 +1,53 @@
 #include "global.h"	
-#include "index_hash.h"
+#include "HashIndex.h"
 #include "mem_alloc.h"
-#include "table.h"
+#include "Table.h"
 
-RC IndexHash::init(uint64_t bucket_cnt, int part_cnt) {
+
+		BucketNode::BucketNode	(KeyId key) {	initialize(key); };
+	void 	BucketNode::initialize	(KeyId key)
+	{
+		this->key = key;
+		next = NULL;
+		records = NULL;
+	}
+
+Status HashIndex::initialize(uint64_t bucket_cnt, uint32_t part_cnt) {
 	_bucket_cnt = bucket_cnt;
 	_bucket_cnt_per_part = bucket_cnt / part_cnt;
 	_buckets = new BucketHeader * [part_cnt];
 	for (int i = 0; i < part_cnt; i++) {
 		_buckets[i] = (BucketHeader *) _mm_malloc(sizeof(BucketHeader) * _bucket_cnt_per_part, 64);
 		for (uint32_t n = 0; n < _bucket_cnt_per_part; n ++)
-			_buckets[i][n].init();
+			_buckets[i][n].initialize();
 	}
-	return RCOK;
+	return OK;
 }
 
-RC 
-IndexHash::init(int part_cnt, table_t * table, uint64_t bucket_cnt) {
-	init(bucket_cnt, part_cnt);
+Status HashIndex::initialize(uint32_t part_cnt, Table * table, uint64_t bucket_cnt) {
+	initialize(bucket_cnt, part_cnt);
 	this->table = table;
-	return RCOK;
+	return OK;
 }
 
-bool IndexHash::index_exist(idx_key_t key) {
+bool HashIndex::exists(KeyId key) {
 	assert(false);
 }
 
 void 
-IndexHash::get_latch(BucketHeader * bucket) {
+HashIndex::get_latch(BucketHeader * bucket) {
 	while (!ATOM_CAS(bucket->locked, false, true)) {}
 }
 
 void 
-IndexHash::release_latch(BucketHeader * bucket) {
+HashIndex::release_latch(BucketHeader * bucket) {
 	bool ok = ATOM_CAS(bucket->locked, true, false);
 	assert(ok);
 }
 
 	
-RC IndexHash::index_insert(idx_key_t key, itemid_t * item, int part_id) {
-	RC rc = RCOK;
+Status HashIndex::insert(KeyId key, Record * item, PartId part_id) {
+	Status rc = OK;
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
 	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
@@ -54,11 +62,11 @@ RC IndexHash::index_insert(idx_key_t key, itemid_t * item, int part_id) {
 	return rc;
 }
 
-RC IndexHash::index_read(idx_key_t key, itemid_t * &item, int part_id) {
+Status HashIndex::read(KeyId key, Record * &item, PartId part_id) {
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
 	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
-	RC rc = RCOK;
+	Status rc = OK;
 	// 1. get the sh latch
 //	get_latch(cur_bkt);
 	cur_bkt->read_item(key, item, table->get_table_name());
@@ -68,12 +76,11 @@ RC IndexHash::index_read(idx_key_t key, itemid_t * &item, int part_id) {
 
 }
 
-RC IndexHash::index_read(idx_key_t key, itemid_t * &item, 
-						int part_id, int thd_id) {
+Status HashIndex::read(KeyId key, Record * &item, PartId part_id, ThreadId thd_id) {
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
 	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
-	RC rc = RCOK;
+	Status rc = OK;
 	// 1. get the sh latch
 //	get_latch(cur_bkt);
 	cur_bkt->read_item(key, item, table->get_table_name());
@@ -84,15 +91,13 @@ RC IndexHash::index_read(idx_key_t key, itemid_t * &item,
 
 /************** BucketHeader Operations ******************/
 
-void BucketHeader::init() {
+void BucketHeader::initialize() {
 	node_cnt = 0;
 	first_node = NULL;
 	locked = false;
 }
 
-void BucketHeader::insert_item(idx_key_t key, 
-		itemid_t * item, 
-		int part_id) 
+void BucketHeader::insert_item(KeyId key, Record * item, PartId part_id)
 {
 	BucketNode * cur_node = first_node;
 	BucketNode * prev_node = NULL;
@@ -105,8 +110,8 @@ void BucketHeader::insert_item(idx_key_t key,
 	if (cur_node == NULL) {		
 		BucketNode * new_node = (BucketNode *) 
 			mem_allocator.alloc(sizeof(BucketNode), part_id );
-		new_node->init(key);
-		new_node->items = item;
+		new_node->initialize(key);
+		new_node->records = item;
 		if (prev_node != NULL) {
 			new_node->next = prev_node->next;
 			prev_node->next = new_node;
@@ -115,12 +120,12 @@ void BucketHeader::insert_item(idx_key_t key,
 			first_node = new_node;
 		}
 	} else {
-		item->next = cur_node->items;
-		cur_node->items = item;
+		item->next = cur_node->records;
+		cur_node->records = item;
 	}
 }
 
-void BucketHeader::read_item(idx_key_t key, itemid_t * &item, const char * tname) 
+void BucketHeader::read_item(KeyId key, Record * &item, const char * tname)
 {
 	BucketNode * cur_node = first_node;
 	while (cur_node != NULL) {
@@ -129,5 +134,5 @@ void BucketHeader::read_item(idx_key_t key, itemid_t * &item, const char * tname
 		cur_node = cur_node->next;
 	}
 	M_ASSERT(cur_node->key == key, "Key does not exist!");
-	item = cur_node->items;
+	item = cur_node->records;
 }

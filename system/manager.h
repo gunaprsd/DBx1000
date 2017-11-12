@@ -3,7 +3,7 @@
 #include "helper.h"
 #include "global.h"
 
-class row_t;
+class Row;
 class txn_man;
 
 class Manager {
@@ -18,8 +18,8 @@ public:
 
 	// HACK! the following mutexes are used to model a centralized
 	// lock/timestamp manager. 
- 	void 			lock_row(row_t * row);
-	void 			release_row(row_t * row);
+ 	void 			lock_row(Row * row);
+	void 			release_row(Row * row);
 	
 	txn_man * 		get_txn_man(int thd_id) { return _all_txns[thd_id]; };
 	void 			set_txn_man(txn_man * txn);
@@ -34,7 +34,7 @@ private:
 	pthread_mutex_t ts_mutex;
 	uint64_t *		timestamp;
 	pthread_mutex_t mutexes[BUCKET_CNT];
-	uint64_t 		hash(row_t * row);
+	uint64_t 		hash(Row * row);
 	ts_t volatile * volatile * volatile all_ts;
 	txn_man ** 		_all_txns;
 	// for MVCC 

@@ -1,17 +1,18 @@
 #include "txn.h"
-#include "row.h"
+
+#include "../storage/BTreeIndex.h"
+#include "../storage/HashIndex.h"
+#include "../storage/Table.h"
+#include "Row.h"
 #include "wl.h"
 #include "ycsb.h"
 #include "experiment.h"
 #include "thread.h"
 #include "mem_alloc.h"
 #include "occ.h"
-#include "table.h"
-#include "catalog.h"
-#include "index_btree.h"
-#include "index_hash.h"
+#include "Catalog.h"
 
-void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
+void txn_man::init(thread_t * h_thd, Workload * h_wl, uint64_t thd_id) {
 	this->h_thd = h_thd;
 	this->h_wl = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
@@ -51,7 +52,7 @@ txnid_t txn_man::get_txn_id() {
 	return this->txn_id;
 }
 
-workload * txn_man::get_wl() {
+Workload * txn_man::get_wl() {
 	return h_wl;
 }
 
@@ -67,7 +68,7 @@ ts_t txn_man::get_ts() {
 	return this->timestamp;
 }
 
-void txn_man::cleanup(RC rc) {
+void txn_man::cleanup(Status rc) {
 #if CC_ALG == HEKATON
 	row_cnt = 0;
 	wr_cnt = 0;
@@ -75,7 +76,7 @@ void txn_man::cleanup(RC rc) {
 	return;
 #endif
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
-		row_t * orig_r = accesses[rid]->orig_row;
+		Row * orig_r = accesses[rid]->orig_row;
 		access_t type = accesses[rid]->type;
 		if (type == WR && rc == Abort)
 			type = XP;
@@ -103,7 +104,7 @@ void txn_man::cleanup(RC rc) {
 
 	if (rc == Abort) {
 		for (UInt32 i = 0; i < insert_cnt; i ++) {
-			row_t * row = insert_rows[i];
+			Row * row = insert_rows[i];
 			assert(g_part_alloc == false);
 #if CC_ALG != HSTORE && CC_ALG != OCC
 			mem_allocator.free(row->manager, 0);
@@ -120,21 +121,21 @@ void txn_man::cleanup(RC rc) {
 #endif
 }
 
-row_t * txn_man::get_row(row_t * row, access_t type) {
+Row * txn_man::get_row(Row * row, access_t type) {
 	if (CC_ALG == HSTORE)
 		return row;
 	uint64_t starttime = get_sys_clock();
-	RC rc = RCOK;
+	Status rc = OK;
 	if (accesses[row_cnt] == NULL) {
 		Access * access = (Access *) _mm_malloc(sizeof(Access), 64);
 		accesses[row_cnt] = access;
 #if (CC_ALG == SILO || CC_ALG == TICTOC)
-		access->data = (row_t *) _mm_malloc(sizeof(row_t), 64);
+		access->data = (Row *) _mm_malloc(sizeof(Row), 64);
 		access->data->init(MAX_TUPLE_SIZE);
-		access->orig_data = (row_t *) _mm_malloc(sizeof(row_t), 64);
+		access->orig_data = (Row *) _mm_malloc(sizeof(Row), 64);
 		access->orig_data->init(MAX_TUPLE_SIZE);
 #elif (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
-		access->orig_data = (row_t *) _mm_malloc(sizeof(row_t), 64);
+		access->orig_data = (Row *) _mm_malloc(sizeof(Row), 64);
 		access->orig_data->init(MAX_TUPLE_SIZE);
 #endif
 		num_accesses_alloc ++;
@@ -178,46 +179,46 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 	return accesses[row_cnt - 1]->data;
 }
 
-void txn_man::insert_row(row_t * row, table_t * table) {
+void txn_man::insert_row(Row * row, Table * table) {
 	if (CC_ALG == HSTORE)
 		return;
 	assert(insert_cnt < MAX_ROW_PER_TXN);
 	insert_rows[insert_cnt ++] = row;
 }
 
-itemid_t *
-txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
+Record *
+txn_man::index_read(INDEX * index, KeyId key, int part_id) {
 	uint64_t starttime = get_sys_clock();
-	itemid_t * item;
+	Record * item;
 	index->index_read(key, item, part_id, get_thd_id());
 	INC_TMP_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
 	return item;
 }
 
 void 
-txn_man::index_read(INDEX * index, idx_key_t key, int part_id, itemid_t *& item) {
+txn_man::index_read(INDEX * index, KeyId key, int part_id, Record *& item) {
 	uint64_t starttime = get_sys_clock();
 	index->index_read(key, item, part_id, get_thd_id());
 	INC_TMP_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
 }
 
-RC txn_man::finish(RC rc) {
+Status txn_man::finish(Status rc) {
 #if CC_ALG == HSTORE
-	return RCOK;
+	return OK;
 #endif
 	uint64_t starttime = get_sys_clock();
 #if CC_ALG == OCC
-	if (rc == RCOK)
+	if (rc == OK)
 		rc = occ_man.validate(this);
 	else 
 		cleanup(rc);
 #elif CC_ALG == TICTOC
-	if (rc == RCOK)
+	if (rc == OK)
 		rc = validate_tictoc();
 	else 
 		cleanup(rc);
 #elif CC_ALG == SILO
-	if (rc == RCOK)
+	if (rc == OK)
 		rc = validate_silo();
 	else 
 		cleanup(rc);

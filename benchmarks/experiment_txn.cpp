@@ -1,14 +1,14 @@
+#include "../storage/BTreeIndex.h"
+#include "../storage/HashIndex.h"
+#include "../storage/Table.h"
 #include "global.h"
 #include "helper.h"
 #include "experiment.h"
 #include "experiment_query.h"
 #include "wl.h"
 #include "thread.h"
-#include "table.h"
-#include "row.h"
-#include "index_hash.h"
-#include "index_btree.h"
-#include "catalog.h"
+#include "Row.h"
+#include "Catalog.h"
 #include "manager.h"
 #include "row_lock.h"
 #include "row_ts.h"
@@ -16,16 +16,16 @@
 #include "mem_alloc.h"
 #include "query.h"
 
-void experiment_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
+void experiment_txn_man::init(thread_t * h_thd, Workload * h_wl, uint64_t thd_id) {
 	txn_man::init(h_thd, h_wl, thd_id);
 	_wl = (experiment_wl *) h_wl;
 }
 
-RC experiment_txn_man::run_txn(base_query * query) {
-	RC rc;
+Status experiment_txn_man::run_txn(base_query * query) {
+	Status rc;
 	experiment_query * m_query = (experiment_query *) query;
 	experiment_wl * wl = (experiment_wl *) h_wl;
-	itemid_t * m_item = NULL;
+	Record * m_item = NULL;
   	row_cnt = 0;
 
 	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
@@ -44,8 +44,8 @@ RC experiment_txn_man::run_txn(base_query * query) {
 					break;
 			}
 #endif
-			row_t * row = ((row_t *)m_item->location);
-			row_t * row_local; 
+			Row * row = ((Row *)m_item->location);
+			Row * row_local; 
 			access_t type = req->rtype;
 			
 			row_local = get_row(row, type);
@@ -79,7 +79,7 @@ RC experiment_txn_man::run_txn(base_query * query) {
 				finish_req = true;
 		}
 	}
-	rc = RCOK;
+	rc = OK;
 final:
 	rc = finish(rc);
 	return rc;

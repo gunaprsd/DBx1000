@@ -1,10 +1,11 @@
 //#include "mvcc.h"
-#include "txn.h"
 #include "Row.h"
-#include "manager.h"
 #include "row_mvcc.h"
-#include "mem_alloc.h"
 #include <mm_malloc.h>
+
+#include "../system/Allocator.h"
+#include "../system/Manager.h"
+#include "../system/TransactionManager.h"
 
 #if CC_ALG == MVCC
 

@@ -45,61 +45,11 @@ void Catalog::add_column(const char* name, const char* type, uint32_t size)
 	num_columns ++;
 }
 
-inline uint32_t Catalog::get_tuple_size()
-{
-	return tuple_size;
-};
-
-inline uint32_t Catalog::get_num_columns()
-{
-	return num_columns;
-};
-
-inline uint32_t Catalog::get_column_size(ColumnId id)
-{
-	return columns[id].size;
-};
-
-inline uint32_t Catalog::get_column_index(ColumnId id)
-{
-	return columns[id].index;
-};
-
-inline ColumnId Catalog::get_column_id(const char* name)
-{
-	uint32_t i;
-	for (i = 0; i < num_columns; i++) {
-		if (strcmp(name, columns[i].name) == 0)
-			break;
-	}
-	assert (i < num_columns);
-	return i;
-}
-
-char* Catalog::get_column_type(ColumnId id)
-{
-	return columns[id].type;
-}
-
-char* Catalog::get_column_name(ColumnId id)
-{
-	return columns[id].name;
-}
-
-char* Catalog::get_column_type(const char* name)
-{
-	return get_column_type( get_column_id(name) );
-}
-
-uint32_t Catalog::get_column_index(const char* name)
-{
-	return get_column_index( get_column_id(name) );
-}
 
 void Catalog::print_schema() 
 {
 	printf("\n[Catalog] %s\n", table_name);
 	for (uint32_t i = 0; i < num_columns; i++) {
-		printf("\t%s\t%s\t%ld\n", get_column_name(i), get_column_type(i), get_column_size(i));
+		printf("\t%s\t%s\t%ud\n", get_column_name(i), get_column_type(i), get_column_size(i));
 	}
 }

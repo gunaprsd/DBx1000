@@ -1,21 +1,22 @@
-#include "txn.h"
 #include "Row.h"
 #include "row_occ.h"
-#include "mem_alloc.h"
+
+#include "../system/Allocator.h"
+#include "../system/TransactionManager.h"
 
 void 
 Row_occ::init(Row * row) {
 	_row = row;
 	int part_id = row->get_part_id();
 	_latch = (pthread_mutex_t *) 
-		mem_allocator.alloc(sizeof(pthread_mutex_t), part_id);
+		mem_allocator.allocate(sizeof(pthread_mutex_t), part_id);
 	pthread_mutex_init( _latch, NULL );
 	wts = 0;
 	blatch = false;
 }
 
 Status
-Row_occ::access(txn_man * txn, TsType type) {
+Row_occ::access(TransactionManager * txn, TimestampType type) {
 	Status rc = OK;
 	pthread_mutex_lock( _latch );
 	if (type == R_REQ) {

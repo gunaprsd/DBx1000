@@ -1,7 +1,8 @@
 #include "Row.h"
 #include "row_vll.h"
-#include "global.h"
-#include "helper.h"
+
+#include "../system/Global.h"
+#include "../system/Helper.h"
 
 void 
 Row_vll::init(Row * row) {
@@ -11,7 +12,7 @@ Row_vll::init(Row * row) {
 }
 
 bool 
-Row_vll::insert_access(access_t type) {
+Row_vll::insert_access(AccessType type) {
 	if (type == RD) {
 		cs ++;
 		return (cx > 0);
@@ -22,7 +23,7 @@ Row_vll::insert_access(access_t type) {
 }
 
 void 
-Row_vll::remove_access(access_t type) {
+Row_vll::remove_access(AccessType type) {
 	if (type == RD) {
 		assert (cs > 0);
 		cs --;

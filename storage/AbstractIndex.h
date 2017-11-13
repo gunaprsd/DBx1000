@@ -3,8 +3,8 @@
 #ifndef __STORAGE_ABSTRACT_INDEX_H__
 #define __STORAGE_ABSTRACT_INDEX_H__
 
-#include "global.h"
-#include "helper.h"
+#include "../system/Global.h"
+#include "../system/Helper.h"
 
 class Table;
 

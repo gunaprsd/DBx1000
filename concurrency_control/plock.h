@@ -1,21 +1,21 @@
 #ifndef _PLOCK_H_
 #define _PLOCK_H_
 
-#include "global.h"
-#include "helper.h"
+#include "../system/Global.h"
+#include "../system/Helper.h"
 
-class txn_man;
+class TransactionManager;
 
 // Parition manager for HSTORE
 class PartMan {
 public:
 	void init();
-	Status lock(txn_man * txn);
-	void unlock(txn_man * txn);
+	Status lock(TransactionManager * txn);
+	void unlock(TransactionManager * txn);
 private:
 	pthread_mutex_t latch;
-	txn_man * owner;
-	txn_man ** waiters;
+	TransactionManager * owner;
+	TransactionManager ** waiters;
 	UInt32 waiter_cnt;
 };
 
@@ -24,8 +24,8 @@ class Plock {
 public:
 	void init();
 	// lock all partitions in parts
-	Status lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt);
-	void unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt);
+	Status lock(TransactionManager * txn, uint64_t * parts, uint64_t part_cnt);
+	void unlock(TransactionManager * txn, uint64_t * parts, uint64_t part_cnt);
 private:
 	PartMan ** part_mans;
 };

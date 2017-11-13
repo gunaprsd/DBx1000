@@ -2,7 +2,7 @@
 
 class Table;
 class Catalog;
-class txn_man;
+class TransactionManager;
 struct TsReqEntry;
 
 #if CC_ALG==SILO
@@ -10,11 +10,11 @@ struct TsReqEntry;
 
 class Row_silo {
 public:
-	void 				init(row_t * row);
-	RC 					access(txn_man * txn, TsType type, row_t * local_row);
+	void 				init(Row * row);
+	Status 				access(TransactionManager * txn, TimestampType type, Row * local_row);
 	
-	bool				validate(ts_t tid, bool in_write_set);
-	void				write(row_t * data, uint64_t tid);
+	bool				validate(Time tid, bool in_write_set);
+	void				write(Row * data, uint64_t tid);
 	
 	void 				lock();
 	void 				release();
@@ -27,9 +27,9 @@ private:
 	volatile uint64_t	_tid_word;
 #else
  	pthread_mutex_t * 	_latch;
-	ts_t 				_tid;
+	Time 				_tid;
 #endif
-	row_t * 			_row;
+	Row * 			_row;
 };
 
 #endif

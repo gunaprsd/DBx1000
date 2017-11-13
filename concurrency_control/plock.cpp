@@ -1,8 +1,9 @@
-#include "global.h"
-#include "helper.h"
 #include "plock.h"
-#include "mem_alloc.h"
-#include "txn.h"
+
+#include "../system/Allocator.h"
+#include "../system/Global.h"
+#include "../system/Helper.h"
+#include "../system/TransactionManager.h"
 
 /************************************************/
 // per-partition Manager
@@ -11,23 +12,23 @@ void PartMan::init() {
 	uint64_t part_id = get_part_id(this);
 	waiter_cnt = 0;
 	owner = NULL;
-	waiters = (txn_man **)
-		mem_allocator.alloc(sizeof(txn_man *) * g_thread_cnt, part_id);
+	waiters = (TransactionManager **)
+		mem_allocator.allocate(sizeof(TransactionManager *) * g_thread_cnt, part_id);
 	pthread_mutex_init( &latch, NULL );
 }
 
-Status PartMan::lock(txn_man * txn) {
+Status PartMan::lock(TransactionManager * txn) {
 	Status rc;
 
 	pthread_mutex_lock( &latch );
 	if (owner == NULL) {
 		owner = txn;
 		rc = OK;
-	} else if (owner->get_ts() < txn->get_ts()) {
+	} else if (owner->get_timestamp() < txn->get_timestamp()) {
 		int i;
 		assert(waiter_cnt < g_thread_cnt);
 		for (i = waiter_cnt; i > 0; i--) {
-			if (txn->get_ts() > waiters[i - 1]->get_ts()) {
+			if (txn->get_timestamp() > waiters[i - 1]->get_timestamp()) {
 				waiters[i] = txn;
 				break;
 			} else 
@@ -44,7 +45,7 @@ Status PartMan::lock(txn_man * txn) {
 	return rc;
 }
 
-void PartMan::unlock(txn_man * txn) {
+void PartMan::unlock(TransactionManager * txn) {
 	pthread_mutex_lock( &latch );
 	if (txn == owner) {		
 		if (waiter_cnt == 0) 
@@ -52,7 +53,7 @@ void PartMan::unlock(txn_man * txn) {
 		else {
 			owner = waiters[0];			
 			for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
-				assert( waiters[i]->get_ts() < waiters[i + 1]->get_ts() );
+				assert( waiters[i]->get_timestamp() < waiters[i + 1]->get_timestamp() );
 				waiters[i] = waiters[i + 1];
 			}
 			waiter_cnt --;
@@ -83,9 +84,9 @@ void Plock::init() {
 		part_mans[i]->init();
 }
 
-Status Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
+Status Plock::lock(TransactionManager * txn, uint64_t * parts, uint64_t part_cnt) {
 	Status rc = OK;
-	ts_t starttime = get_sys_clock();
+	Time starttime = get_sys_clock();
 	UInt32 i;
 	for (i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
@@ -99,24 +100,24 @@ Status Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 			part_mans[part_id]->unlock(txn);
 		}
 		assert(txn->ready_part == 0);
-		INC_TMP_STATS(txn->get_thd_id(), time_man, get_sys_clock() - starttime);
+		INC_TMP_STATS(txn->get_thread_id(), time_man, get_sys_clock() - starttime);
 		return Abort;
 	}
 	if (txn->ready_part > 0) {
-		ts_t t = get_sys_clock();
+		Time t = get_sys_clock();
 		while (txn->ready_part > 0) {}
-		INC_TMP_STATS(txn->get_thd_id(), time_wait, get_sys_clock() - t);
+		INC_TMP_STATS(txn->get_thread_id(), time_wait, get_sys_clock() - t);
 	}
 	assert(txn->ready_part == 0);
-	INC_TMP_STATS(txn->get_thd_id(), time_man, get_sys_clock() - starttime);
+	INC_TMP_STATS(txn->get_thread_id(), time_man, get_sys_clock() - starttime);
 	return OK;
 }
 
-void Plock::unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
-	ts_t starttime = get_sys_clock();
+void Plock::unlock(TransactionManager * txn, uint64_t * parts, uint64_t part_cnt) {
+	Time starttime = get_sys_clock();
 	for (UInt32 i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
 		part_mans[part_id]->unlock(txn);
 	}
-	INC_TMP_STATS(txn->get_thd_id(), time_man, get_sys_clock() - starttime);
+	INC_TMP_STATS(txn->get_thread_id(), time_man, get_sys_clock() - starttime);
 }

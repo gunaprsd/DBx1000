@@ -1,9 +1,10 @@
-#include "global.h"
-#include "helper.h"
-#include "txn.h"
 #include "occ.h"
-#include "manager.h"
-#include "mem_alloc.h"
+
+#include "../system/Allocator.h"
+#include "../system/Global.h"
+#include "../system/Helper.h"
+#include "../system/Manager.h"
+#include "../system/TransactionManager.h"
 #include "row_occ.h"
 
 
@@ -22,7 +23,7 @@ void OptCC::init() {
 	lock_all = false;
 }
 
-Status OptCC::validate(txn_man * txn) {
+Status OptCC::validate(TransactionManager * txn) {
 	Status rc;
 #if PER_ROW_VALID
 	rc = per_row_validate(txn);
@@ -33,7 +34,7 @@ Status OptCC::validate(txn_man * txn) {
 }
 
 Status 
-OptCC::per_row_validate(txn_man * txn) {
+OptCC::per_row_validate(TransactionManager * txn) {
 	Status rc = OK;
 #if CC_ALG == OCC
 	// sort all rows accessed in primary key order.
@@ -84,7 +85,7 @@ OptCC::per_row_validate(txn_man * txn) {
 	return rc;
 }
 
-Status OptCC::central_validate(txn_man * txn) {
+Status OptCC::central_validate(TransactionManager * txn) {
 	Status rc;
 	uint64_t start_tn = txn->start_ts;
 	uint64_t finish_tn;
@@ -104,7 +105,7 @@ Status OptCC::central_validate(txn_man * txn) {
 	finish_tn = tnc;
 	ent = active;
 	f_active_len = active_len;
-	finish_active = (set_ent**) mem_allocator.alloc(sizeof(set_ent *) * f_active_len, 0);
+	finish_active = (set_ent**) mem_allocator.allocate(sizeof(set_ent *) * f_active_len, 0);
 	while (ent != NULL) {
 		finish_active[n++] = ent;
 		ent = ent->next;
@@ -173,13 +174,13 @@ final:
 	return rc;
 }
 
-Status OptCC::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {
-	wset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
-	rset = (set_ent*) mem_allocator.alloc(sizeof(set_ent), 0);
+Status OptCC::get_rw_set(TransactionManager * txn, set_ent * &rset, set_ent *& wset) {
+	wset = (set_ent*) mem_allocator.allocate(sizeof(set_ent), 0);
+	rset = (set_ent*) mem_allocator.allocate(sizeof(set_ent), 0);
 	wset->set_size = txn->wr_cnt;
 	rset->set_size = txn->row_cnt - txn->wr_cnt;
-	wset->rows = (Row **) mem_allocator.alloc(sizeof(Row *) * wset->set_size, 0);
-	rset->rows = (Row **) mem_allocator.alloc(sizeof(Row *) * rset->set_size, 0);
+	wset->rows = (Row **) mem_allocator.allocate(sizeof(Row *) * wset->set_size, 0);
+	rset->rows = (Row **) mem_allocator.allocate(sizeof(Row *) * rset->set_size, 0);
 	wset->txn = txn;
 	rset->txn = txn;
 

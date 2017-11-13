@@ -1,6 +1,7 @@
-#include "global.h"	
 #include "HashIndex.h"
-#include "mem_alloc.h"
+
+#include "../system/Allocator.h"
+#include "../system/Global.h"
 #include "Table.h"
 
 /**********************************
@@ -49,7 +50,7 @@ inline void Bucket::insert_record(Key key, Record * record, PartId part_id)
 	}
 
 	if (cur_node == NULL) {
-		BucketNode * new_node = (BucketNode *) mem_allocator.alloc(sizeof(BucketNode), part_id );
+		BucketNode * new_node = (BucketNode *) mem_allocator.allocate(sizeof(BucketNode), part_id );
 		new_node->initialize(key);
 		new_node->records = record;
 		if (prev_node != NULL) {
@@ -91,9 +92,9 @@ HashIndex::HashIndex	()
 
 HashIndex::~HashIndex()
 {
-	for (int i = 0; i < _part_cnt; i++) {
+	for (PartId i = 0; i < _part_cnt; i++) {
 		for (uint32_t n = 0; n < _bucket_cnt_per_part; n ++) {
-			_buckets[i][n]->~Bucket();
+			_buckets[i][n].~Bucket();
 		}
 		_mm_free(_buckets[i]);
 	}
@@ -105,7 +106,7 @@ Status HashIndex::initialize(uint64_t bucket_cnt, uint64_t part_cnt)
 	_part_cnt = part_cnt;
 	_bucket_cnt_per_part = _bucket_cnt / _part_cnt;
 	_buckets = new Bucket * [_part_cnt];
-	for (int i = 0; i < _part_cnt; i++) {
+	for (PartId i = 0; i < _part_cnt; i++) {
 		_buckets[i] = (Bucket *) _mm_malloc(sizeof(Bucket) * _bucket_cnt_per_part, 64);
 		for (uint32_t n = 0; n < _bucket_cnt_per_part; n ++) {
 			_buckets[i][n].initialize();

@@ -3,7 +3,7 @@
 
 class Table;
 class Catalog;
-class txn_man;
+class TransactionManager;
 
 // Only a constant number of versions can be maintained.
 // If a request accesses an old version that has been recycled,   
@@ -24,13 +24,13 @@ struct WriteHisEntry {
 class Row_hekaton {
 public:
 	void 			init(row_t * row);
-	RC 				access(txn_man * txn, TsType type, row_t * row);
-	RC 				prepare_read(txn_man * txn, row_t * row, ts_t commit_ts);
-	void 			post_process(txn_man * txn, ts_t commit_ts, RC rc);
+	RC 				access(TransactionManager * txn, TsType type, row_t * row);
+	RC 				prepare_read(TransactionManager * txn, row_t * row, ts_t commit_ts);
+	void 			post_process(TransactionManager * txn, ts_t commit_ts, RC rc);
 
 private:
 	volatile bool 	blatch;
-	uint32_t 		reserveRow(txn_man * txn);
+	uint32_t 		reserveRow(TransactionManager * txn);
 	void 			doubleHistory();
 
 	uint32_t 		_his_latest;

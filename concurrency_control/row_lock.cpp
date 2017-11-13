@@ -1,8 +1,9 @@
 #include "Row.h"
-#include "txn.h"
 #include "row_lock.h"
-#include "mem_alloc.h"
-#include "manager.h"
+
+#include "../system/Allocator.h"
+#include "../system/Manager.h"
+#include "../system/TransactionManager.h"
 
 void Row_lock::init(Row * row) {
 	_row = row;
@@ -20,13 +21,13 @@ void Row_lock::init(Row * row) {
 
 }
 
-Status Row_lock::lock_get(lock_t type, txn_man * txn) {
+Status Row_lock::lock_get(LockType type, TransactionManager * txn) {
 	uint64_t *txnids = NULL;
 	int txncnt = 0;
 	return lock_get(type, txn, txnids, txncnt);
 }
 
-Status Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt) {
+Status Row_lock::lock_get(LockType type, TransactionManager * txn, uint64_t* &txnids, int &txncnt) {
 	assert (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE);
 	Status rc;
 	int part_id =_row->get_part_id();
@@ -60,7 +61,7 @@ Status Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &tx
 
 	bool conflict = conflict_lock(lock_type, type);
 	if (CC_ALG == WAIT_DIE && !conflict) {
-		if (waiters_head && txn->get_ts() < waiters_head->txn->get_ts())
+		if (waiters_head && txn->get_timestamp() < waiters_head->txn->get_timestamp())
 			conflict = true;
 	}
 	// Some txns coming earlier is waiting. Should also wait.
@@ -92,7 +93,7 @@ Status Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &tx
 			bool canwait = true;
 			LockEntry * en = owners;
 			while (en != NULL) {
-                if (en->txn->get_ts() < txn->get_ts()) {
+                if (en->txn->get_timestamp() < txn->get_timestamp()) {
 					canwait = false;
 					break;
 				}
@@ -105,7 +106,7 @@ Status Row_lock::lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &tx
 				entry->txn = txn;
 				entry->type = type;
 				en = waiters_head;
-				while (en != NULL && txn->get_ts() < en->txn->get_ts()) 
+				while (en != NULL && txn->get_timestamp() < en->txn->get_timestamp()) 
 					en = en->next;
 				if (en) {
 					LIST_INSERT_BEFORE(en, entry);
@@ -136,18 +137,18 @@ final:
 	if (rc == WAIT && CC_ALG == DL_DETECT) {
 		// Update the waits-for graph
 		ASSERT(waiters_tail->txn == txn);
-		txnids = (uint64_t *) mem_allocator.alloc(sizeof(uint64_t) * (owner_cnt + waiter_cnt), part_id);
+		txnids = (uint64_t *) mem_allocator.allocate(sizeof(uint64_t) * (owner_cnt + waiter_cnt), part_id);
 		txncnt = 0;
 		LockEntry * en = waiters_tail->prev;
 		while (en != NULL) {
 			if (conflict_lock(type, en->type)) 
-				txnids[txncnt++] = en->txn->get_txn_id();
+				txnids[txncnt++] = en->txn->get_transaction_id();
 			en = en->prev;
 		}
 		en = owners;
 		if (conflict_lock(type, lock_type)) 
 			while (en != NULL) {
-				txnids[txncnt++] = en->txn->get_txn_id();
+				txnids[txncnt++] = en->txn->get_transaction_id();
 				en = en->next;
 			}
 		ASSERT(txncnt > 0);
@@ -162,7 +163,7 @@ final:
 }
 
 
-Status Row_lock::lock_release(txn_man * txn) {	
+Status Row_lock::lock_release(TransactionManager * txn) {	
 
 	if (g_central_man)
 		glob_manager->lock_row(_row);
@@ -203,7 +204,7 @@ Status Row_lock::lock_release(txn_man * txn) {
 		ASSERT(lock_type == LOCK_NONE);
 #if DEBUG_ASSERT && CC_ALG == WAIT_DIE 
 		for (en = waiters_head; en != NULL && en->next != NULL; en = en->next)
-			assert(en->next->txn->get_ts() < en->txn->get_ts());
+			assert(en->next->txn->get_timestamp() < en->txn->get_timestamp());
 #endif
 
 	LockEntry * entry;
@@ -227,7 +228,7 @@ Status Row_lock::lock_release(txn_man * txn) {
 	return OK;
 }
 
-bool Row_lock::conflict_lock(lock_t l1, lock_t l2) {
+bool Row_lock::conflict_lock(LockType l1, LockType l2) {
 	if (l1 == LOCK_NONE || l2 == LOCK_NONE)
 		return false;
     else if (l1 == LOCK_EX || l2 == LOCK_EX)
@@ -238,7 +239,7 @@ bool Row_lock::conflict_lock(lock_t l1, lock_t l2) {
 
 LockEntry * Row_lock::get_entry() {
 	LockEntry * entry = (LockEntry *) 
-		mem_allocator.alloc(sizeof(LockEntry), _row->get_part_id());
+		mem_allocator.allocate(sizeof(LockEntry), _row->get_part_id());
 	return entry;
 }
 void Row_lock::return_entry(LockEntry * entry) {

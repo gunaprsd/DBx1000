@@ -1,10 +1,11 @@
 #include "dl_detect.h"
-#include "global.h"
-#include "helper.h"
-#include "txn.h"
+
+#include "../system/Allocator.h"
+#include "../system/Global.h"
+#include "../system/Helper.h"
+#include "../system/Manager.h"
+#include "../system/TransactionManager.h"
 #include "Row.h"
-#include "manager.h"
-#include "mem_alloc.h"
 
 /********************************************************/
 // The current txn aborts itself only if it holds less
@@ -107,11 +108,11 @@ DL_detect::detect_cycle(uint64_t txnid) {
 
 	int thd = get_thdid_from_txnid(txnid);
 	DetectData * detect_data = (DetectData *)
-		mem_allocator.alloc(sizeof(DetectData), thd);
+		mem_allocator.allocate(sizeof(DetectData), thd);
 	detect_data->visited = (bool * )
-		mem_allocator.alloc(sizeof(bool) * V, thd);
+		mem_allocator.allocate(sizeof(bool) * V, thd);
 	detect_data->recStack = (bool * )
-		mem_allocator.alloc(sizeof(bool) * V, thd);	
+		mem_allocator.allocate(sizeof(bool) * V, thd);	
 	for(int i = 0; i < V; i++) {
         detect_data->visited[i] = false;
 		detect_data->recStack[i] = false;
@@ -126,7 +127,7 @@ DL_detect::detect_cycle(uint64_t txnid) {
 		INC_GLOB_STATS(deadlock, 1);
 		int thd_to_abort = get_thdid_from_txnid(detect_data->min_txnid);
 		if (dependency[thd_to_abort].txnid == (SInt64) detect_data->min_txnid) {
-			txn_man * txn = glob_manager->get_txn_man(thd_to_abort);
+			TransactionManager * txn = glob_manager->get_txn_man(thd_to_abort);
 			txn->lock_abort = true;
 		}
 	} 

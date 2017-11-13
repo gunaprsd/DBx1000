@@ -9,13 +9,13 @@
 //    The head is always the latest and the tail the youngest. 
 // 	  When history is traversed, always go from head -> tail order.
 
-class txn_man;
+class TransactionManager;
 
 class set_ent{
 public:
 	set_ent();
 	UInt64 tn;
-	txn_man * txn;
+	TransactionManager * txn;
 	UInt32 set_size;
 	Row ** rows;
 	set_ent * next;
@@ -24,18 +24,18 @@ public:
 class OptCC {
 public:
 	void init();
-	Status validate(txn_man * txn);
+	Status validate(TransactionManager * txn);
 	volatile bool lock_all;
 	uint64_t lock_txn_id;
 private:
 	
 	// per row validation similar to Hekaton.
-	Status per_row_validate(txn_man * txn);
+	Status per_row_validate(TransactionManager * txn);
 
 	// parallel validation in the original OCC paper.
-	Status central_validate(txn_man * txn);
+	Status central_validate(TransactionManager * txn);
 	bool test_valid(set_ent * set1, set_ent * set2);
-	Status get_rw_set(txn_man * txni, set_ent * &rset, set_ent *& wset);
+	Status get_rw_set(TransactionManager * txni, set_ent * &rset, set_ent *& wset);
 	
 	// "history" stores write set of transactions with tn >= smallest running tn
 	set_ent * history;

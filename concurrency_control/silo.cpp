@@ -1,13 +1,12 @@
-#include "txn.h"
+#include "../system/TransactionManager.h"
 #include "Row.h"
 #include "row_silo.h"
 
 #if CC_ALG == SILO
 
-RC
-txn_man::validate_silo()
+Status TransactionManager::validate_silo()
 {
-	RC rc = RCOK;
+	Status rc = OK;
 	// lock write tuples in the primary key order.
 	int write_set[wr_cnt];
 	int cur_wr_idx = 0;
@@ -38,11 +37,11 @@ txn_man::validate_silo()
 	}
 
 	int num_locks = 0;
-	ts_t max_tid = 0;
+	Time max_tid = 0;
 	bool done = false;
 	if (_pre_abort) {
 		for (int i = 0; i < wr_cnt; i++) {
-			row_t * row = accesses[ write_set[i] ]->orig_row;
+			Row * row = accesses[ write_set[i] ]->orig_row;
 			if (row->manager->get_tid() != accesses[write_set[i]]->tid) {
 				rc = Abort;
 				goto final;
@@ -64,7 +63,7 @@ txn_man::validate_silo()
 		while (!done) {
 			num_locks = 0;
 			for (int i = 0; i < wr_cnt; i++) {
-				row_t * row = accesses[ write_set[i] ]->orig_row;
+				Row * row = accesses[ write_set[i] ]->orig_row;
 				if (!row->manager->try_lock())
 					break;
 				row->manager->assert_lock();
@@ -83,7 +82,7 @@ txn_man::validate_silo()
 				if (_pre_abort) {
 					num_locks = 0;
 					for (int i = 0; i < wr_cnt; i++) {
-						row_t * row = accesses[ write_set[i] ]->orig_row;
+						Row * row = accesses[ write_set[i] ]->orig_row;
 						if (row->manager->get_tid() != accesses[write_set[i]]->tid) {
 							rc = Abort;
 							goto final;
@@ -104,7 +103,7 @@ txn_man::validate_silo()
 		}
 	} else {
 		for (int i = 0; i < wr_cnt; i++) {
-			row_t * row = accesses[ write_set[i] ]->orig_row;
+			Row * row = accesses[ write_set[i] ]->orig_row;
 			row->manager->lock();
 			num_locks++;
 			if (row->manager->get_tid() != accesses[write_set[i]]->tid) {

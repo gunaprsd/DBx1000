@@ -1,9 +1,9 @@
-#include "global.h"
-#include "helper.h"
 #include "Catalog.h"
 #include "Row.h"
-#include "mem_alloc.h"
 #include "Table.h"
+#include "../system/Allocator.h"
+#include "../system/Global.h"
+#include "../system/Helper.h"
 
 Table::Table()
 {

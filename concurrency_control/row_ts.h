@@ -3,41 +3,41 @@
 
 class Table;
 class Catalog;
-class txn_man;
+class TransactionManager;
 struct TsReqEntry {
-	txn_man * txn;
+	TransactionManager * txn;
 	// for write requests, need to have a copy of the data to write.
 	Row * row;
 	Record * item;
-	ts_t ts;
+	Time ts;
 	TsReqEntry * next;
 };
 
 class Row_ts {
 public:
 	void init(Row * row);
-	Status access(txn_man * txn, TsType type, Row * row);
+	Status access(TransactionManager * txn, TimestampType type, Row * row);
 
 private:
  	pthread_mutex_t * latch;
 	bool blatch;
 
-	void buffer_req(TsType type, txn_man * txn, Row * row);
-	TsReqEntry * debuffer_req(TsType type, txn_man * txn);
-	TsReqEntry * debuffer_req(TsType type, ts_t ts);
-	TsReqEntry * debuffer_req(TsType type, txn_man * txn, ts_t ts);
+	void buffer_req(TimestampType type, TransactionManager * txn, Row * row);
+	TsReqEntry * debuffer_req(TimestampType type, TransactionManager * txn);
+	TsReqEntry * debuffer_req(TimestampType type, Time ts);
+	TsReqEntry * debuffer_req(TimestampType type, TransactionManager * txn, Time ts);
 	void update_buffer();
-	ts_t cal_min(TsType type);
+	Time cal_min(TimestampType type);
 	TsReqEntry * get_req_entry();
 	void return_req_entry(TsReqEntry * entry);
  	void return_req_list(TsReqEntry * list);
 
 	Row * _row;
-	ts_t wts;
-    ts_t rts;
-    ts_t min_wts;
-    ts_t min_rts;
-    ts_t min_pts;
+	Time wts;
+    Time rts;
+    Time min_wts;
+    Time min_rts;
+    Time min_pts;
 
     TsReqEntry * readreq;
     TsReqEntry * writereq;

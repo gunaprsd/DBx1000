@@ -2,13 +2,12 @@
 
 #include <map>
 #include <vector>
-#include "global.h"
-#include "helper.h"
+
+#include "../system/Global.h"
+#include "../system/Helper.h"
 
 #ifndef __STORAGE_CATALOG_H__
 #define __STORAGE_CATALOG_H__
-
-typedef uint32_t ColumnId;
 
 struct Column
 {
@@ -44,7 +43,61 @@ struct Catalog
 	uint32_t 		num_columns;
 	uint32_t 		tuple_size;
 	Column * 		columns;
-	char * 			table_name;
+	const char * 	table_name;
 };
+
+/*********************************
+ * Inline Function Definitions
+ *********************************/
+inline uint32_t Catalog::get_tuple_size()
+{
+	return tuple_size;
+};
+
+inline uint32_t Catalog::get_num_columns()
+{
+	return num_columns;
+};
+
+inline uint32_t Catalog::get_column_size(ColumnId id)
+{
+	return columns[id].size;
+};
+
+inline uint32_t Catalog::get_column_index(ColumnId id)
+{
+	return columns[id].index;
+};
+
+inline ColumnId Catalog::get_column_id(const char* name)
+{
+	uint32_t i;
+	for (i = 0; i < num_columns; i++) {
+		if (strcmp(name, columns[i].name) == 0)
+			break;
+	}
+	assert (i < num_columns);
+	return i;
+}
+
+inline char* Catalog::get_column_type(ColumnId id)
+{
+	return columns[id].type;
+}
+
+inline char* Catalog::get_column_name(ColumnId id)
+{
+	return columns[id].name;
+}
+
+inline char* Catalog::get_column_type(const char* name)
+{
+	return get_column_type( get_column_id(name) );
+}
+
+inline uint32_t Catalog::get_column_index(const char* name)
+{
+	return get_column_index( get_column_id(name) );
+}
 
 #endif

@@ -1,9 +1,9 @@
 #ifndef __STORAGE_BTREE_H__
 #define __STORAGE_BTREE_H__
 
+#include "../system/Global.h"
+#include "../system/Helper.h"
 #include "AbstractIndex.h"
-#include "global.h"
-#include "helper.h"
 
 
 typedef struct BTreeNode

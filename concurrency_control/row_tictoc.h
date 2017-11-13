@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "global.h"
+#include "../system/Global.h"
 
 #if CC_ALG == TICTOC
 

@@ -2,7 +2,7 @@
 
 class Table;
 class Catalog;
-class txn_man;
+class TransactionManager;
 
 // Only a constant number of versions can be maintained.
 // If a request accesses an old version that has been recycled,   
@@ -20,7 +20,7 @@ struct ReqEntry {
 	bool valid;
 	TsType type; // P_REQ or R_REQ
 	ts_t ts;
-	txn_man * txn;
+	TransactionManager * txn;
 	ts_t time;
 };
 
@@ -28,7 +28,7 @@ struct ReqEntry {
 class Row_mvcc {
 public:
 	void init(Row * row);
-	Status access(txn_man * txn, TsType type, Row * row);
+	Status access(TransactionManager * txn, TsType type, Row * row);
 private:
  	pthread_mutex_t * latch;
 	volatile bool blatch;
@@ -36,8 +36,8 @@ private:
 	Row * _row;
 
 	Status conflict(TsType type, ts_t ts, uint64_t thd_id = 0);
-	void update_buffer(txn_man * txn, TsType type);
-	void buffer_req(TsType type, txn_man * txn, bool served);
+	void update_buffer(TransactionManager * txn, TsType type);
+	void buffer_req(TsType type, TransactionManager * txn, bool served);
 
 	// Invariant: all valid entries in _requests have greater ts than any entry in _write_history 
 	Row * 		_latest_row;
@@ -63,7 +63,7 @@ private:
 	// list = 0: _write_history
 	// list = 1: _requests
 	void double_list(uint32_t list);
-	Row * reserveRow(ts_t ts, txn_man * txn);
+	Row * reserveRow(ts_t ts, TransactionManager * txn);
 };
 
 #endif

@@ -1,9 +1,10 @@
-#include "txn.h"
 #include "Row.h"
-#include "manager.h"
 #include "row_hekaton.h"
-#include "mem_alloc.h"
 #include <mm_malloc.h>
+
+#include "../system/Allocator.h"
+#include "../system/Manager.h"
+#include "../system/TransactionManager.h"
 
 #if CC_ALG == HEKATON
 

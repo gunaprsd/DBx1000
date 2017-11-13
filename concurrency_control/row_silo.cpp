@@ -1,12 +1,13 @@
-#include "txn.h"
 #include "Row.h"
 #include "row_silo.h"
-#include "mem_alloc.h"
+
+#include "../system/Allocator.h"
+#include "../system/TransactionManager.h"
 
 #if CC_ALG==SILO
 
 void 
-Row_silo::init(row_t * row) 
+Row_silo::init(Row * row)
 {
 	_row = row;
 #if ATOMIC_WORD
@@ -18,8 +19,7 @@ Row_silo::init(row_t * row)
 #endif
 }
 
-RC
-Row_silo::access(txn_man * txn, TsType type, row_t * local_row) {
+Status Row_silo::access(TransactionManager * txn, TimestampType type, Row * local_row) {
 #if ATOMIC_WORD
 	uint64_t v = 0;
 	uint64_t v2 = 1;
@@ -40,11 +40,11 @@ Row_silo::access(txn_man * txn, TsType type, row_t * local_row) {
 	txn->last_tid = _tid;
 	release();
 #endif
-	return RCOK;
+	return OK;
 }
 
 bool
-Row_silo::validate(ts_t tid, bool in_write_set) {
+Row_silo::validate(Time tid, bool in_write_set) {
 #if ATOMIC_WORD
 	uint64_t v = _tid_word;
 	if (in_write_set)
@@ -68,7 +68,7 @@ Row_silo::validate(ts_t tid, bool in_write_set) {
 }
 
 void
-Row_silo::write(row_t * data, uint64_t tid) {
+Row_silo::write(Row * data, uint64_t tid) {
 	_row->copy(data);
 #if ATOMIC_WORD
 	uint64_t v = _tid_word;

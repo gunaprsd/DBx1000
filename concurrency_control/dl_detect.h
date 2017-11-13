@@ -5,7 +5,8 @@
 #include <list>
 #include <stdint.h>
 #include "pthread.h"
-#include "config.h"
+
+#include "../Config.h"
 //#include "global.h"
 //#include "helper.h"
 

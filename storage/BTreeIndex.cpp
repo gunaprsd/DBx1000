@@ -1,5 +1,6 @@
 #include "BTreeIndex.h"
-#include "mem_alloc.h"
+
+#include "../system/Allocator.h"
 #include "Row.h"
 
 Status BTreeIndex::initialize(uint64_t part_cnt) {
@@ -84,7 +85,7 @@ Status BTreeIndex::read(Key key, Record * & item, PartId part_id, ThreadId thd_i
 {
 	Status rc = Abort;
 	glob_param params;
-	assert(part_id != -1);
+	//assert(part_id != -1);
 	params.part_id = part_id;
 	BTreeNode * leaf;
 	find_leaf(params, key, INDEX_READ, leaf);
@@ -108,8 +109,8 @@ Status BTreeIndex::read(Key key, Record * & item, PartId part_id, ThreadId thd_i
 Status BTreeIndex::insert(Key key, Record * item, PartId part_id)
 {
 	glob_param params;
-	if (WORKLOAD == TPCC) assert(part_id != -1);
-	assert(part_id != -1);
+	//if (WORKLOAD == TPCC) assert(part_id != -1);
+	//assert(part_id != -1);
 	params.part_id = part_id;
 	// create a tree if there does not exist one already
 	Status rc = OK;
@@ -175,11 +176,11 @@ Status BTreeIndex::make_nl(uint64_t part_id, BTreeNode *& node)
 Status BTreeIndex::make_node(uint64_t part_id, BTreeNode *& node)
 {
 //	printf("make_node(). part_id=%lld\n", part_id);
-	BTreeNode * new_node = (BTreeNode *) mem_allocator.alloc(sizeof(BTreeNode), part_id);
+	BTreeNode * new_node = (BTreeNode *) mem_allocator.allocate(sizeof(BTreeNode), part_id);
 	assert (new_node != NULL);
 	new_node->pointers = NULL;
-	new_node->keys = (Key *) mem_allocator.alloc((order - 1) * sizeof(Key), part_id);
-	new_node->pointers = (void **) mem_allocator.alloc(order * sizeof(void *), part_id);
+	new_node->keys = (Key *) mem_allocator.allocate((order - 1) * sizeof(Key), part_id);
+	new_node->pointers = (void **) mem_allocator.allocate(order * sizeof(void *), part_id);
 	assert (new_node->keys != NULL && new_node->pointers != NULL);
 	new_node->is_leaf = false;
 	new_node->num_keys = 0;

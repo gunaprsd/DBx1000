@@ -1,9 +1,10 @@
-#include "txn.h"
 #include "Row.h"
 #include "row_ts.h"
-#include "mem_alloc.h"
-#include "manager.h"
 #include "stdint.h"
+
+#include "../system/Allocator.h"
+#include "../system/Manager.h"
+#include "../system/TransactionManager.h"
 
 void Row_ts::init(Row * row) {
 	_row = row;
@@ -18,14 +19,14 @@ void Row_ts::init(Row * row) {
     prereq = NULL;
 	preq_len = 0;
 	latch = (pthread_mutex_t *) 
-		mem_allocator.alloc(sizeof(pthread_mutex_t), part_id);
+		mem_allocator.allocate(sizeof(pthread_mutex_t), part_id);
 	pthread_mutex_init( latch, NULL );
 	blatch = false;
 }
 
 TsReqEntry * Row_ts::get_req_entry() {
 	uint64_t part_id = get_part_id(_row);
-	return (TsReqEntry *) mem_allocator.alloc(sizeof(TsReqEntry), part_id);
+	return (TsReqEntry *) mem_allocator.allocate(sizeof(TsReqEntry), part_id);
 }
 
 void Row_ts::return_req_entry(TsReqEntry * entry) {
@@ -46,13 +47,13 @@ void Row_ts::return_req_list(TsReqEntry * list) {
 	}
 }
 
-void Row_ts::buffer_req(TsType type, txn_man * txn, Row * row)
+void Row_ts::buffer_req(TimestampType type, TransactionManager * txn, Row * row)
 {
 	TsReqEntry * req_entry = get_req_entry();
 	assert(req_entry != NULL);
 	req_entry->txn = txn;
 	req_entry->row = row;
-	req_entry->ts = txn->get_ts();
+	req_entry->ts = txn->get_timestamp();
 	if (type == R_REQ) {
 		req_entry->next = readreq;
 		readreq = req_entry;
@@ -73,15 +74,15 @@ void Row_ts::buffer_req(TsType type, txn_man * txn, Row * row)
 	}
 }
 
-TsReqEntry * Row_ts::debuffer_req(TsType type, txn_man * txn) {
+TsReqEntry * Row_ts::debuffer_req(TimestampType type, TransactionManager * txn) {
 	return debuffer_req(type, txn, UINT64_MAX);
 }
 	
-TsReqEntry * Row_ts::debuffer_req(TsType type, ts_t ts) {
+TsReqEntry * Row_ts::debuffer_req(TimestampType type, Time ts) {
 	return debuffer_req(type, NULL, ts);
 }
 
-TsReqEntry * Row_ts::debuffer_req( TsType type, txn_man * txn, ts_t ts ) {
+TsReqEntry * Row_ts::debuffer_req( TimestampType type, TransactionManager * txn, Time ts ) {
 	TsReqEntry ** queue;
 	TsReqEntry * return_queue = NULL;
 	switch (type) {
@@ -129,7 +130,7 @@ TsReqEntry * Row_ts::debuffer_req( TsType type, txn_man * txn, ts_t ts ) {
 	return return_queue;
 }
 
-ts_t Row_ts::cal_min(TsType type) {
+Time Row_ts::cal_min(TimestampType type) {
 	// update the min_pts
 	TsReqEntry * queue;
 	switch (type) {
@@ -138,7 +139,7 @@ ts_t Row_ts::cal_min(TsType type) {
 		case W_REQ : queue = writereq; break;
 		default: assert(false);
 	}
-	ts_t new_min_pts = UINT64_MAX;
+	Time new_min_pts = UINT64_MAX;
 	TsReqEntry * req = queue;
 	while (req != NULL) {
 		if (req->ts < new_min_pts)
@@ -148,9 +149,9 @@ ts_t Row_ts::cal_min(TsType type) {
 	return new_min_pts;
 }
 
-Status Row_ts::access(txn_man * txn, TsType type, Row * row) {
+Status Row_ts::access(TransactionManager * txn, TimestampType type, Row * row) {
 	Status rc = OK;
-	ts_t ts = txn->get_ts();
+	Time ts = txn->get_timestamp();
 	if (g_central_man)
 		glob_manager->lock_row(_row);
 	else
@@ -241,7 +242,7 @@ final:
 
 void Row_ts::update_buffer() {
 	while (true) {
-		ts_t new_min_pts = cal_min(P_REQ);
+		Time new_min_pts = cal_min(P_REQ);
 		assert(new_min_pts >= min_pts);
 		if (new_min_pts > min_pts)
 			min_pts = new_min_pts;
@@ -261,14 +262,14 @@ void Row_ts::update_buffer() {
 		// return all the req_entry back to freelist
 		return_req_list(ready_read);
 		// re-calculate min_rts
-		ts_t new_min_rts = cal_min(R_REQ);
+		Time new_min_rts = cal_min(R_REQ);
 		if (new_min_rts > min_rts)
 			min_rts = new_min_rts;
 		else break;
 		// debuffer writereq
 		TsReqEntry * ready_write = debuffer_req(W_REQ, min_rts);
 		if (ready_write == NULL) break;
-		ts_t young_ts = UINT64_MAX;
+		Time young_ts = UINT64_MAX;
 		TsReqEntry * young_req = NULL;
 		req = ready_write;
 		while (req != NULL) {

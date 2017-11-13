@@ -3,13 +3,13 @@
 
 class Table;
 class Catalog;
-class txn_man;
+class TransactionManager;
 struct TsReqEntry;
 
 class Row_occ {
 public:
 	void 				init(Row * row);
-	Status 					access(txn_man * txn, TsType type);
+	Status 					access(TransactionManager * txn, TimestampType type);
 	void 				latch();
 	// ts is the start_ts of the validating txn 
 	bool				validate(uint64_t ts);
@@ -21,7 +21,7 @@ private:
 
 	Row * 			_row;
 	// the last update time
-	ts_t 				wts;
+	Time 				wts;
 };
 
 #endif

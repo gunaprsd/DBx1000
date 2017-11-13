@@ -1,7 +1,7 @@
-#include "txn.h"
+#include "../system/Manager.h"
+#include "../system/TransactionManager.h"
 #include "Row.h"
 #include "row_tictoc.h"
-#include "manager.h"
 
 #if CC_ALG==TICTOC
 

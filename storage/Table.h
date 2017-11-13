@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "global.h"
+#include "../system/Global.h"
 
 #ifndef __STORAGE_TABLE_H__
 #define __STORAGE_TABLE_H__

@@ -1,8 +1,10 @@
-#ifndef _MEM_ALLOC_H_
-#define _MEM_ALLOC_H_
+#pragma once 
+#ifndef __SYSTEM_ALLOCATOR_H__
+#define __SYSTEM_ALLOCATOR_H__
 
 #include <map>
 #include "Global.h"
+
 
 const int SizeNum = 4;
 const uint32_t BlockSizes[] = {32, 64, 256, 1024};

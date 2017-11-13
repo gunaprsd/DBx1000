@@ -1,4 +1,6 @@
 #pragma once 
+#ifndef __SYSTEM_THREAD_H__
+#define __SYSTEM_THREAD_H__
 
 #include "Global.h"
 
@@ -43,3 +45,5 @@ private:
 	int _abort_buffer_empty_slots;
 	bool _abort_buffer_enable;
 };
+
+#endif

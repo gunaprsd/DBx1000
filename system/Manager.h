@@ -1,7 +1,10 @@
 #pragma once 
+#ifndef __SYSTEM_MANAGER_H__
+#define __SYSTEM_MANAGER_H__
 
 #include "Global.h"
 #include "Helper.h"
+
 
 class Row;
 class TransactionManager;
@@ -41,3 +44,5 @@ private:
 	volatile Time	_last_min_ts_time;
 	Time			_min_ts;
 };
+
+#endif

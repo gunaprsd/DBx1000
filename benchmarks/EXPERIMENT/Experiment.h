@@ -1,10 +1,10 @@
 #ifndef _EXPERIMENT_SYNTH_BM_H_
 #define _EXPERIMENT_SYNTH_BM_H_
 
-#include "../system/Global.h"
-#include "../system/Helper.h"
-#include "../system/TransactionManager.h"
-#include "../system/Workload.h"
+#include "Global.h"
+#include "Helper.h"
+#include "TransactionManager.h"
+#include "Workload.h"
 
 class ExperimentQuery;
 

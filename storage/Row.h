@@ -1,13 +1,13 @@
 #pragma once 
+#ifndef __STORAGE_ROW_H__
+#define __STORAGE_ROW_H__
 
 #include <cassert>
-
-#include "../system/Global.h"
+#include "Global.h"
 #include "Catalog.h"
 #include "Table.h"
 
-#ifndef __STORAGE_ROW_H__
-#define __STORAGE_ROW_H__
+
 
 #define GET_POS(col_id) get_schema()->get_column_index(col_id)
 #define GET_SIZE(col_id) get_schema()->get_column_size(col_id)

@@ -1,8 +1,9 @@
+#pragma once
 #ifndef __STORAGE_BTREE_H__
 #define __STORAGE_BTREE_H__
 
-#include "../system/Global.h"
-#include "../system/Helper.h"
+#include "Global.h"
+#include "Helper.h"
 #include "AbstractIndex.h"
 
 

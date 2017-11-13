@@ -1,10 +1,11 @@
 #pragma once 
+#ifndef __SYSTEM_STATISTICS_H__
+#define __SYSTEM_STATISTICS_H__
 
 #include "Global.h"
 #include "Helper.h"
 
-#ifndef __SYSTEM_STATISTICS_H__
-#define __SYSTEM_STATISTICS_H__
+
 
 class ThreadStatistics {
 public:

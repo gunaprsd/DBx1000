@@ -1,3 +1,7 @@
+#pragma once
+#ifndef __TYPES_H__
+#define __TYPES_H__
+
 #include <stdint.h>
 
 enum Status { OK, Commit, Abort, WAIT, ERROR, FINISH};
@@ -52,3 +56,4 @@ enum TimestampType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #define UINT64_MAX 		18446744073709551615UL
 #endif // UINT64_MAX
 
+#endif

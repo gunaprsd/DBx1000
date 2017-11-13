@@ -21,7 +21,8 @@ Status Workload::initialize()
 	return OK;
 }
 
-Status Workload::initialize_schema(string schema_file) {
+Status Workload::initialize_schema(string schema_file) 
+{
     assert(sizeof(uint64_t) == 8);
     assert(sizeof(double) == 8);
 

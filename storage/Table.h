@@ -1,9 +1,8 @@
 #pragma once 
-
-#include "../system/Global.h"
-
 #ifndef __STORAGE_TABLE_H__
 #define __STORAGE_TABLE_H__
+
+#include "Global.h"
 
 class Catalog;
 class Row;

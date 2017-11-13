@@ -1,9 +1,9 @@
 #ifndef _EXPERIMENT_QUERY_H_
 #define _EXPERIMENT_QUERY_H_
 
-#include "../system/Global.h"
-#include "../system/Helper.h"
-#include "../system/Query.h"
+#include "Global.h"
+#include "Helper.h"
+#include "Query.h"
 
 class Workload;
 class QueryQueue;

@@ -1,13 +1,14 @@
 #pragma once 
+#ifndef __STORAGE_CATALOG_H__
+#define __STORAGE_CATALOG_H__
 
 #include <map>
 #include <vector>
 
-#include "../system/Global.h"
-#include "../system/Helper.h"
+#include "Global.h"
+#include "Helper.h"
 
-#ifndef __STORAGE_CATALOG_H__
-#define __STORAGE_CATALOG_H__
+
 
 struct Column
 {

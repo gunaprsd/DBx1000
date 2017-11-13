@@ -1,8 +1,8 @@
 #ifndef _TPCC_H_
 #define _TPCC_H_
 
-#include "../system/TransactionManager.h"
-#include "../system/Workload.h"
+#include "TransactionManager.h"
+#include "Workload.h"
 
 class Table;
 class INDEX;

@@ -1,10 +1,9 @@
 #pragma once 
+#ifndef __SYSTEM_QUERY_H__
+#define __SYSTEM_QUERY_H__
 
 #include "Global.h"
 #include "Helper.h"
-
-#ifndef __SYSTEM_QUERY_H__
-#define __SYSTEM_QUERY_H__
 
 class Workload;
 class YCSB_Query;

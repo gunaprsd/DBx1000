@@ -1,11 +1,12 @@
 #pragma once 
 
-#include "../system/Global.h"
-#include "../system/Helper.h"
-#include "AbstractIndex.h"
-
 #ifndef __STORAGE_HASH_INDEX_H__
 #define __STORAGE_HASH_INDEX_H__
+
+#include "Global.h"
+#include "Helper.h"
+#include "AbstractIndex.h"
+
 
 /* Hash Table Implementation:
  ****************************

@@ -9,7 +9,9 @@
                 "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",
                 "${workspaceRoot}",
                 "${workspaceRoot}/benchmarks",
-                "${workspaceRoot}/concurrency_control"
+                "${workspaceRoot}/concurrency_control",
+                "${workspaceRoot}/system",
+                "${workspaceRoot}/storage"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",

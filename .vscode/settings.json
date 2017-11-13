@@ -2,5 +2,6 @@
     "files.associations": {
         "ios": "cpp",
         "iosfwd": "cpp"
-    }
+    },
+    "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

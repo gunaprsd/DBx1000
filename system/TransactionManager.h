@@ -1,4 +1,6 @@
 #pragma once 
+#ifndef __SYSTEM_TRANSACTION_MANAGER_H__
+#define __SYSTEM_TRANSACTION_MANAGER_H__
 
 #include "Global.h"
 #include "Helper.h"
@@ -123,3 +125,5 @@ private:
 	Status 				validate_hekaton(Status rc);
 #endif
 };
+
+#endif

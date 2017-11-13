@@ -1,4 +1,6 @@
 #pragma once 
+#ifndef __SYSTEM_HELPER_H__
+#define __SYSTEM_HELPER_H__
 
 #include <cstdlib>
 #include <iostream>
@@ -230,3 +232,5 @@ inline void set_affinity(uint64_t thd_id) {
 	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 	*/
 }
+
+#endif

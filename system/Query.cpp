@@ -22,7 +22,7 @@ Scheduler::initialize(Workload * h_wl) {
 	
 
 #if WORKLOAD == YCSB	
-	YCSBQuery::calculateDenom();
+	YCSB_Query::calculateDenom();
 #elif WORKLOAD == EXPERIMENT
 	experiment_query::calculateDenom();
 #elif WORKLOAD == TPCC
@@ -115,10 +115,10 @@ void QueryQueue::initialize(Workload * wl, ThreadId id)
 {
 	current = 0;
 	uint64_t request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
-	queries = (YCSBQuery *) mem_allocator.allocate(sizeof(YCSBQuery) * request_cnt, id);
+	queries = (YCSB_Query *) mem_allocator.allocate(sizeof(YCSB_Query) * request_cnt, id);
 	srand48_r(id + 1, &buffer);
 	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
-		new(&queries[qid]) YCSBQuery();
+		new(&queries[qid]) YCSB_Query();
 		queries[qid].init(id, wl, this);
 	}
 }

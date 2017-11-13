@@ -1,9 +1,9 @@
 #ifndef _YCSB_QUERY_H_
 #define _YCSB_QUERY_H_
 
-#include "../system/Global.h"
-#include "../system/Helper.h"
-#include "../system/Query.h"
+#include "Global.h"
+#include "Helper.h"
+#include "Query.h"
 
 class Workload;
 class QueryQueue;
@@ -19,7 +19,7 @@ public:
 	UInt32 scan_len;
 };
 
-class YCSBQuery : public Query {
+class YCSB_Query : public Query {
 public:
 	void initialize(uint64_t thd_id, Workload * h_wl) { assert(false); };
 	void init(uint64_t thd_id, Workload * h_wl, QueryQueue * query_thd);

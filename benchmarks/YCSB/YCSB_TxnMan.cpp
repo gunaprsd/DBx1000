@@ -1,13 +1,13 @@
-#include "../storage/BTreeIndex.h"
-#include "../storage/HashIndex.h"
-#include "../storage/Table.h"
-#include "../system/Allocator.h"
-#include "../system/Global.h"
-#include "../system/Helper.h"
-#include "../system/Manager.h"
-#include "../system/Query.h"
-#include "../system/Thread.h"
-#include "../system/Workload.h"
+#include "BTreeIndex.h"
+#include "HashIndex.h"
+#include "Table.h"
+#include "Allocator.h"
+#include "Global.h"
+#include "Helper.h"
+#include "Manager.h"
+#include "Query.h"
+#include "Thread.h"
+#include "Workload.h"
 #include "Row.h"
 #include "Catalog.h"
 #include "row_lock.h"
@@ -23,7 +23,7 @@ void YCSB_TxnMan::initialize(Thread * h_thd, Workload * h_wl, uint64_t thd_id) {
 
 Status YCSB_TxnMan::run_transaction(Query * query) {
 	Status rc;
-	YCSBQuery * m_query = (YCSBQuery *) query;
+	YCSB_Query * m_query = (YCSB_Query *) query;
 	YCSB_Workload * wl = (YCSB_Workload *) workload;
 	Record * m_item = NULL;
   	row_cnt = 0;

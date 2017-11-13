@@ -169,5 +169,3 @@ Status experiment_wl::get_txn_manager(TransactionManager *& txn_manager, Thread 
 	txn_manager->initialize(h_thd, this, h_thd->get_thd_id());
 	return OK;
 }
-
-

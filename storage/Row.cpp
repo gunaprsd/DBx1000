@@ -38,7 +38,7 @@ void Row::initialize_manager(Row * row)
 #elif CC_ALG == SILO
 	manager = (Row_silo *) _mm_malloc(sizeof(Row_silo), 64);
 #elif CC_ALG == VLL
-    manager = (Row_vll *) mem_allocator.alloc(sizeof(Row_vll), _part_id);
+    manager = (Row_vll *) mem_allocator.allocate(sizeof(Row_vll), _part_id);
 #endif
 
 #if CC_ALG != HSTORE

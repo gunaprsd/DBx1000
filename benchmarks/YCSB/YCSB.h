@@ -6,7 +6,7 @@
 #include "TransactionManager.h"
 #include "Workload.h"
 
-class YCSBQuery;
+class YCSB_Query;
 
 class YCSB_Workload : public Workload {
 public :

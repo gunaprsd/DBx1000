@@ -7,7 +7,7 @@
 #define __SYSTEM_QUERY_H__
 
 class Workload;
-class YCSBQuery;
+class YCSB_Query;
 class TPCCQuery;
 class ExperimentQuery;
 
@@ -39,7 +39,7 @@ public:
 	/* Data Fields */
 	uint32_t current;
 #if WORKLOAD == YCSB
-	YCSBQuery * queries;
+	YCSB_Query * queries;
 #elif WORKLOAD == EXPERIMENT
 	ExperimentQuery * queries;
 #else 

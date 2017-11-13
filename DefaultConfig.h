@@ -19,7 +19,7 @@
 #define WORKLOAD 					YCSB
 // print the transaction latency distribution
 #define PRT_LAT_DISTR				false
-#define STATS_ENABLE				true
+#define STATS_ENABLE					true
 #define TIME_ENABLE					true 
 
 #define MEM_ALLIGN					8 

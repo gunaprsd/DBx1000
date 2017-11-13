@@ -1,15 +1,15 @@
-#include "../storage/Table.h"
-#include "../system/Workload.h"
+#include "Table.h"
+#include "Workload.h"
 #include "YCSB.h"
 #include "YCSB_Query.h"
 
-#include "../system/Allocator.h"
-#include "../system/Query.h"
+#include "Allocator.h"
+#include "Query.h"
 
-uint64_t YCSBQuery::the_n = 0;
-double YCSBQuery::denom = 0;
+uint64_t YCSB_Query::the_n = 0;
+double YCSB_Query::denom = 0;
 
-void YCSBQuery::init(uint64_t thd_id, Workload * h_wl, QueryQueue * query_thd) 
+void YCSB_Query::init(uint64_t thd_id, Workload * h_wl, QueryQueue * query_thd)
 {
 	_query_thd = query_thd;
 	requests = (ycsb_request *) mem_allocator.allocate(sizeof(ycsb_request) * g_req_per_query, thd_id);
@@ -20,7 +20,7 @@ void YCSBQuery::init(uint64_t thd_id, Workload * h_wl, QueryQueue * query_thd)
 	gen_requests(thd_id, h_wl);
 }
 
-void YCSBQuery::calculateDenom()
+void YCSB_Query::calculateDenom()
 {
 	assert(the_n == 0);
 	uint64_t table_size = g_synth_table_size / g_virtual_part_cnt;
@@ -33,7 +33,7 @@ void YCSBQuery::calculateDenom()
 // However, it seems there is a small bug. 
 // The original paper says zeta(theta, 2.0). But I guess it should be 
 // zeta(2.0, theta).
-double YCSBQuery::zeta(uint64_t n, double theta) 
+double YCSB_Query::zeta(uint64_t n, double theta)
 {
 	double sum = 0;
 	for (uint64_t i = 1; i <= n; i++) {
@@ -42,7 +42,7 @@ double YCSBQuery::zeta(uint64_t n, double theta)
 	return sum;
 }
 
-uint64_t YCSBQuery::zipf(uint64_t n, double theta) 
+uint64_t YCSB_Query::zipf(uint64_t n, double theta)
 {
 	assert(this->the_n == n);
 	assert(theta == g_zipf_theta);
@@ -57,7 +57,7 @@ uint64_t YCSBQuery::zipf(uint64_t n, double theta)
 	return 1 + (uint64_t)(n * pow(eta*u -eta + 1, alpha));
 }
 
-void YCSBQuery::gen_requests(uint64_t thd_id, Workload * h_wl) {
+void YCSB_Query::gen_requests(uint64_t thd_id, Workload * h_wl) {
 	#if CC_ALG == HSTORE
 		assert(g_virtual_part_cnt == g_part_cnt);
 	#endif

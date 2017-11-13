@@ -16,7 +16,7 @@ public:
 
 class VLLMan {
 public:
-	void init();
+	void initialize();
 	void vllMainLoop(TransactionManager * next_txn, Query * query);
 	// 	 1: txn is blocked
 	//	 2: txn is not blocked. Can run.

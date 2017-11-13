@@ -30,7 +30,7 @@ BTreeNode * BTreeIndex::find_root(uint64_t part_id) {
 	return roots[part_id];
 }
 
-bool BTreeIndex::exists(KeyId key) {
+bool BTreeIndex::exists(Key key) {
 	assert(false); // part_id is not correct now.
 	glob_param params;
 	params.part_id = key_to_part(key) % part_cnt;
@@ -49,7 +49,7 @@ bool BTreeIndex::exists(KeyId key) {
 Status BTreeIndex::next(uint64_t thd_id, Record * &item, bool samekey) {
 	int idx = *cur_idx_per_thd[thd_id];
 	BTreeNode * leaf = *cur_leaf_per_thd[thd_id];
-	KeyId cur_key = leaf->keys[idx] ;
+	Key cur_key = leaf->keys[idx] ;
 	
 	*cur_idx_per_thd[thd_id] += 1;
 	if (*cur_idx_per_thd[thd_id] >= leaf->num_keys) {
@@ -69,18 +69,18 @@ Status BTreeIndex::next(uint64_t thd_id, Record * &item, bool samekey) {
 	return OK;
 }
 
-Status BTreeIndex::read(KeyId key, Record *& item)
+Status BTreeIndex::read(Key key, Record *& item)
 {
 	assert(false);
 	return OK;
 }
 
-Status BTreeIndex::read(KeyId key, Record * & item, PartId part_id)
+Status BTreeIndex::read(Key key, Record * & item, PartId part_id)
 {
 	return read(key, item, 0, part_id);
 }
 
-Status BTreeIndex::read(KeyId key, Record * & item, PartId part_id, ThreadId thd_id)
+Status BTreeIndex::read(Key key, Record * & item, PartId part_id, ThreadId thd_id)
 {
 	Status rc = Abort;
 	glob_param params;
@@ -105,7 +105,7 @@ Status BTreeIndex::read(KeyId key, Record * & item, PartId part_id, ThreadId thd
 	return rc;
 }
 
-Status BTreeIndex::insert(KeyId key, Record * item, PartId part_id)
+Status BTreeIndex::insert(Key key, Record * item, PartId part_id)
 {
 	glob_param params;
 	if (WORKLOAD == TPCC) assert(part_id != -1);
@@ -178,7 +178,7 @@ Status BTreeIndex::make_node(uint64_t part_id, BTreeNode *& node)
 	BTreeNode * new_node = (BTreeNode *) mem_allocator.alloc(sizeof(BTreeNode), part_id);
 	assert (new_node != NULL);
 	new_node->pointers = NULL;
-	new_node->keys = (KeyId *) mem_allocator.alloc((order - 1) * sizeof(KeyId), part_id);
+	new_node->keys = (Key *) mem_allocator.alloc((order - 1) * sizeof(Key), part_id);
 	new_node->pointers = (void **) mem_allocator.alloc(order * sizeof(void *), part_id);
 	assert (new_node->keys != NULL && new_node->pointers != NULL);
 	new_node->is_leaf = false;
@@ -193,7 +193,7 @@ Status BTreeIndex::make_node(uint64_t part_id, BTreeNode *& node)
 	return OK;
 }
 
-Status BTreeIndex::start_new_tree(glob_param params, KeyId key, Record * item)
+Status BTreeIndex::start_new_tree(glob_param params, Key key, Record * item)
 {
 	Status rc;
 	uint64_t part_id = params.part_id;
@@ -302,14 +302,14 @@ Status BTreeIndex::cleanup(BTreeNode * node, BTreeNode * last_ex) {
 	return OK;
 }
 
-Status BTreeIndex::find_leaf(glob_param params, KeyId key, idx_acc_t access_type, BTreeNode *& leaf) {
+Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, BTreeNode *& leaf) {
 	BTreeNode * last_ex = NULL;
 	assert(access_type != INDEX_INSERT);
 	Status rc = find_leaf(params, key, access_type, leaf, last_ex);
 	return rc;
 }
 
-Status BTreeIndex::find_leaf(glob_param params, KeyId key, idx_acc_t access_type, BTreeNode *& leaf, BTreeNode  *& last_ex) 
+Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, BTreeNode *& leaf, BTreeNode  *& last_ex) 
 {
 //	RC rc;
 	UInt32 i;
@@ -381,7 +381,7 @@ Status BTreeIndex::find_leaf(glob_param params, KeyId key, idx_acc_t access_type
 	return OK;
 }
 
-Status BTreeIndex::insert_into_leaf(glob_param params, BTreeNode * leaf, KeyId key, Record * item) {
+Status BTreeIndex::insert_into_leaf(glob_param params, BTreeNode * leaf, Key key, Record * item) {
 	UInt32 i, insertion_point;
     insertion_point = 0;
 	int idx = leaf_has_key(leaf, key);	
@@ -403,10 +403,10 @@ Status BTreeIndex::insert_into_leaf(glob_param params, BTreeNode * leaf, KeyId k
     return OK;
 }
 
-Status BTreeIndex::split_lf_insert(glob_param params, BTreeNode * leaf, KeyId key, Record * item) {
+Status BTreeIndex::split_lf_insert(glob_param params, BTreeNode * leaf, Key key, Record * item) {
     Status rc;
 	UInt32 insertion_index, split, i, j;
-	KeyId new_key;
+	Key new_key;
 
 	uint64_t part_id = params.part_id;
     BTreeNode * new_leaf;
@@ -418,7 +418,7 @@ Status BTreeIndex::split_lf_insert(glob_param params, BTreeNode * leaf, KeyId ke
 
 	M_ASSERT(leaf->num_keys == order - 1, "trying to split non-full leaf!");
 
-	KeyId temp_keys[BTREE_ORDER];
+	Key temp_keys[BTREE_ORDER];
 	Record * temp_pointers[BTREE_ORDER];
     insertion_index = 0;
     while (insertion_index < order - 1 && leaf->keys[insertion_index] < key)
@@ -480,7 +480,7 @@ Status BTreeIndex::split_lf_insert(glob_param params, BTreeNode * leaf, KeyId ke
 Status BTreeIndex::insert_into_parent(
 	glob_param params,
 	BTreeNode * left, 
-	KeyId key, 
+	Key key, 
 	BTreeNode * right) {
 	
     BTreeNode * parent = left->parent;
@@ -513,7 +513,7 @@ Status BTreeIndex::insert_into_parent(
 }
 
 Status BTreeIndex::insert_into_new_root(
-	glob_param params, BTreeNode * left, KeyId key, BTreeNode * right) 
+	glob_param params, BTreeNode * left, Key key, BTreeNode * right) 
 {
 	Status rc;
 	uint64_t part_id = params.part_id;
@@ -541,7 +541,7 @@ Status BTreeIndex::split_nl_insert(
 	glob_param params,
 	BTreeNode * old_node, 
 	UInt32 left_index, 
-	KeyId key, 
+	Key key, 
 	BTreeNode * right) 
 {
 	Status rc;
@@ -561,7 +561,7 @@ Status BTreeIndex::split_nl_insert(
      * the other half to the new.
      */
 
-    KeyId temp_keys[BTREE_ORDER];
+    Key temp_keys[BTREE_ORDER];
     BTreeNode * temp_pointers[BTREE_ORDER + 1];
     for (i = 0, j = 0; i < old_node->num_keys + 1; i++, j++) {
         if (j == left_index + 1) j++;
@@ -631,7 +631,7 @@ Status BTreeIndex::split_nl_insert(
     return insert_into_parent(params, old_node, k_prime, new_node);	
 }
 
-int BTreeIndex::leaf_has_key(BTreeNode * leaf, KeyId key) {
+int BTreeIndex::leaf_has_key(BTreeNode * leaf, Key key) {
 	for (UInt32 i = 0; i < leaf->num_keys; i++) 
 		if (leaf->keys[i] == key)
 			return i;

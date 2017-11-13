@@ -59,7 +59,7 @@ TestTxnMan::testConflict(int access_num)
 	Status rc = OK;
 	Record * m_item;
 
-	KeyId key;
+	Key key;
 	for (key = 0; key < 1; key ++) {
 		m_item = index_read(_wl->the_index, key, 0);
 		Row * row = ((Row *)m_item->location);

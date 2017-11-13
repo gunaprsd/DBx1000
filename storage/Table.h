@@ -18,7 +18,6 @@ public:
 	/* Initializers */
 	void 			initialize		(Catalog * schema);
 
-
 	Status 			new_row			(Row * & row);
 	Status 			new_row			(Row * & row, uint64_t part_id, uint64_t &row_id);
 	Status 			free_row			(Row * & row);

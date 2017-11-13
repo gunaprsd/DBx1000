@@ -133,10 +133,10 @@ typedef uint64_t pgid_t; // page id
 enum latch_t {LATCH_EX, LATCH_SH, LATCH_NONE};
 // accessing type determines the latch type on nodes
 enum idx_acc_t {INDEX_INSERT, INDEX_READ, INDEX_NONE};
-typedef uint64_t KeyId; // key id for index
+typedef uint64_t Key; // key id for index
 typedef int64_t PartId;
 typedef uint64_t ThreadId;
-typedef uint64_t (*func_ptr)(KeyId);	// part_id func_ptr(index_key);
+typedef uint64_t (*func_ptr)(Key);	// part_id func_ptr(index_key);
 
 /* general concurrency control */
 enum access_t {RD, WR, XP, SCAN};

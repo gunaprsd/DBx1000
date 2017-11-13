@@ -11,7 +11,7 @@ typedef struct BTreeNode
 	// TODO bad hack!
    	void ** pointers; // for non-leaf nodes, point to bt_nodes
 	bool is_leaf;
-	KeyId * keys;
+	Key * keys;
 	BTreeNode * parent;
 	UInt32 num_keys;
 	BTreeNode * next;
@@ -36,12 +36,12 @@ public:
 	Status			initialize	(uint64_t part_cnt, Table * table);
 
 	/* Index Accessors */
-	bool 			exists		(KeyId key) 	override;
-	Status 			insert		(KeyId key, Record * item, PartId part_id = -1) override;
+	bool 			exists		(Key key) 	override;
+	Status 			insert		(Key key, Record * item, PartId part_id = -1) override;
 
-	Status	 		read			(KeyId key, Record * &item, PartId part_id = -1) override;
-	Status	 		read			(KeyId key, Record * &item, PartId part_id = -1, ThreadId thread_id = 0) override;
-	Status	 		read			(KeyId key, Record * &item);
+	Status	 		read			(Key key, Record * &item, PartId part_id = -1) override;
+	Status	 		read			(Key key, Record * &item, PartId part_id = -1, ThreadId thread_id = 0) override;
+	Status	 		read			(Key key, Record * &item);
 	Status 			next			(uint64_t thd_id, Record * &item, bool samekey = false);
 
 private:
@@ -51,17 +51,17 @@ private:
 	Status			make_nl(uint64_t part_id, BTreeNode *& node);
 	Status		 	make_node(uint64_t part_id, BTreeNode *& node);
 	
-	Status 			start_new_tree(glob_param params, KeyId key, Record * item);
-	Status 			find_leaf(glob_param params, KeyId key, idx_acc_t access_type, BTreeNode *& leaf, BTreeNode  *& last_ex);
-	Status 			find_leaf(glob_param params, KeyId key, idx_acc_t access_type, BTreeNode *& leaf);
-	Status			insert_into_leaf(glob_param params, BTreeNode * leaf, KeyId key, Record * item);
+	Status 			start_new_tree(glob_param params, Key key, Record * item);
+	Status 			find_leaf(glob_param params, Key key, idx_acc_t access_type, BTreeNode *& leaf, BTreeNode  *& last_ex);
+	Status 			find_leaf(glob_param params, Key key, idx_acc_t access_type, BTreeNode *& leaf);
+	Status			insert_into_leaf(glob_param params, BTreeNode * leaf, Key key, Record * item);
 	// handle split
-	Status 			split_lf_insert(glob_param params, BTreeNode * leaf, KeyId key, Record * item);
-	Status 			split_nl_insert(glob_param params, BTreeNode * node, UInt32 left_index, KeyId key, BTreeNode * right);
-	Status 			insert_into_parent(glob_param params, BTreeNode * left, KeyId key, BTreeNode * right);
-	Status 			insert_into_new_root(glob_param params, BTreeNode * left, KeyId key, BTreeNode * right);
+	Status 			split_lf_insert(glob_param params, BTreeNode * leaf, Key key, Record * item);
+	Status 			split_nl_insert(glob_param params, BTreeNode * node, UInt32 left_index, Key key, BTreeNode * right);
+	Status 			insert_into_parent(glob_param params, BTreeNode * left, Key key, BTreeNode * right);
+	Status 			insert_into_new_root(glob_param params, BTreeNode * left, Key key, BTreeNode * right);
 
-	int				leaf_has_key(BTreeNode * leaf, KeyId key);
+	int				leaf_has_key(BTreeNode * leaf, Key key);
 	
 	UInt32 			cut(UInt32 length);
 	UInt32	 		order; // # of keys in a node(for both leaf and non-leaf)

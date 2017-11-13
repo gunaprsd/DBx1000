@@ -88,8 +88,8 @@ public:
 
 	// For VLL
 	TxnType 		vll_txn_type;
-	Record *		index_read(INDEX * index, KeyId key, int part_id);
-	void 			index_read(INDEX * index, KeyId key, int part_id, Record *& item);
+	Record *		index_read(INDEX * index, Key key, int part_id);
+	void 			index_read(INDEX * index, Key key, int part_id, Record *& item);
 	Row * 		get_row(Row * row, access_t type);
 protected:	
 	void 			insert_row(Row * row, Table * table);

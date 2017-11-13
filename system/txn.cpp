@@ -187,7 +187,7 @@ void txn_man::insert_row(Row * row, Table * table) {
 }
 
 Record *
-txn_man::index_read(INDEX * index, KeyId key, int part_id) {
+txn_man::index_read(INDEX * index, Key key, int part_id) {
 	uint64_t starttime = get_sys_clock();
 	Record * item;
 	index->index_read(key, item, part_id, get_thd_id());
@@ -196,7 +196,7 @@ txn_man::index_read(INDEX * index, KeyId key, int part_id) {
 }
 
 void 
-txn_man::index_read(INDEX * index, KeyId key, int part_id, Record *& item) {
+txn_man::index_read(INDEX * index, Key key, int part_id, Record *& item) {
 	uint64_t starttime = get_sys_clock();
 	index->index_read(key, item, part_id, get_thd_id());
 	INC_TMP_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);

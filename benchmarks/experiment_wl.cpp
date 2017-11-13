@@ -70,8 +70,8 @@ Status experiment_wl::init_table()
 			new_row->set_primary_key(primary_key);
             new_row->set_value(0, &primary_key);
 			Catalog * schema = the_table->get_schema();
-			for (UInt32 fid = 0; fid < schema->get_field_cnt(); fid ++) {
-				int field_size = schema->get_field_size(fid);
+			for (UInt32 fid = 0; fid < schema->get_num_columns(); fid ++) {
+				int field_size = schema->get_column_size(fid);
 				char value[field_size];
 				for (int i = 0; i < field_size; i++) 
 					value[i] = (char)rand() % (1<<8) ;
@@ -142,7 +142,7 @@ void * experiment_wl::init_table_slice()
 		new_row->set_value(0, &primary_key);
 		Catalog * schema = the_table->get_schema();
 		
-		for (UInt32 fid = 0; fid < schema->get_field_cnt(); fid ++) {
+		for (UInt32 fid = 0; fid < schema->get_num_columns(); fid ++) {
 			char value[6] = "hello";
 			new_row->set_value(fid, value);
 		}

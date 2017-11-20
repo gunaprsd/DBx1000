@@ -80,7 +80,7 @@ void txn_man::cleanup(RC rc) {
 		if (type == WR && rc == Abort)
 			type = XP;
 
-#if (CC_ALG == NO_WAIT || CC_ALG == DL_DETECT) && ISOLATION_LEVEL == REPEATABLE_READ
+#if (CC_ALG == NO_WAIT || CC_ALG == NONE || CC_ALG == DL_DETECT) && ISOLATION_LEVEL == REPEATABLE_READ
 		if (type == RD) {
 			accesses[rid]->data = NULL;
 			continue;
@@ -89,7 +89,7 @@ void txn_man::cleanup(RC rc) {
 
 		if (ROLL_BACK && type == XP &&
 					(CC_ALG == DL_DETECT || 
-					CC_ALG == NO_WAIT || 
+					CC_ALG == NO_WAIT || CC_ALG == NONE ||
 					CC_ALG == WAIT_DIE)) 
 		{
 			orig_r->return_row(type, this, accesses[rid]->orig_data);
@@ -133,7 +133,7 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 		access->data->init(MAX_TUPLE_SIZE);
 		access->orig_data = (row_t *) _mm_malloc(sizeof(row_t), 64);
 		access->orig_data->init(MAX_TUPLE_SIZE);
-#elif (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
+#elif (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == NONE || CC_ALG == WAIT_DIE)
 		access->orig_data = (row_t *) _mm_malloc(sizeof(row_t), 64);
 		access->orig_data->init(MAX_TUPLE_SIZE);
 #endif
@@ -157,14 +157,14 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 	accesses[row_cnt]->history_entry = history_entry;
 #endif
 
-#if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE)
+#if ROLL_BACK && (CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == NONE || CC_ALG == WAIT_DIE)
 	if (type == WR) {
 		accesses[row_cnt]->orig_data->table = row->get_table();
 		accesses[row_cnt]->orig_data->copy(row);
 	}
 #endif
 
-#if (CC_ALG == NO_WAIT || CC_ALG == DL_DETECT) && ISOLATION_LEVEL == REPEATABLE_READ
+#if (CC_ALG == NO_WAIT || CC_ALG == NONE || CC_ALG == DL_DETECT) && ISOLATION_LEVEL == REPEATABLE_READ
 	if (type == RD)
 		row->return_row(type, this, accesses[ row_cnt ]->data);
 #endif

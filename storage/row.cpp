@@ -134,7 +134,7 @@ void row_t::free_row() {
 
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	RC rc = RCOK;
-#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
+#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == NONE || CC_ALG == DL_DETECT
 	uint64_t thd_id = txn->get_thd_id();
 	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
 #if CC_ALG == DL_DETECT
@@ -147,8 +147,9 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 
 	if (rc == RCOK) {
 		row = this;
-	} else if (rc == Abort) {} 
-	else if (rc == WAIT) {
+	} else if (rc == Abort) {
+
+	} else if (rc == WAIT) {
 		ASSERT(CC_ALG == WAIT_DIE || CC_ALG == DL_DETECT);
 		uint64_t starttime = get_sys_clock();
 #if CC_ALG == DL_DETECT	

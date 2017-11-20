@@ -5,26 +5,26 @@
 
 #if CC_ALG==HEKATON
 
-RC
-txn_man::validate_hekaton(RC rc)
+Status
+TransactionManager::validate_hekaton(Status rc)
 {
 	uint64_t starttime = get_sys_clock();
-	INC_STATS(get_thd_id(), debug1, get_sys_clock() - starttime);
-	ts_t commit_ts = glob_manager->get_ts(get_thd_id());
+	INC_STATS(get_thread_id(), debug1, get_sys_clock() - starttime);
+	Time commit_ts = glob_manager->get_ts(get_thread_id());
 	// validate the read set.
 #if ISOLATION_LEVEL == SERIALIZABLE
-	if (rc == RCOK) {
-		for (int rid = 0; rid < row_cnt; rid ++) {
+	if (rc == OK) {
+		for (uint32_t rid = 0; rid < row_cnt; rid ++) {
 			if (accesses[rid]->type == WR)
 				continue;
 			rc = accesses[rid]->orig_row->manager->prepare_read(this, accesses[rid]->data, commit_ts);
-			if (rc == Abort)
+			if (rc == ABORT)
 				break;
 		}
 	}
 #endif
 	// postprocess 
-	for (int rid = 0; rid < row_cnt; rid ++) {
+	for (uint32_t rid = 0; rid < row_cnt; rid ++) {
 		if (accesses[rid]->type == RD)
 			continue;
 		accesses[rid]->orig_row->manager->post_process(this, commit_ts, rc);

@@ -6,7 +6,7 @@
 #include "../system/Manager.h"
 #include "../system/TransactionManager.h"
 
-void Row_ts::init(Row * row) {
+void Row_ts::initialize(Row * row) {
 	_row = row;
 	uint64_t part_id = row->get_part_id();
 	wts = 0;
@@ -158,7 +158,7 @@ Status Row_ts::access(TransactionManager * txn, TimestampType type, Row * row) {
 		pthread_mutex_lock( latch );
 	if (type == R_REQ) {
 		if (ts < wts) {
-			rc = Abort;
+			rc = ABORT;
 		} else if (ts > min_pts) {
 			// insert the req into the read request queue
 			buffer_req(R_REQ, txn, NULL);
@@ -173,14 +173,14 @@ Status Row_ts::access(TransactionManager * txn, TimestampType type, Row * row) {
 		}
 	} else if (type == P_REQ) {
 		if (ts < rts) {
-			rc = Abort;
+			rc = ABORT;
 		} else {
 #if TS_TWR
 			buffer_req(P_REQ, txn, NULL);
 			rc = OK;
 #else 
 			if (ts < wts) {
-				rc = Abort;
+				rc = ABORT;
 			} else {
 				buffer_req(P_REQ, txn, NULL);
 				rc = OK;

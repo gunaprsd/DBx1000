@@ -15,7 +15,7 @@ struct TsReqEntry {
 
 class Row_ts {
 public:
-	void init(Row * row);
+	void initialize(Row * row);
 	Status access(TransactionManager * txn, TimestampType type, Row * row);
 
 private:

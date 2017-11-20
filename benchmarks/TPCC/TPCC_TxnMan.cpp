@@ -15,7 +15,7 @@ void tpcc_txn_man::initialize(Thread * h_thd, Workload * h_wl, uint64_t thd_id) 
 	_wl = (tpcc_wl *) h_wl;
 }
 
-Status tpcc_txn_man::run_transaction(Query * query) {
+Status tpcc_txn_man::execute(Query * query) {
 	TPCCQuery * m_query = (TPCCQuery *) query;
 	switch (m_query->type) {
 		case TPCC_PAYMENT :
@@ -65,7 +65,7 @@ Status tpcc_txn_man::run_payment(TPCCQuery * query) {
 		r_wh_local = get_row(r_wh, RD);
 
 	if (r_wh_local == NULL) {
-		return finish(Abort);
+		return finish(ABORT);
 	}
 	double w_ytd;
 	
@@ -87,7 +87,7 @@ Status tpcc_txn_man::run_payment(TPCCQuery * query) {
 	Row * r_dist = ((Row *)item->location);
 	Row * r_dist_local = get_row(r_dist, WR);
 	if (r_dist_local == NULL) {
-		return finish(Abort);
+		return finish(ABORT);
 	}
 
 	double d_ytd;
@@ -175,7 +175,7 @@ Status tpcc_txn_man::run_payment(TPCCQuery * query) {
    	+======================================================================*/
 	Row * r_cust_local = get_row(r_cust, WR);
 	if (r_cust_local == NULL) {
-		return finish(Abort);
+		return finish(ABORT);
 	}
 	double c_balance;
 	double c_ytd_payment;
@@ -263,7 +263,7 @@ Status tpcc_txn_man::run_new_order(TPCCQuery * query) {
 	Row * r_wh = ((Row *)item->location);
 	Row * r_wh_local = get_row(r_wh, RD);
 	if (r_wh_local == NULL) {
-		return finish(Abort);
+		return finish(ABORT);
 	}
 
 
@@ -276,7 +276,7 @@ Status tpcc_txn_man::run_new_order(TPCCQuery * query) {
 	Row * r_cust = (Row *) item->location;
 	Row * r_cust_local = get_row(r_cust, RD);
 	if (r_cust_local == NULL) {
-		return finish(Abort); 
+		return finish(ABORT); 
 	}
 	uint64_t c_discount;
 	//char * c_last;
@@ -298,7 +298,7 @@ Status tpcc_txn_man::run_new_order(TPCCQuery * query) {
 	Row * r_dist = ((Row *)item->location);
 	Row * r_dist_local = get_row(r_dist, WR);
 	if (r_dist_local == NULL) {
-		return finish(Abort);
+		return finish(ABORT);
 	}
 	//double d_tax;
 	int64_t o_id;
@@ -333,7 +333,7 @@ Status tpcc_txn_man::run_new_order(TPCCQuery * query) {
 //	r_no->set_value(NO_D_ID, d_id);
 //	r_no->set_value(NO_W_ID, w_id);
 //	insert_row(r_no, _wl->t_neworder);
-	for (UInt32 ol_number = 0; ol_number < ol_cnt; ol_number++) {
+	for (uint32_t ol_number = 0; ol_number < ol_cnt; ol_number++) {
 
 		uint64_t ol_i_id = query->items[ol_number].ol_i_id;
 		uint64_t ol_supply_w_id = query->items[ol_number].ol_supply_w_id;
@@ -351,7 +351,7 @@ Status tpcc_txn_man::run_new_order(TPCCQuery * query) {
 
 		Row * r_item_local = get_row(r_item, RD);
 		if (r_item_local == NULL) {
-			return finish(Abort);
+			return finish(ABORT);
 		}
 		int64_t i_price;
 		//char * i_name;
@@ -382,11 +382,11 @@ Status tpcc_txn_man::run_new_order(TPCCQuery * query) {
 		Row * r_stock = ((Row *)stock_item->location);
 		Row * r_stock_local = get_row(r_stock, WR);
 		if (r_stock_local == NULL) {
-			return finish(Abort);
+			return finish(ABORT);
 		}
 		
 		// XXX s_dist_xx are not retrieved.
-		UInt64 s_quantity;
+		uint64_t s_quantity;
 		int64_t s_remote_cnt;
 		s_quantity = *(int64_t *)r_stock_local->get_value(S_QUANTITY);
 #if !TPCC_SMALL

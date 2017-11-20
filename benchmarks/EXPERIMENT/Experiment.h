@@ -33,7 +33,7 @@ class experiment_txn_man : public TransactionManager
 {
 public:
 	void initialize(Thread * h_thd, Workload * h_wl, uint64_t part_id); 
-	Status run_transaction(Query * query);
+	Status execute(Query * query);
 private:
 	uint64_t row_cnt;
 	experiment_wl * _wl;

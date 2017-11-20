@@ -8,7 +8,7 @@
 #if CC_ALG==TICTOC
 
 void 
-Row_tictoc::init(row_t * row)
+Row_tictoc::initialize(Row * row)
 {
 	_row = row;
 #if ATOMIC_WORD
@@ -24,8 +24,8 @@ Row_tictoc::init(row_t * row)
 #endif
 }
 	
-RC
-Row_tictoc::access(txn_man * txn, TsType type, row_t * local_row)
+Status
+Row_tictoc::access(TransactionManager * txn, TimestampType type, Row * local_row)
 {
 #if ATOMIC_WORD
 	uint64_t v = 0;
@@ -59,11 +59,11 @@ Row_tictoc::access(txn_man * txn, TsType type, row_t * local_row)
 	local_row->copy(_row); 
 	release();
 #endif
-	return RCOK;
+	return OK;
 }
 
 void 
-Row_tictoc::write_data(row_t * data, ts_t wts)
+Row_tictoc::write_data(Row * data, Time wts)
 {
 #if ATOMIC_WORD
   	uint64_t v = _ts_word;
@@ -91,7 +91,7 @@ Row_tictoc::write_data(row_t * data, ts_t wts)
 }
 
 bool
-Row_tictoc::renew_lease(ts_t wts, ts_t rts)
+Row_tictoc::renew_lease(Time wts, Time rts)
 {	
 #if !ATOMIC_WORD
 	if (_wts != wts) {
@@ -107,7 +107,7 @@ Row_tictoc::renew_lease(ts_t wts, ts_t rts)
 }
 
 bool 
-Row_tictoc::try_renew(ts_t wts, ts_t rts, ts_t &new_rts, uint64_t thd_id)
+Row_tictoc::try_renew(Time wts, Time rts, Time &new_rts, uint64_t thd_id)
 {	
 #if ATOMIC_WORD
 	uint64_t v = _ts_word;
@@ -131,7 +131,7 @@ Row_tictoc::try_renew(ts_t wts, ts_t rts, ts_t &new_rts, uint64_t thd_id)
 		return false;
   #endif
 
-	ts_t delta_rts = rts - wts;
+	Time delta_rts = rts - wts;
 	if (delta_rts < ((v & RTS_MASK) >> WTS_LEN)) // the rts has already been extended.
 		return true;
 	bool rebase = false;
@@ -187,7 +187,7 @@ Row_tictoc::try_renew(ts_t wts, ts_t rts, ts_t &new_rts, uint64_t thd_id)
 }
 
 
-ts_t
+Time
 Row_tictoc::get_wts()
 {
 #if ATOMIC_WORD
@@ -207,7 +207,7 @@ Row_tictoc::get_ts_word(bool &lock, uint64_t &rts, uint64_t &wts)
 	rts = ((v & RTS_MASK) >> WTS_LEN)  + (v & WTS_MASK);
 }
 
-ts_t
+Time
 Row_tictoc::get_rts()
 {
 #if ATOMIC_WORD

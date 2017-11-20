@@ -16,7 +16,7 @@ public:
 	uint64_t key;
 	char value;
 	// only for (qtype == SCAN)
-	UInt32 scan_len;
+	uint32_t scan_len;
 };
 
 class ExperimentQuery : public Query {

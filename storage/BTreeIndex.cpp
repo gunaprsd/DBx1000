@@ -10,9 +10,9 @@ Status BTreeIndex::initialize(uint64_t part_cnt) {
 	roots = (BTreeNode **) malloc(part_cnt * sizeof(BTreeNode *));
 	// "cur_xxx_per_thd" is only for SCAN queries.
 	ARR_PTR(BTreeNode *, cur_leaf_per_thd, g_thread_cnt);
-	ARR_PTR(UInt32, cur_idx_per_thd, g_thread_cnt);
+	ARR_PTR(uint32_t, cur_idx_per_thd, g_thread_cnt);
 	// the index tree of each partition musted be mapped to corresponding l2 slices
-	for (UInt32 part_id = 0; part_id < part_cnt; part_id ++) {
+	for (uint32_t part_id = 0; part_id < part_cnt; part_id ++) {
 		Status rc;
 		rc = make_lf(part_id, roots[part_id]);
 		assert (rc == OK);
@@ -39,7 +39,7 @@ bool BTreeIndex::exists(Key key) {
 	// does not matter which thread check existence
 	find_leaf(params, key, INDEX_NONE, leaf);
 	if (leaf == NULL) return false;
-	for (UInt32 i = 0; i < leaf->num_keys; i++)
+	for (uint32_t i = 0; i < leaf->num_keys; i++)
     	if (leaf->keys[i] == key) {
             // the record is found!
 			return true;
@@ -83,7 +83,7 @@ Status BTreeIndex::read(Key key, Record * & item, PartId part_id)
 
 Status BTreeIndex::read(Key key, Record * & item, PartId part_id, ThreadId thd_id)
 {
-	Status rc = Abort;
+	Status rc = ABORT;
 	glob_param params;
 	//assert(part_id != -1);
 	params.part_id = part_id;
@@ -91,7 +91,7 @@ Status BTreeIndex::read(Key key, Record * & item, PartId part_id, ThreadId thd_i
 	find_leaf(params, key, INDEX_READ, leaf);
 	if (leaf == NULL)
 		M_ASSERT(false, "the leaf does not exist!");
-	for (UInt32 i = 0; i < leaf->num_keys; i++) 
+	for (uint32_t i = 0; i < leaf->num_keys; i++) 
 		if (leaf->keys[i] == key) {
 			item = (Record *)leaf->pointers[i];
 			release_latch(leaf);
@@ -288,7 +288,7 @@ Status BTreeIndex::upgrade_latch(BTreeNode * node) {
 //		pthread_mutex_unlock(&node->locked);
 //		assert( ATOM_CAS(node->locked, true, false) );
 	if (success) return OK;
-	else return Abort;
+	else return ABORT;
 }
 
 Status BTreeIndex::cleanup(BTreeNode * node, BTreeNode * last_ex) {
@@ -313,7 +313,7 @@ Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, 
 Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, BTreeNode *& leaf, BTreeNode  *& last_ex) 
 {
 //	RC rc;
-	UInt32 i;
+	uint32_t i;
 	BTreeNode * c = find_root(params.part_id);
 	assert(c != NULL);
 	BTreeNode * child;
@@ -330,7 +330,7 @@ Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, 
 	}
 	// key should be inserted into the right side of i
 	if (!latch_node(c, LATCH_SH)) 
-		return Abort;
+		return ABORT;
 	while (!c->is_leaf) {
 		assert(get_part_id(c) == params.part_id);
 		assert(get_part_id(c->keys) == params.part_id);
@@ -343,7 +343,7 @@ Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, 
 			release_latch(c);
 			cleanup(c, last_ex);
 			last_ex = NULL;
-			return Abort;
+			return ABORT;
 		}	
 		if (access_type == INDEX_INSERT) {
 			if (child->num_keys == order - 1) {
@@ -352,7 +352,7 @@ Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, 
 					release_latch(child);
 					cleanup(c, last_ex);
 					last_ex = NULL;
-					return Abort;
+					return ABORT;
 				}
 				if (last_ex == NULL)
 					last_ex = c;
@@ -374,7 +374,7 @@ Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, 
 		if (upgrade_latch(c) != OK) {
         	release_latch(c);
             cleanup(c, last_ex);
-            return Abort;
+            return ABORT;
         }
 	}
 	leaf = c;
@@ -383,7 +383,7 @@ Status BTreeIndex::find_leaf(glob_param params, Key key, idx_acc_t access_type, 
 }
 
 Status BTreeIndex::insert_into_leaf(glob_param params, BTreeNode * leaf, Key key, Record * item) {
-	UInt32 i, insertion_point;
+	uint32_t i, insertion_point;
     insertion_point = 0;
 	int idx = leaf_has_key(leaf, key);	
 	if (idx >= 0) {
@@ -406,7 +406,7 @@ Status BTreeIndex::insert_into_leaf(glob_param params, BTreeNode * leaf, Key key
 
 Status BTreeIndex::split_lf_insert(glob_param params, BTreeNode * leaf, Key key, Record * item) {
     Status rc;
-	UInt32 insertion_index, split, i, j;
+	uint32_t insertion_index, split, i, j;
 	Key new_key;
 
 	uint64_t part_id = params.part_id;
@@ -490,12 +490,12 @@ Status BTreeIndex::insert_into_parent(
     if (parent == NULL)
         return insert_into_new_root(params, left, key, right);
     
-	UInt32 insert_idx = 0;
+	uint32_t insert_idx = 0;
 	while (parent->keys[insert_idx] < key && insert_idx < parent->num_keys)
 		insert_idx ++;
 	// the parent has enough space, just insert into it
     if (parent->num_keys < order - 1) {
-		for (UInt32 i = parent->num_keys-1; i >= insert_idx; i--) {
+		for (uint32_t i = parent->num_keys-1; i >= insert_idx; i--) {
 			parent->keys[i + 1] = parent->keys[i];
 			parent->pointers[i+2] = parent->pointers[i+1];
 		}
@@ -541,7 +541,7 @@ Status BTreeIndex::insert_into_new_root(
 Status BTreeIndex::split_nl_insert(
 	glob_param params,
 	BTreeNode * old_node, 
-	UInt32 left_index, 
+	uint32_t left_index, 
 	Key key, 
 	BTreeNode * right) 
 {
@@ -633,13 +633,13 @@ Status BTreeIndex::split_nl_insert(
 }
 
 int BTreeIndex::leaf_has_key(BTreeNode * leaf, Key key) {
-	for (UInt32 i = 0; i < leaf->num_keys; i++) 
+	for (uint32_t i = 0; i < leaf->num_keys; i++) 
 		if (leaf->keys[i] == key)
 			return i;
 	return -1;
 }
 
-UInt32 BTreeIndex::cut(UInt32 length) {
+uint32_t BTreeIndex::cut(uint32_t length) {
 	if (length % 2 == 0)
         return length/2;
     else

@@ -4,13 +4,12 @@
 #include "Row.h"
 #include "occ.h"
 #include "Catalog.h"
-#include "TransactionManager.h"
-
 #include "Experiment.h"
 #include "YCSB.h"
 #include "Allocator.h"
 #include "Thread.h"
 #include "Workload.h"
+#include "TransactionManager.h"
 
 void TransactionManager::initialize(Thread * h_thd, Workload * h_wl, uint64_t thd_id) {
 	this->thread = h_thd;
@@ -57,7 +56,7 @@ Workload * TransactionManager::get_workload() {
 }
 
 uint64_t TransactionManager::get_thread_id() {
-	return thread->get_thd_id();
+	return thread->get_thread_id();
 }
 
 void TransactionManager::set_timestamp(Time timestamp) {
@@ -78,7 +77,7 @@ void TransactionManager::cleanup(Status rc) {
 	for (int rid = row_cnt - 1; rid >= 0; rid --) {
 		Row * orig_r = accesses[rid]->orig_row;
 		AccessType type = accesses[rid]->type;
-		if (type == WR && rc == Abort)
+		if (type == WR && rc == ABORT)
 			type = XP;
 
 #if (CC_ALG == NO_WAIT || CC_ALG == DL_DETECT) && ISOLATION_LEVEL == REPEATABLE_READ
@@ -102,8 +101,8 @@ void TransactionManager::cleanup(Status rc) {
 #endif
 	}
 
-	if (rc == Abort) {
-		for (UInt32 i = 0; i < insert_cnt; i ++) {
+	if (rc == ABORT) {
+		for (uint32_t i = 0; i < insert_cnt; i ++) {
 			Row * row = insert_rows[i];
 			assert(g_part_alloc == false);
 #if CC_ALG != HSTORE && CC_ALG != OCC
@@ -144,7 +143,7 @@ Row * TransactionManager::get_row(Row * row, AccessType type) {
 	rc = row->request_access(type, this, accesses[ row_cnt ]->data);
 
 
-	if (rc == Abort) {
+	if (rc == ABORT) {
 		return NULL;
 	}
 	accesses[row_cnt]->type = type;

@@ -1,15 +1,15 @@
 #include <mm_malloc.h>
 #include "Row.h"
 
-#include "../system/Allocator.h"
-#include "../system/Global.h"
-#include "../system/Manager.h"
-#include "../system/TransactionManager.h"
+#include "Allocator.h"
+#include "Global.h"
+#include "Manager.h"
+#include "TransactionManager.h"
 #include "row_lock.h"
 #include "row_ts.h"
 #include "row_mvcc.h"
 #include "row_hekaton.h"
-#include "row_occ.h"
+#include "RowOcc.h"
 #include "row_tictoc.h"
 #include "row_silo.h"
 #include "row_vll.h"
@@ -24,15 +24,15 @@
 void Row::initialize_manager(Row * row)
 {
 #if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE
-    manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock), _part_id);
+    manager = (Row_lock *) mem_allocator.allocate(sizeof(Row_lock), _part_id);
 #elif CC_ALG == TIMESTAMP
-    manager = (Row_ts *) mem_allocator.alloc(sizeof(Row_ts), _part_id);
+    manager = (Row_ts *) mem_allocator.allocate(sizeof(Row_ts), _part_id);
 #elif CC_ALG == MVCC
     manager = (Row_mvcc *) _mm_malloc(sizeof(Row_mvcc), 64);
 #elif CC_ALG == HEKATON
     manager = (Row_hekaton *) _mm_malloc(sizeof(Row_hekaton), 64);
 #elif CC_ALG == OCC
-    manager = (Row_occ *) mem_allocator.alloc(sizeof(Row_occ), _part_id);
+    manager = (RowOcc *) mem_allocator.allocate(sizeof(RowOcc), _part_id);
 #elif CC_ALG == TICTOC
 	manager = (Row_tictoc *) _mm_malloc(sizeof(Row_tictoc), 64);
 #elif CC_ALG == SILO
@@ -42,16 +42,22 @@ void Row::initialize_manager(Row * row)
 #endif
 
 #if CC_ALG != HSTORE
-	manager->init(this);
+	manager->initialize(this);
 #endif
 }
+
+void Row::copy(Row * src)
+{
+	set_data(src->get_data(), src->get_tuple_size());
+}
+
 
 Status Row::request_access(AccessType type, TransactionManager * txn, Row * & row)
 {
 	Status rc = OK;
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
-	uint64_t thd_id = txn->get_thd_id();
-	lock_t lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
+	uint64_t thd_id = txn->get_thread_id();
+	LockType lt = (type == RD || type == SCAN)? LOCK_SH : LOCK_EX;
 	#if CC_ALG == DL_DETECT
 		uint64_t * txnids;
 		int txncnt;
@@ -62,7 +68,7 @@ Status Row::request_access(AccessType type, TransactionManager * txn, Row * & ro
 
 	if (rc == OK) {
 		row = this;
-	} else if (rc == Abort) {
+	} else if (rc == ABORT) {
 	} else if (rc == WAIT) {
 		ASSERT(CC_ALG == WAIT_DIE || CC_ALG == DL_DETECT);
 		uint64_t starttime = get_sys_clock();
@@ -71,7 +77,7 @@ Status Row::request_access(AccessType type, TransactionManager * txn, Row * & ro
 	#endif
 		uint64_t endtime;
 		txn->lock_abort = false;
-		INC_STATS(txn->get_thd_id(), wait_cnt, 1);
+		INC_STATS(txn->get_thread_id(), wait_cnt, 1);
 		while (!txn->lock_ready && !txn->lock_abort)
 		{
 		#if CC_ALG == WAIT_DIE
@@ -92,14 +98,14 @@ Status Row::request_access(AccessType type, TransactionManager * txn, Row * & ro
 			int ok = 0;
 			if ((now - last_detect > g_dl_loop_detect) && (now - last_try > DL_LOOP_TRIAL)) {
 				if (!dep_added) {
-					ok = dl_detector.add_dep(txn->get_txn_id(), txnids, txncnt, txn->row_cnt);
+					ok = dl_detector.add_dep(txn->get_transaction_id(), txnids, txncnt, txn->row_cnt);
 					if (ok == 0)
 						dep_added = true;
 					else if (ok == 16)
 						last_try = now;
 				}
 				if (dep_added) {
-					ok = dl_detector.detect_cycle(txn->get_txn_id());
+					ok = dl_detector.detect_cycle(txn->get_transaction_id());
 					if (ok == 16)  // failed to lock the deadlock detector
 						last_try = now;
 					else if (ok == 0)
@@ -116,7 +122,7 @@ Status Row::request_access(AccessType type, TransactionManager * txn, Row * & ro
 		if (txn->lock_ready)
 			rc = OK;
 		else if (txn->lock_abort) {
-			rc = Abort;
+			rc = ABORT;
 			return_access(type, txn, NULL);
 		}
 		endtime = get_sys_clock();
@@ -125,7 +131,7 @@ Status Row::request_access(AccessType type, TransactionManager * txn, Row * & ro
 	}
 	return rc;
 #elif CC_ALG == TIMESTAMP || CC_ALG == MVCC || CC_ALG == HEKATON
-	uint64_t thd_id = txn->get_thd_id();
+	uint64_t thd_id = txn->get_thread_id();
 	// For TIMESTAMP RD, a new copy of the row will be returned.
 	// for MVCC RD, the version will be returned instead of a copy
 	// So for MVCC RD-WR, the version should be explicitly copied.
@@ -133,7 +139,7 @@ Status Row::request_access(AccessType type, TransactionManager * txn, Row * & ro
   #if CC_ALG == TIMESTAMP
 	// TODO. should not call malloc for each row read. Only need to call malloc once
 	// before simulation starts, like TicToc and Silo.
-	txn->cur_row = (Row *) mem_allocator.alloc(sizeof(Row), this->get_part_id());
+	txn->cur_row = (Row *) mem_allocator.allocate(sizeof(Row), this->get_part_id());
 	txn->cur_row->initialize(get_table(), this->get_part_id());
   #endif
 
@@ -150,14 +156,14 @@ Status Row::request_access(AccessType type, TransactionManager * txn, Row * & ro
 		INC_TMP_STATS(thd_id, time_wait, t2 - t1);
 		row = txn->cur_row;
 	}
-	if (rc != Abort) {
+	if (rc != ABORT) {
 		row->table = get_table();
 		assert(row->get_schema() == this->get_schema());
 	}
 	return rc;
 #elif CC_ALG == OCC
 	// OCC always make a local copy regardless of read or write
-	txn->cur_row = (Row *) mem_allocator.alloc(sizeof(Row), get_part_id());
+	txn->cur_row = (Row *) mem_allocator.allocate(sizeof(Row), get_part_id());
 	txn->cur_row->initialize(get_table(), get_part_id());
 	rc = this->manager->access(txn, R_REQ);
 	row = txn->cur_row;

@@ -21,7 +21,7 @@ void experiment_txn_man::initialize(Thread * h_thd, Workload * h_wl, uint64_t th
 	_wl = (experiment_wl *) h_wl;
 }
 
-Status experiment_txn_man::run_transaction(Query * query) {
+Status experiment_txn_man::execute(Query * query) {
 	Status rc;
 	ExperimentQuery * m_query = (ExperimentQuery *) query;
 	experiment_wl * wl = (experiment_wl *) workload;
@@ -32,25 +32,18 @@ Status experiment_txn_man::run_transaction(Query * query) {
 		experiment_request * req = &m_query->requests[rid];
 		int part_id = wl->key_to_part( req->key );
 		bool finish_req = false;
-		UInt32 iteration = 0;
+		uint32_t iteration = 0;
 		while ( !finish_req ) {
 			if (iteration == 0) {
 				m_item = index_read(_wl->the_index, req->key, part_id);
 			} 
-#if INDEX_STRUCT == IDX_BTREE
-			else {
-				_wl->the_index->index_next(get_thd_id(), m_item);
-				if (m_item == NULL)
-					break;
-			}
-#endif
+
 			Row * row = ((Row *)m_item->location);
 			Row * row_local; 
 			AccessType type = req->rtype;
-			
 			row_local = get_row(row, type);
 			if (row_local == NULL) {
-				rc = Abort;
+				rc = ABORT;
 				goto final;
 			}
 

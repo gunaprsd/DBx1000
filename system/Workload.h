@@ -20,8 +20,8 @@ class Workload
 {
 public:
 	/* Constructors/Destructors */
-						Workload();
-	virtual				~Workload();
+				Workload();
+	virtual		~Workload();
 
 	/* Initializers */
 	virtual Status	 	initialize			();

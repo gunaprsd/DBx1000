@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-enum Status { OK, Commit, Abort, WAIT, ERROR, FINISH};
+enum Status { OK, Commit, ABORT, WAIT, ERROR, FINISH};
 
 /* Thread */
 typedef uint64_t TxnId;

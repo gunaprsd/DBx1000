@@ -1,6 +1,9 @@
 #ifndef ROW_LOCK_H
 #define ROW_LOCK_H
 
+#include "Global.h"
+#include "Helper.h"
+
 struct LockEntry {
     LockType type;
     TransactionManager * txn;
@@ -10,7 +13,7 @@ struct LockEntry {
 
 class Row_lock {
 public:
-	void init(Row * row);
+	void initialize(Row * row);
 	// [DL_DETECT] txnids are the txn_ids that current txn is waiting for.
     Status lock_get(LockType type, TransactionManager * txn);
     Status lock_get(LockType type, TransactionManager * txn, uint64_t* &txnids, int &txncnt);
@@ -25,8 +28,8 @@ private:
 	void 		return_entry(LockEntry * entry);
 	Row * _row;
     LockType lock_type;
-    UInt32 owner_cnt;
-    UInt32 waiter_cnt;
+    uint32_t owner_cnt;
+    uint32_t waiter_cnt;
 	
 	// owners is a single linked list
 	// waiters is a double linked list 

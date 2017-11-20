@@ -10,7 +10,7 @@ struct TsReqEntry;
 
 class Row_silo {
 public:
-	void 				init(Row * row);
+	void 				initialize(Row * row);
 	Status 				access(TransactionManager * txn, TimestampType type, Row * local_row);
 	
 	bool				validate(Time tid, bool in_write_set);

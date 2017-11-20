@@ -4,7 +4,7 @@
 
 #include "Global.h"
 #include "Helper.h"
-
+#include "Types.h"
 
 class Row;
 class TransactionManager;
@@ -25,7 +25,7 @@ public:
 	void 			release_row(Row * row);
 	
 	TransactionManager * 		get_txn_man(int thd_id) { return _all_txns[thd_id]; };
-	void 			set_txn_man(TransactionManager * txn);
+	void 						set_txn_man(TransactionManager * txn);
 	
 	uint64_t 		get_epoch() { return *_epoch; };
 	void 	 		update_epoch();

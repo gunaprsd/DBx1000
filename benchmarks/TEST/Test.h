@@ -25,7 +25,7 @@ class TestTxnMan : public TransactionManager
 public:
 	void initialize(Thread * h_thd, Workload * h_wl, uint64_t part_id); 
 	Status run_txn(int type, int access_num);
-	Status run_transaction(Query * m_query) { assert(false); };
+	Status execute(Query * m_query) { assert(false); };
 private:
 	Status testReadwrite(int access_num);
 	Status testConflict(int access_num);

@@ -21,7 +21,7 @@ void YCSB_TxnMan::initialize(Thread * h_thd, Workload * h_wl, uint64_t thd_id) {
 	_wl = (YCSB_Workload *) h_wl;
 }
 
-Status YCSB_TxnMan::run_transaction(Query * query) {
+Status YCSB_TxnMan::execute(Query * query) {
 	Status rc;
 	YCSB_Query * m_query = (YCSB_Query *) query;
 	YCSB_Workload * wl = (YCSB_Workload *) workload;
@@ -32,7 +32,7 @@ Status YCSB_TxnMan::run_transaction(Query * query) {
 		ycsb_request * req = &m_query->requests[rid];
 		int part_id = wl->key_to_part( req->key );
 		bool finish_req = false;
-		UInt32 iteration = 0;
+		uint32_t iteration = 0;
 		while ( !finish_req ) {
 			if (iteration == 0) {
 				m_item = index_read(_wl->the_index, req->key, part_id);
@@ -50,7 +50,7 @@ Status YCSB_TxnMan::run_transaction(Query * query) {
 			
 			row_local = get_row(row, type);
 			if (row_local == NULL) {
-				rc = Abort;
+				rc = ABORT;
 				goto final;
 			}
 

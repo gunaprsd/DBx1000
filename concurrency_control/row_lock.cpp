@@ -1,11 +1,11 @@
 #include "Row.h"
 #include "row_lock.h"
 
-#include "../system/Allocator.h"
-#include "../system/Manager.h"
-#include "../system/TransactionManager.h"
+#include "Allocator.h"
+#include "Manager.h"
+#include "TransactionManager.h"
 
-void Row_lock::init(Row * row) {
+void Row_lock::initialize(Row * row) {
 	_row = row;
 	owners = NULL;
 	waiters_head = NULL;
@@ -71,7 +71,7 @@ Status Row_lock::lock_get(LockType type, TransactionManager * txn, uint64_t* &tx
 	if (conflict) { 
 		// Cannot be added to the owner list.
 		if (CC_ALG == NO_WAIT) {
-			rc = Abort;
+			rc = ABORT;
 			goto final;
 		} else if (CC_ALG == DL_DETECT) {
 			LockEntry * entry = get_entry();
@@ -119,7 +119,7 @@ Status Row_lock::lock_get(LockType type, TransactionManager * txn, uint64_t* &tx
                 rc = WAIT;
             }
             else 
-                rc = Abort;
+                rc = ABORT;
         }
 	} else {
 		LockEntry * entry = get_entry();

@@ -58,11 +58,11 @@ void Arena::free(void * ptr)
 }
 
 void Allocator::initialize_thread_arena() {
-	UInt32 buf_cnt = g_thread_cnt;
+	uint32_t buf_cnt = g_thread_cnt;
 	if (buf_cnt < g_init_parallelism)
 		buf_cnt = g_init_parallelism;
 	_arenas = new Arena * [buf_cnt];
-	for (UInt32 i = 0; i < buf_cnt; i++) {
+	for (uint32_t i = 0; i < buf_cnt; i++) {
 		_arenas[i] = new Arena[SizeNum];
 		for (int n = 0; n < SizeNum; n++) {
 			assert(sizeof(Arena) == 128);
@@ -132,7 +132,7 @@ void Allocator::free(void * ptr, uint64_t size)
 	if (NO_FREE) {} 
 	else if (THREAD_ALLOC) {
 		int arena_id = get_arena_id();
-		FreeBlock * block = (FreeBlock *)((UInt64)ptr - sizeof(FreeBlock));
+		FreeBlock * block = (FreeBlock *)((uint64_t)ptr - sizeof(FreeBlock));
 		int size = block->size;
 		int size_id = get_size_id(size);
 		_arenas[arena_id][size_id].free(ptr);

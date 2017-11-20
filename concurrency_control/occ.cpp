@@ -1,21 +1,21 @@
 #include "occ.h"
 
-#include "../system/Allocator.h"
-#include "../system/Global.h"
-#include "../system/Helper.h"
-#include "../system/Manager.h"
-#include "../system/TransactionManager.h"
-#include "row_occ.h"
+#include "Allocator.h"
+#include "Global.h"
+#include "Helper.h"
+#include "Manager.h"
+#include "TransactionManager.h"
+#include "RowOcc.h"
 
 
-set_ent::set_ent() {
+RWSetEntry::RWSetEntry() {
 	set_size = 0;
 	txn = NULL;
 	rows = NULL;
 	next = NULL;
 }
 
-void OptCC::init() {
+void OCCManager::initialize() {
 	tnc = 0;
 	his_len = 0;
 	active_len = 0;
@@ -23,22 +23,19 @@ void OptCC::init() {
 	lock_all = false;
 }
 
-Status OptCC::validate(TransactionManager * txn) {
-	Status rc;
+Status OCCManager::validate(TransactionManager * txn) {
+	Status status;
 #if PER_ROW_VALID
-	rc = per_row_validate(txn);
+	status = per_row_validate(txn);
 #else
-	rc = central_validate(txn);
+	status = central_validate(txn);
 #endif
-	return rc;
+	return status;
 }
 
-Status 
-OptCC::per_row_validate(TransactionManager * txn) {
-	Status rc = OK;
-#if CC_ALG == OCC
+Status OCCManager::per_row_validate(TransactionManager * txn) {
+	Status status = OK;
 	// sort all rows accessed in primary key order.
-	// TODO for migration, should first sort by partition id
 	for (int i = txn->row_cnt - 1; i > 0; i--) {
 		for (int j = 0; j < i; j ++) {
 			int tabcmp = strcmp(txn->accesses[j]->orig_row->get_table_name(), 
@@ -50,76 +47,76 @@ OptCC::per_row_validate(TransactionManager * txn) {
 			}
 		}
 	}
-#if DEBUG_ASSERT
-	for (int i = txn->row_cnt - 1; i > 0; i--) {
-		int tabcmp = strcmp(txn->accesses[i-1]->orig_row->get_table_name(), 
-		txn->accesses[i]->orig_row->get_table_name());
-		assert(tabcmp < 0 || tabcmp == 0 && txn->accesses[i]->orig_row->get_primary_key() > 
-		txn->accesses[i-1]->orig_row->get_primary_key());
-	}
-#endif
-	// lock all rows in the readset and writeset.
-	// Validate each access
+
+	// lock, validate each access and unlock
 	bool ok = true;
-	int lock_cnt = 0;
-	for (int i = 0; i < txn->row_cnt && ok; i++) {
-		lock_cnt ++;
-		txn->accesses[i]->orig_row->manager->latch();
-		ok = txn->accesses[i]->orig_row->manager->validate( txn->start_ts );
-	}
-	if (ok) {
-		// Validation passed.
-		// advance the global timestamp and get the end_ts
-		txn->end_ts = glob_manager->get_ts( txn->get_thd_id() );
-		// write to each row and update wts
-		txn->cleanup(OK);
-		rc = OK;
-	} else {
-		txn->cleanup(Abort);
-		rc = Abort;
+	int lock_count = 0;
+	for (uint32_t i = 0; i < txn->row_cnt && ok; i++) {
+		lock_count ++;
+		RowOcc* manager = txn->accesses[i]->orig_row->manager;
+		manager->latch();
+		ok = manager->validate(txn->start_ts);
 	}
 
-	for (int i = 0; i < lock_cnt; i++) 
-		txn->accesses[i]->orig_row->manager->release();
-#endif
-	return rc;
+	if (ok) {
+		txn->end_ts = glob_manager->get_ts( txn->get_thread_id() );
+		txn->cleanup(OK);
+		status = OK;
+	} else {
+		txn->cleanup(ABORT);
+		status = ABORT;
+	}
+
+	for (int i = 0; i < lock_count; i++) {
+		RowOcc* manager = txn->accesses[i]->orig_row->manager;
+		manager->release();
+	}
+	return status;
 }
 
-Status OptCC::central_validate(TransactionManager * txn) {
-	Status rc;
-	uint64_t start_tn = txn->start_ts;
-	uint64_t finish_tn;
-	set_ent ** finish_active;
-	uint64_t f_active_len;
+Status OCCManager::central_validate(TransactionManager * txn) {
+	Status status;
+
+	uint64_t start_ts;
+	uint64_t finish_ts;
+
+	RWSetEntry * * 	finish_active;
+	uint64_t 		f_active_len;
+
 	bool valid = true;
-	// OptCC is centralized. No need to do per partition malloc.
-	set_ent * wset;
-	set_ent * rset;
+
+	start_ts = txn->start_ts;
+	RWSetEntry * wset = NULL;
+	RWSetEntry * rset = NULL;
 	get_rw_set(txn, rset, wset);
+
 	bool readonly = (wset->set_size == 0);
-	set_ent * his;
-	set_ent * ent;
+	RWSetEntry * his;
+	RWSetEntry * entry;
 	int n = 0;
 
 	pthread_mutex_lock( &latch );
-	finish_tn = tnc;
-	ent = active;
+	finish_ts = tnc;
+	entry = active;
 	f_active_len = active_len;
-	finish_active = (set_ent**) mem_allocator.allocate(sizeof(set_ent *) * f_active_len, 0);
-	while (ent != NULL) {
-		finish_active[n++] = ent;
-		ent = ent->next;
+	finish_active = (RWSetEntry**) mem_allocator.allocate(sizeof(RWSetEntry *) * f_active_len, 0);
+	while (entry != NULL) {
+		finish_active[n++] = entry;
+		entry = entry->next;
 	}
+
 	if ( !readonly ) {
 		active_len ++;
 		STACK_PUSH(active, wset);
 	}
+
 	his = history;
 	pthread_mutex_unlock( &latch );
-	if (finish_tn > start_tn) {
-		while (his && his->tn > finish_tn) 
+
+	if (finish_ts > start_ts) {
+		while (his && his->tn > finish_ts) 
 			his = his->next;
-		while (his && his->tn > start_tn) {
+		while (his && his->tn > start_ts) {
 			valid = test_valid(his, rset);
 			if (!valid) 
 				goto final;
@@ -127,8 +124,8 @@ Status OptCC::central_validate(TransactionManager * txn) {
 		}
 	}
 
-	for (UInt32 i = 0; i < f_active_len; i++) {
-		set_ent * wact = finish_active[i];
+	for (uint32_t i = 0; i < f_active_len; i++) {
+		RWSetEntry * wact = finish_active[i];
 		valid = test_valid(wact, rset);
 		if (valid) {
 			valid = test_valid(wact, wset);
@@ -136,24 +133,26 @@ Status OptCC::central_validate(TransactionManager * txn) {
 			goto final;
 	}
 final:
-	if (valid) 
+	if (valid) {
 		txn->cleanup(OK);
-	mem_allocator.free(rset, sizeof(set_ent));
+	}
+	mem_allocator.free(rset, sizeof(RWSetEntry));
 
 	if (!readonly) {
 		// only update active & tnc for non-readonly transactions
 		pthread_mutex_lock( &latch );
-		set_ent * act = active;
-		set_ent * prev = NULL;
+		RWSetEntry * act = active;
+		RWSetEntry * prev = NULL;
 		while (act->txn != txn) {
 			prev = act;
 			act = act->next;
 		}
 		assert(act->txn == txn);
-		if (prev != NULL)
+		if (prev != NULL) {
 			prev->next = act->next;
-		else
+		} else {
 			active = act->next;
+		}
 		active_len --;
 		if (valid) {
 			if (history)
@@ -165,18 +164,19 @@ final:
 		}
 		pthread_mutex_unlock( &latch );
 	}
+
 	if (valid) {
-		rc = OK;
+		status = OK;
 	} else {
-		txn->cleanup(Abort);
-		rc = Abort;
+		txn->cleanup(ABORT);
+		status = ABORT;
 	}
-	return rc;
+	return status;
 }
 
-Status OptCC::get_rw_set(TransactionManager * txn, set_ent * &rset, set_ent *& wset) {
-	wset = (set_ent*) mem_allocator.allocate(sizeof(set_ent), 0);
-	rset = (set_ent*) mem_allocator.allocate(sizeof(set_ent), 0);
+Status OCCManager::get_rw_set(TransactionManager * txn, RWSetEntry * &rset, RWSetEntry *& wset) {
+	wset = (RWSetEntry*) mem_allocator.allocate(sizeof(RWSetEntry), 0);
+	rset = (RWSetEntry*) mem_allocator.allocate(sizeof(RWSetEntry), 0);
 	wset->set_size = txn->wr_cnt;
 	rset->set_size = txn->row_cnt - txn->wr_cnt;
 	wset->rows = (Row **) mem_allocator.allocate(sizeof(Row *) * wset->set_size, 0);
@@ -184,8 +184,8 @@ Status OptCC::get_rw_set(TransactionManager * txn, set_ent * &rset, set_ent *& w
 	wset->txn = txn;
 	rset->txn = txn;
 
-	UInt32 n = 0, m = 0;
-	for (int i = 0; i < txn->row_cnt; i++) {
+	uint32_t n = 0, m = 0;
+	for (uint32_t i = 0; i < txn->row_cnt; i++) {
 		if (txn->accesses[i]->type == WR)
 			wset->rows[n ++] = txn->accesses[i]->orig_row;
 		else 
@@ -197,9 +197,9 @@ Status OptCC::get_rw_set(TransactionManager * txn, set_ent * &rset, set_ent *& w
 	return OK;
 }
 
-bool OptCC::test_valid(set_ent * set1, set_ent * set2) {
-	for (UInt32 i = 0; i < set1->set_size; i++)
-		for (UInt32 j = 0; j < set2->set_size; j++) {
+bool OCCManager::test_valid(RWSetEntry * set1, RWSetEntry * set2) {
+	for (uint32_t i = 0; i < set1->set_size; i++)
+		for (uint32_t j = 0; j < set2->set_size; j++) {
 			if (set1->rows[i] == set2->rows[j]) {
 				return false;
 			}

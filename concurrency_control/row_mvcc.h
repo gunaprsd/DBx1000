@@ -12,45 +12,45 @@ class TransactionManager;
 struct WriteHisEntry {
 	bool valid;		// whether the entry contains a valid version
 	bool reserved; 	// when valid == false, whether the entry is reserved by a P_REQ 
-	ts_t ts;
+	Time ts;
 	Row * row;
 };
 
 struct ReqEntry {
 	bool valid;
-	TsType type; // P_REQ or R_REQ
-	ts_t ts;
+	TimestampType type; // P_REQ or R_REQ
+	Time ts;
 	TransactionManager * txn;
-	ts_t time;
+	Time time;
 };
 
 
 class Row_mvcc {
 public:
-	void init(Row * row);
-	Status access(TransactionManager * txn, TsType type, Row * row);
+	void initialize(Row * row);
+	Status access(TransactionManager * txn, TimestampType type, Row * row);
 private:
  	pthread_mutex_t * latch;
 	volatile bool blatch;
 
 	Row * _row;
 
-	Status conflict(TsType type, ts_t ts, uint64_t thd_id = 0);
-	void update_buffer(TransactionManager * txn, TsType type);
-	void buffer_req(TsType type, TransactionManager * txn, bool served);
+	Status conflict(TimestampType type, Time ts, uint64_t thd_id = 0);
+	void update_buffer(TransactionManager * txn, TimestampType type);
+	void buffer_req(TimestampType type, TransactionManager * txn, bool served);
 
 	// Invariant: all valid entries in _requests have greater ts than any entry in _write_history 
 	Row * 		_latest_row;
-	ts_t			_latest_wts;
-	ts_t			_oldest_wts;
+	Time			_latest_wts;
+	Time			_oldest_wts;
 	WriteHisEntry * _write_history;
 	// the following is a small optimization.
 	// the timestamp for the served prewrite request. There should be at most one 
 	// served prewrite request. 
 	bool  			_exists_prewrite;
-	ts_t 			_prewrite_ts;
+	Time 			_prewrite_ts;
 	uint32_t 		_prewrite_his_id;
-	ts_t 			_max_served_rts;
+	Time 			_max_served_rts;
 
 	// _requests only contains pending requests.
 	ReqEntry * 		_requests;
@@ -63,7 +63,7 @@ private:
 	// list = 0: _write_history
 	// list = 1: _requests
 	void double_list(uint32_t list);
-	Row * reserveRow(ts_t ts, TransactionManager * txn);
+	Row * reserveRow(Time ts, TransactionManager * txn);
 };
 
 #endif

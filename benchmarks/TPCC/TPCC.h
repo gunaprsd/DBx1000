@@ -63,7 +63,7 @@ class tpcc_txn_man : public TransactionManager
 {
 public:
 	void initialize(Thread * h_thd, Workload * h_wl, uint64_t part_id); 
-	Status run_transaction(Query * query);
+	Status execute(Query * query);
 private:
 	tpcc_wl * _wl;
 	Status run_payment(TPCCQuery * m_query);

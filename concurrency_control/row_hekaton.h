@@ -14,19 +14,19 @@ class TransactionManager;
 struct WriteHisEntry {
 	bool begin_txn;	
 	bool end_txn;
-	ts_t begin;
-	ts_t end;
-	row_t * row;
+	Time begin;
+	Time end;
+	Row * row;
 };
 
 #define INF UINT64_MAX
 
 class Row_hekaton {
 public:
-	void 			init(row_t * row);
-	RC 				access(TransactionManager * txn, TsType type, row_t * row);
-	RC 				prepare_read(TransactionManager * txn, row_t * row, ts_t commit_ts);
-	void 			post_process(TransactionManager * txn, ts_t commit_ts, RC rc);
+	void 			initialize(Row * row);
+	Status 			access(TransactionManager * txn, TimestampType type, Row * row);
+	Status 			prepare_read(TransactionManager * txn, Row * row, Time commit_ts);
+	void 			post_process(TransactionManager * txn, Time commit_ts, Status rc);
 
 private:
 	volatile bool 	blatch;

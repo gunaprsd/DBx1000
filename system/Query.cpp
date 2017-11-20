@@ -30,7 +30,7 @@ Scheduler::initialize(Workload * h_wl) {
 #endif
 	int64_t begin = get_server_clock();
 	pthread_t p_thds[g_thread_cnt - 1];
-	for (UInt32 i = 0; i < g_thread_cnt - 1; i++) {
+	for (uint32_t i = 0; i < g_thread_cnt - 1; i++) {
 		pthread_create(&p_thds[i], NULL, InitializeQueryQueue, this);
 	}
 	InitializeQueryQueue(this);
@@ -117,7 +117,7 @@ void QueryQueue::initialize(Workload * wl, ThreadId id)
 	uint64_t request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
 	queries = (YCSB_Query *) mem_allocator.allocate(sizeof(YCSB_Query) * request_cnt, id);
 	srand48_r(id + 1, &buffer);
-	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
+	for (uint32_t qid = 0; qid < request_cnt; qid ++) {
 		new(&queries[qid]) YCSB_Query();
 		queries[qid].init(id, wl, this);
 	}
@@ -132,7 +132,7 @@ void QueryQueue::initialize(Workload * h_wl, ThreadId thread_id)
 	request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
 	queries = (experiment_query *) mem_allocator.allocate(sizeof(experiment_query) * request_cnt, thread_id);
 	srand48_r(thread_id + 1, &buffer);
-	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
+	for (uint32_t qid = 0; qid < request_cnt; qid ++) {
 		new(&queries[qid]) experiment_query();
 		queries[qid].initialize(thread_id, h_wl, this);
 	}
@@ -146,7 +146,7 @@ void QueryQueue::initialize(Workload * h_wl, ThreadId thread_id)
 	current = 0;
 	request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
 	queries = (tpcc_query *) _mm_malloc(sizeof(tpcc_query) * request_cnt, 64);
-	for (UInt32 qid = 0; qid < request_cnt; qid ++) {
+	for (uint32_t qid = 0; qid < request_cnt; qid ++) {
 		new(&queries[qid]) tpcc_query();
 		queries[qid].initialize(thread_id, h_wl);
 	}

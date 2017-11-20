@@ -80,7 +80,7 @@ int VLLMan::beginTxn(TransactionManager * txn, Query * query, TxnQEntry *& entry
 	txn->vll_txn_type = VLL_FREE;
 	assert(WORKLOAD == YCSB);
 	
-	for (int rid = 0; rid < txn->row_cnt; rid ++ ) {
+	for (uint32_t rid = 0; rid < txn->row_cnt; rid ++ ) {
 		AccessType type = txn->accesses[rid]->type;
 		if (txn->accesses[rid]->orig_row->manager->insert_access(type))
 			txn->vll_txn_type = VLL_BLOCKED;
@@ -103,7 +103,7 @@ void VLLMan::execute(TransactionManager * txn, Query * query)
 	YCSB_Workload * wl = (YCSB_Workload *) txn->get_workload();
 	Catalog * schema = wl->the_table->get_schema();
 	uint64_t average;
-	for (int rid = 0; rid < txn->row_cnt; rid ++) {
+	for (uint32_t rid = 0; rid < txn->row_cnt; rid ++) {
 		Row * row = txn->accesses[rid]->orig_row;
 		AccessType type = txn->accesses[rid]->type;
 		if (type == RD) {
@@ -128,7 +128,7 @@ void VLLMan::finishTxn(TransactionManager * txn, TxnQEntry * entry)
 {
 	pthread_mutex_lock(&_mutex);
 	
-	for (int rid = 0; rid < txn->row_cnt; rid ++ ) {
+	for (uint32_t rid = 0; rid < txn->row_cnt; rid ++ ) {
 		AccessType type = txn->accesses[rid]->type;
 		txn->accesses[rid]->orig_row->manager->remove_access(type);
 	}

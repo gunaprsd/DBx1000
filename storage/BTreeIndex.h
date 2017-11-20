@@ -14,12 +14,12 @@ typedef struct BTreeNode
 	bool is_leaf;
 	Key * keys;
 	BTreeNode * parent;
-	UInt32 num_keys;
+	uint32_t num_keys;
 	BTreeNode * next;
 	bool latch;
 	pthread_mutex_t locked;
 	latch_t latch_type;
-	UInt32 share_cnt;
+	uint32_t share_cnt;
 } BTreeNode;
 
 struct glob_param {
@@ -58,14 +58,14 @@ private:
 	Status			insert_into_leaf(glob_param params, BTreeNode * leaf, Key key, Record * item);
 	// handle split
 	Status 			split_lf_insert(glob_param params, BTreeNode * leaf, Key key, Record * item);
-	Status 			split_nl_insert(glob_param params, BTreeNode * node, UInt32 left_index, Key key, BTreeNode * right);
+	Status 			split_nl_insert(glob_param params, BTreeNode * node, uint32_t left_index, Key key, BTreeNode * right);
 	Status 			insert_into_parent(glob_param params, BTreeNode * left, Key key, BTreeNode * right);
 	Status 			insert_into_new_root(glob_param params, BTreeNode * left, Key key, BTreeNode * right);
 
 	int				leaf_has_key(BTreeNode * leaf, Key key);
 	
-	UInt32 			cut(UInt32 length);
-	UInt32	 		order; // # of keys in a node(for both leaf and non-leaf)
+	uint32_t 			cut(uint32_t length);
+	uint32_t	 		order; // # of keys in a node(for both leaf and non-leaf)
 	BTreeNode ** 		roots; // each partition has a different root
 	BTreeNode *   		find_root(uint64_t part_id);
 
@@ -76,7 +76,7 @@ private:
 
 	// the leaf and the idx within the leaf that the thread last accessed.
 	BTreeNode *** cur_leaf_per_thd;
-	UInt32 ** 		cur_idx_per_thd;
+	uint32_t ** 		cur_idx_per_thd;
 };
 
 #endif

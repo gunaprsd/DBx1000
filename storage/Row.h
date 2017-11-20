@@ -18,7 +18,7 @@ class Row_lock;
 class Row_mvcc;
 class Row_hekaton;
 class Row_ts;
-class Row_occ;
+class RowOcc;
 class Row_tictoc;
 class Row_silo;
 class Row_vll;
@@ -41,10 +41,10 @@ public:
 	uint64_t 		get_field_cnt	();
 
 	/* Private Fields */
-	PartId 		get_part_id		();
-	RowId 		get_row_id		();
-	Key 			get_primary_key	();
-	void 		set_primary_key	(Key key);
+	PartId 			get_part_id		();
+	RowId 			get_row_id		();
+	Key 				get_primary_key	();
+	void 			set_primary_key	(Key key);
 
 
 	/* Crude Data Modifiers */
@@ -86,7 +86,7 @@ public:
   #elif CC_ALG == HEKATON
   	Row_hekaton * manager;
   #elif CC_ALG == OCC
-  	Row_occ * manager;
+  	RowOcc * manager;
   #elif CC_ALG == TICTOC
   	Row_tictoc * manager;
   #elif CC_ALG == SILO
@@ -166,10 +166,6 @@ inline void	Row::set_data(char * data, uint64_t offset, uint64_t size)
 	memcpy(& (this->data[offset]), data, size);
 }
 
-inline void 	Row::copy(Row * src)
-{
-	set_data(src->get_data(), src->get_tuple_size());
-}
 
 inline void 	Row::set_data(char * data, uint64_t size)
 {

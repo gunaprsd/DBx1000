@@ -33,7 +33,7 @@ class YCSB_TxnMan : public TransactionManager
 {
 public:
 	void initialize(Thread * h_thd, Workload * h_wl, PartId part_id);
-	Status run_transaction(Query * query);
+	Status execute(Query * query);
 private:
 	uint64_t row_cnt;
 	YCSB_Workload * _wl;

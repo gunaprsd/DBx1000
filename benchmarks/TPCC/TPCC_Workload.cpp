@@ -80,13 +80,13 @@ Status tpcc_wl::initialize_table() {
 Status tpcc_wl::get_txn_manager(TransactionManager *& txn_manager, Thread * h_thd) {
 	txn_manager = (tpcc_txn_man *) _mm_malloc( sizeof(tpcc_txn_man), 64);
 	new(txn_manager) tpcc_txn_man();
-	txn_manager->initialize(h_thd, this, h_thd->get_thd_id());
+	txn_manager->initialize(h_thd, this, h_thd->get_thread_id());
 	return OK;
 }
 
 // TODO ITEM table is assumed to be in partition 0
 void tpcc_wl::init_tab_item() {
-	for (UInt32 i = 1; i <= g_max_items; i++) {
+	for (uint32_t i = 1; i <= g_max_items; i++) {
 		Row * row;
 		uint64_t row_id;
 		t_item->new_row(row, 0, row_id);
@@ -178,7 +178,7 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 
 void tpcc_wl::init_tab_stock(uint64_t wid) {
 	
-	for (UInt32 sid = 1; sid <= g_max_items; sid++) {
+	for (uint32_t sid = 1; sid <= g_max_items; sid++) {
 		Row * row;
 		uint64_t row_id;
 		t_stock->new_row(row, 0, row_id);
@@ -218,7 +218,7 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 
 void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 	assert(g_cust_per_dist >= 1000);
-	for (UInt32 cid = 1; cid <= g_cust_per_dist; cid++) {
+	for (uint32_t cid = 1; cid <= g_cust_per_dist; cid++) {
 		Row * row;
 		uint64_t row_id;
 		t_customer->new_row(row, 0, row_id);
@@ -304,7 +304,7 @@ void tpcc_wl::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
 void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 	uint64_t perm[g_cust_per_dist]; 
 	init_permutation(perm, wid); /* initialize permutation of customer numbers */
-	for (UInt32 oid = 1; oid <= g_cust_per_dist; oid++) {
+	for (uint32_t oid = 1; oid <= g_cust_per_dist; oid++) {
 		Row * row;
 		uint64_t row_id;
 		t_order->new_row(row, 0, row_id);

@@ -8,7 +8,7 @@
 
 #if CC_ALG == HEKATON
 
-void Row_hekaton::init(row_t * row) {
+void Row_hekaton::init(Row * row) {
 	_his_len = 4;
 
 	_write_history = (WriteHisEntry *) _mm_malloc(sizeof(WriteHisEntry) * _his_len, 64);
@@ -48,25 +48,25 @@ Row_hekaton::doubleHistory()
 	_his_len *= 2;
 }
 
-RC Row_hekaton::access(txn_man * txn, TsType type, row_t * row) {
-	RC rc = RCOK;
-	ts_t ts = txn->get_ts();
+Status Row_hekaton::access(TransactionManager * txn, TimestampType type, Row * row) {
+	Status rc = OK;
+	Time ts = txn->get_timestamp();
 	while (!ATOM_CAS(blatch, false, true))
 		PAUSE
 	assert(_write_history[_his_latest].end == INF || _write_history[_his_latest].end_txn);
 	if (type == R_REQ) {
 		if (ISOLATION_LEVEL == REPEATABLE_READ) {
-			rc = RCOK;
+			rc = OK;
 			txn->cur_row = _write_history[_his_latest].row;
 		} else if (ts < _write_history[_his_oldest].begin) { 
-			rc = Abort;
+			rc = ABORT;
 		} else if (ts > _write_history[_his_latest].begin) {
 			// TODO. should check the next history entry. If that entry is locked by a preparing txn,
 			// may create a commit dependency. For now, I always return non-speculative entries.
-			rc = RCOK;
+			rc = OK;
 			txn->cur_row = _write_history[_his_latest].row;
 		} else {
-			rc = RCOK;
+			rc = OK;
 			// ts is between _oldest_wts and _latest_wts, should find the correct version
 			uint32_t i = _his_latest;
 			bool find = false;
@@ -85,17 +85,17 @@ RC Row_hekaton::access(txn_man * txn, TsType type, row_t * row) {
 		}
 	} else if (type == P_REQ) {
 		if (_exists_prewrite || ts < _write_history[_his_latest].begin) {
-			rc = Abort;
+			rc = ABORT;
 		} else {
-			rc = RCOK;
+			rc = OK;
 			_exists_prewrite = true;
 			uint32_t id = reserveRow(txn);
 			uint32_t pre_id = (id == 0)? _his_len - 1 : id - 1;
 			_write_history[id].begin_txn = true;
-			_write_history[id].begin = txn->get_txn_id();
+			_write_history[id].begin = txn->get_transaction_id();
 			_write_history[pre_id].end_txn = true;
-			_write_history[pre_id].end = txn->get_txn_id();
-			row_t * res_row = _write_history[id].row;
+			_write_history[pre_id].end = txn->get_transaction_id();
+			Row * res_row = _write_history[id].row;
 			assert(res_row);
 			res_row->copy(_write_history[_his_latest].row);
 			txn->cur_row = res_row;
@@ -108,11 +108,11 @@ RC Row_hekaton::access(txn_man * txn, TsType type, row_t * row) {
 }
 
 uint32_t 
-Row_hekaton::reserveRow(txn_man * txn)
+Row_hekaton::reserveRow(TransactionManager * txn)
 {
 	// Garbage Collection
 	uint32_t idx;
-	ts_t min_ts = glob_manager->get_min_ts(txn->get_thd_id());
+	Time min_ts = glob_manager->get_min_ts(txn->get_thread_id());
 	if ((_his_latest + 1) % _his_len == _his_oldest // history is full
 		&& min_ts > _write_history[_his_oldest].end) 
 	{
@@ -141,37 +141,36 @@ Row_hekaton::reserveRow(txn_man * txn)
 
 	// some entries are not taken. But the row of that entry is NULL.
 	if (!_write_history[idx].row) {
-		_write_history[idx].row = (row_t *) _mm_malloc(sizeof(row_t), 64);
-		_write_history[idx].row->init(MAX_TUPLE_SIZE);
+		_write_history[idx].row = (Row *) _mm_malloc(sizeof(Row), 64);
+		_write_history[idx].row->initialize(MAX_TUPLE_SIZE);
 	}
 	return idx;
 }
 
-RC 
-Row_hekaton::prepare_read(txn_man * txn, row_t * row, ts_t commit_ts)
+Status Row_hekaton::prepare_read(TransactionManager * txn, Row * row, Time commit_ts)
 {
-	RC rc;
+	Status rc;
 	while (!ATOM_CAS(blatch, false, true))
 		PAUSE
 	// TODO may pass in a pointer to the history entry to reduce the following scan overhead.
 	uint32_t idx = _his_latest;
 	while (true) {
 		if (_write_history[idx].row == row) {
-			if (txn->get_ts() < _write_history[idx].begin) {
-				rc = Abort;
+			if (txn->get_timestamp() < _write_history[idx].begin) {
+				rc = ABORT;
 			} else if (!_write_history[idx].end_txn && _write_history[idx].end > commit_ts) 
-				rc = RCOK;
+				rc = OK;
 			else if (!_write_history[idx].end_txn && _write_history[idx].end < commit_ts) {
-				rc = Abort;
+				rc = ABORT;
 			} else { 
 				// TODO. if the end is a txn id, should check that status of that txn.
 				// but for simplicity, we just commit
-				rc = RCOK;
+				rc = OK;
 			}
 			break;
 		}
 		if (idx == _his_oldest) {
-			rc = Abort;
+			rc = ABORT;
 			break;
 		}
 		idx = (idx == 0)? _his_len - 1 : idx - 1;
@@ -181,16 +180,16 @@ Row_hekaton::prepare_read(txn_man * txn, row_t * row, ts_t commit_ts)
 }
 
 void
-Row_hekaton::post_process(txn_man * txn, ts_t commit_ts, RC rc)
+Row_hekaton::post_process(TransactionManager * txn, Time commit_ts, Status rc)
 {
 	while (!ATOM_CAS(blatch, false, true))
 		PAUSE
 
 	WriteHisEntry * entry = &_write_history[ (_his_latest + 1) % _his_len ];
-	assert(entry->begin_txn && entry->begin == txn->get_txn_id());
+	assert(entry->begin_txn && entry->begin == txn->get_transaction_id());
 	_write_history[ _his_latest ].end_txn = false;
 	_exists_prewrite = false;
-	if (rc == RCOK) {
+	if (rc == OK) {
 		assert(commit_ts > _write_history[_his_latest].begin);
 		_write_history[ _his_latest ].end = commit_ts;
 		entry->begin = commit_ts;

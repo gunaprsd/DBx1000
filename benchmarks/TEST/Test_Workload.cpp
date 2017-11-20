@@ -50,9 +50,9 @@ Status TestWorkload::initialize_table() {
 
 Status TestWorkload::get_txn_manager(TransactionManager *& txn_manager, Thread * h_thd) {
 	txn_manager = (TestTxnMan *)
-		mem_allocator.allocate( sizeof(TestTxnMan), h_thd->get_thd_id() );
+		mem_allocator.allocate( sizeof(TestTxnMan), h_thd->get_thread_id() );
 	new(txn_manager) TestTxnMan();
-	txn_manager->initialize(h_thd, this, h_thd->get_thd_id());
+	txn_manager->initialize(h_thd, this, h_thd->get_thread_id());
 	return OK;
 }
 
@@ -61,7 +61,7 @@ void TestWorkload::summarize() {
 	if (g_test_case == CONFLICT) {
 		assert(curr_time - time > g_thread_cnt * 1e9);
 		int total_wait_cnt = 0;
-		for (UInt32 tid = 0; tid < g_thread_cnt; tid ++) {
+		for (uint32_t tid = 0; tid < g_thread_cnt; tid ++) {
 			total_wait_cnt += stats._stats[tid]->wait_cnt;
 		}
 		printf("CONFLICT TEST. PASSED.\n");

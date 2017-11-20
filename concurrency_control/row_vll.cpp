@@ -5,7 +5,7 @@
 #include "../system/Helper.h"
 
 void 
-Row_vll::init(Row * row) {
+Row_vll::initialize(Row * row) {
 	_row = row;
 	cs = 0;
 	cx = 0;

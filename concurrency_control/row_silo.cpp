@@ -7,7 +7,7 @@
 #if CC_ALG==SILO
 
 void 
-Row_silo::init(Row * row)
+Row_silo::initialize(Row * row)
 {
 	_row = row;
 #if ATOMIC_WORD

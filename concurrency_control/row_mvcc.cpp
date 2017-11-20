@@ -9,7 +9,7 @@
 
 #if CC_ALG == MVCC
 
-void Row_mvcc::init(Row * row) {
+void Row_mvcc::initialize(Row * row) {
 	_row = row;
 	_his_len = 4;
 	_req_len = _his_len;
@@ -34,7 +34,7 @@ void Row_mvcc::init(Row * row) {
 	pthread_mutex_init(latch, NULL);
 }
 
-void Row_mvcc::buffer_req(TsType type, txn_man * txn, bool served)
+void Row_mvcc::buffer_req(TimestampType type, TransactionManager * txn, bool served)
 {
 	uint32_t access_num = 1;
 	while (true) {
@@ -45,7 +45,7 @@ void Row_mvcc::buffer_req(TsType type, txn_man * txn, bool served)
 			if (!_requests[i].valid) {
 				_requests[i].valid = true;
 				_requests[i].type = type;
-				_requests[i].ts = txn->get_ts();
+				_requests[i].ts = txn->get_timestamp();
 				_requests[i].txn = txn;
 				_requests[i].time = get_sys_clock();
 				return;
@@ -95,9 +95,9 @@ Row_mvcc::double_list(uint32_t list)
 	}
 }
 
-Status Row_mvcc::access(txn_man * txn, TsType type, Row * row) {
+Status Row_mvcc::access(TransactionManager * txn, TimestampType type, Row * row) {
 	Status rc = OK;
-	ts_t ts = txn->get_ts();
+	Time ts = txn->get_timestamp();
 uint64_t t1 = get_sys_clock();
 	if (g_central_man)
 		glob_manager->lock_row(_row);
@@ -106,7 +106,7 @@ uint64_t t1 = get_sys_clock();
 			PAUSE
 		//pthread_mutex_lock( latch );
 uint64_t t2 = get_sys_clock();
-INC_STATS(txn->get_thd_id(), debug4, t2 - t1);
+INC_STATS(txn->get_thread_id(), debug4, t2 - t1);
 
 #if DEBUG_CC
 	for (uint32_t i = 0; i < _req_len; i++)
@@ -119,7 +119,7 @@ INC_STATS(txn->get_thd_id(), debug4, t2 - t1);
 	if (type == R_REQ) {
 		if (ts < _oldest_wts)
 			// the version was already recycled... This should be very rare
-			rc = Abort;
+			rc = ABORT;
 		else if (ts > _latest_wts) {
 			if (_exists_prewrite && _prewrite_ts < ts)
 			{
@@ -155,7 +155,7 @@ INC_STATS(txn->get_thd_id(), debug4, t2 - t1);
 		}
 	} else if (type == P_REQ) {
 		if (ts < _latest_wts || ts < _max_served_rts || (_exists_prewrite && _prewrite_ts > ts))
-			rc = Abort;
+			rc = ABORT;
 		else if (_exists_prewrite) {  // _prewrite_ts < ts
 			rc = WAIT;
 			buffer_req(P_REQ, txn, false);
@@ -186,7 +186,7 @@ INC_STATS(txn->get_thd_id(), debug4, t2 - t1);
 		update_buffer(txn, XP_REQ);
 	} else 
 		assert(false);
-INC_STATS(txn->get_thd_id(), debug3, get_sys_clock() - t2);
+INC_STATS(txn->get_thread_id(), debug3, get_sys_clock() - t2);
 	if (g_central_man)
 		glob_manager->release_row(_row);
 	else
@@ -197,17 +197,17 @@ INC_STATS(txn->get_thd_id(), debug3, get_sys_clock() - t2);
 }
 
 Row *
-Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
+Row_mvcc::reserveRow(Time ts, TransactionManager * txn)
 {
 	assert(!_exists_prewrite);
 	
 	// Garbage Collection
-	ts_t min_ts = glob_manager->get_min_ts(txn->get_thd_id());
+	Time min_ts = glob_manager->get_min_ts(txn->get_thread_id());
 	if (_oldest_wts < min_ts && 
 		_num_versions == _his_len)
 	{
-		ts_t max_recycle_ts = 0;
-		ts_t idx = _his_len;
+		Time max_recycle_ts = 0;
+		Time idx = _his_len;
 		for (uint32_t i = 0; i < _his_len; i++) {
 			if (_write_history[i].valid
 				&& _write_history[i].ts < min_ts
@@ -270,7 +270,7 @@ Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 	if (idx == _his_len) { 
 		if (_his_len >= g_thread_cnt) {
 			// all entries are taken. recycle the oldest version if _his_len is too long already
-			ts_t min_ts = UINT64_MAX; 
+			Time min_ts = UINT64_MAX;
 			for (uint32_t i = 0; i < _his_len; i++) {
 				if (_write_history[i].valid && _write_history[i].ts < min_ts) {
 					min_ts = _write_history[i].ts;
@@ -311,12 +311,12 @@ Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 	return _write_history[idx].row;
 }
 
-void Row_mvcc::update_buffer(txn_man * txn, TsType type) {
+void Row_mvcc::update_buffer(TransactionManager * txn, TimestampType type) {
 	// the current txn performs WR or XP.
 	// immediate following R_REQ and P_REQ should return.
-	ts_t ts = txn->get_ts();
+	Time ts = txn->get_timestamp();
 	// figure out the ts for the next pending P_REQ
-	ts_t next_pre_ts = UINT64_MAX ;
+	Time next_pre_ts = UINT64_MAX ;
 	for (uint32_t i = 0; i < _req_len; i++)	
 		if (_requests[i].valid && _requests[i].type == P_REQ
 			&& _requests[i].ts > ts

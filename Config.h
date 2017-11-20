@@ -25,13 +25,13 @@
 #define MEM_ALLIGN					8 
 
 // [THREAD_ALLOC]
-#define THREAD_ALLOC				false
+#define THREAD_ALLOC					false
 #define THREAD_ARENA_SIZE			(1UL << 22) 
-#define MEM_PAD 					true
+#define MEM_PAD 						true
 
 // [PART_ALLOC] 
 #define PART_ALLOC 					false
-#define MEM_SIZE					(1UL << 30) 
+#define MEM_SIZE						(1UL << 30)
 #define NO_FREE						false
 
 /***********************************************/
@@ -39,7 +39,7 @@
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL, TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
-#define CC_ALG 						VLL
+#define CC_ALG 						NO_WAIT
 #define ISOLATION_LEVEL 				SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.
@@ -109,28 +109,28 @@
 /***********************************************/
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
-#define QUERY_INTVL 				1UL
-#define MAX_TXN_PER_PART 			200000
+#define QUERY_INTVL 					1UL
+#define MAX_TXN_PER_PART 			2000000
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 
 // === [EXPERIMENT & TPCC]
-#define INIT_PARALLELISM			40
+#define INIT_PARALLELISM				40
 #define SYNTH_TABLE_SIZE 			10 * 1024 * 1024
-#define READ_PERC 					0.5
-#define WRITE_PERC 					0.5
+#define READ_PERC 					1.0
+#define WRITE_PERC 					0
 #define SCAN_PERC 					0
-#define SCAN_LEN					20
+#define SCAN_LEN						20
 
 // ==== [EXPERIMENT] ===
 #define CONTENTION_PERC				1.0
 #define POS_IN_TXN					1
 
 // ==== [YCSB] ====
-#define ZIPF_THETA 					0.1
+#define ZIPF_THETA 					0
 #define PART_PER_TXN 				1
 #define PERC_MULTI_PART				1
-#define REQ_PER_QUERY				16
+#define REQ_PER_QUERY				1
 #define FIELD_PER_TUPLE				10
 
 // ==== [TPCC] ====

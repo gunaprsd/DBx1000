@@ -4,6 +4,7 @@
 
 #include "Global.h"
 #include "Helper.h"
+#include "Types.h"
 
 class Workload;
 class Thread;
@@ -52,7 +53,7 @@ public:
 	void 				set_timestamp		(Time timestamp);
 
 	virtual void 		initialize		(Thread * h_thd, Workload * h_wl, PartId part_id);
-	virtual Status 		run_transaction	(Query * m_query) = 0;
+	virtual Status 		execute			(Query * query) = 0;
 	void 				cleanup			(Status rc);
 	void 				release			();
 	Status 				finish			(Status rc);
@@ -89,16 +90,16 @@ public:
 	uint64_t 		start_ts;
 	uint64_t 		end_ts;
 	// following are public for OCC
-	int 			row_cnt;
-	int	 			wr_cnt;
+	uint32_t 		row_cnt;
+	uint32_t	 			wr_cnt;
 	Access **		accesses;
 	int 			num_accesses_alloc;
 
 	// For VLL
 	TxnType 			vll_txn_type;
-	Record *		index_read(INDEX * index, Key key, int part_id);
+	Record *			index_read(INDEX * index, Key key, int part_id);
 	void 			index_read(INDEX * index, Key key, int part_id, Record *& item);
-	Row * 		get_row(Row * row, AccessType type);
+	Row * 			get_row(Row * row, AccessType type);
 protected:	
 	void 			insert_row(Row * row, Table * table);
 private:

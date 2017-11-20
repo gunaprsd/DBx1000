@@ -1,47 +1,40 @@
 #pragma once 
 
+#include "pthread.h"
+#include "Types.h"
 #include "Row.h"
-
-// TODO For simplicity, the txn hisotry for OCC is oganized as follows:
-// 1. history is never deleted.
-// 2. hisotry forms a single directional list. 
-//		history head -> hist_1 -> hist_2 -> hist_3 -> ... -> hist_n
-//    The head is always the latest and the tail the youngest. 
-// 	  When history is traversed, always go from head -> tail order.
 
 class TransactionManager;
 
-class set_ent{
+class RWSetEntry{
 public:
-	set_ent();
-	UInt64 tn;
+	RWSetEntry();
+	uint64_t tn;
 	TransactionManager * txn;
-	UInt32 set_size;
+	uint32_t set_size;
 	Row ** rows;
-	set_ent * next;
+	RWSetEntry * next;
 };
 
-class OptCC {
+class OCCManager {
 public:
-	void init();
+	void initialize();
 	Status validate(TransactionManager * txn);
 	volatile bool lock_all;
 	uint64_t lock_txn_id;
 private:
-	
-	// per row validation similar to Hekaton.
-	Status per_row_validate(TransactionManager * txn);
 
-	// parallel validation in the original OCC paper.
-	Status central_validate(TransactionManager * txn);
-	bool test_valid(set_ent * set1, set_ent * set2);
-	Status get_rw_set(TransactionManager * txni, set_ent * &rset, set_ent *& wset);
-	
-	// "history" stores write set of transactions with tn >= smallest running tn
-	set_ent * history;
-	set_ent * active;
-	uint64_t his_len;
-	uint64_t active_len;
-	volatile uint64_t tnc; // transaction number counter
-	pthread_mutex_t latch;
+	Status 	per_row_validate		(TransactionManager * txn);
+	Status 	central_validate		(TransactionManager * txn);
+	bool 	test_valid			(RWSetEntry * set1, RWSetEntry * set2);
+	Status 	get_rw_set(TransactionManager * txni, RWSetEntry * & rset, RWSetEntry * & wset);
+
+	uint64_t 	his_len;
+	uint64_t	 	active_len;
+
+	RWSetEntry * 	history;
+	RWSetEntry * 	active;
+
+	volatile uint64_t 	tnc; // transaction number counter
+	pthread_mutex_t 		latch;
 };

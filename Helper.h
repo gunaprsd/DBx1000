@@ -100,16 +100,16 @@
 #define ARR_PTR_MULTI(type, name, size, scale) \
 	name = new type * [size]; \
 	if (g_part_alloc || THREAD_ALLOC) { \
-		for (uint32_t i = 0; i < size; i ++) {\
-			uint32_t padsize = sizeof(type) * (scale); \
+		for (UInt32 i = 0; i < size; i ++) {\
+			UInt32 padsize = sizeof(type) * (scale); \
 			if (g_mem_pad && padsize % CACHE_LINE_SIZE != 0) \
 				padsize += CACHE_LINE_SIZE - padsize % CACHE_LINE_SIZE; \
 			name[i] = (type *) mem_allocator.allocate(padsize, i); \
-			for (uint32_t j = 0; j < scale; j++) \
+			for (UInt32 j = 0; j < scale; j++) \
 				new (&name[i][j]) type(); \
 		}\
 	} else { \
-		for (uint32_t i = 0; i < size; i++) \
+		for (UInt32 i = 0; i < size; i++) \
 			name[i] = new type[scale]; \
 	}
 
@@ -119,7 +119,7 @@
 #define ARR_PTR_INIT(type, name, size, value) \
 	name = new type * [size]; \
 	if (g_part_alloc) { \
-		for (uint32_t i = 0; i < size; i ++) {\
+		for (UInt32 i = 0; i < size; i ++) {\
 			int padsize = sizeof(type); \
 			if (g_mem_pad && padsize % CACHE_LINE_SIZE != 0) \
 				padsize += CACHE_LINE_SIZE - padsize % CACHE_LINE_SIZE; \
@@ -127,9 +127,9 @@
 			new (name[i]) type(); \
 		}\
 	} else \
-		for (uint32_t i = 0; i < size; i++) \
+		for (UInt32 i = 0; i < size; i++) \
 			name[i] = new type; \
-	for (uint32_t i = 0; i < size; i++) \
+	for (UInt32 i = 0; i < size; i++) \
 		*name[i] = value; \
 
 enum DataType {DT_TABLE, DT_PAGE, DT_ROW, UNKNOWN };
@@ -175,7 +175,6 @@ uint64_t merge_idx_key(uint64_t key1, uint64_t key2);
 uint64_t merge_idx_key(uint64_t key1, uint64_t key2, uint64_t key3);
 
 extern timespec * res;
-
 inline uint64_t get_server_clock() {
 #if defined(__i386__)
     uint64_t ret;

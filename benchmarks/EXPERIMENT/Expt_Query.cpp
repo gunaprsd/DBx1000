@@ -67,8 +67,8 @@ void ExperimentQuery::gen_requests(uint64_t thd_id, Workload * h_wl)
 	set<uint64_t> all_keys;
 	part_num = 0;
 
-	UInt32 rid = 0;
-	for (UInt32 tmp = 0; tmp < g_req_per_query; tmp++) {			
+	uint32_t rid = 0;
+	for (uint32_t tmp = 0; tmp < g_req_per_query; tmp++) {			
 		double r;
 		drand48_r(&_query_thd->buffer, &r);
 		experiment_request * req = &requests[rid];
@@ -108,7 +108,7 @@ void ExperimentQuery::gen_requests(uint64_t thd_id, Workload * h_wl)
 			}
 		} else {
 			bool conflict = false;
-			for (UInt32 i = 0; i < req->scan_len; i++) {
+			for (uint32_t i = 0; i < req->scan_len; i++) {
 				if (all_keys.find(req->key) != all_keys.end())
 					conflict = true;
 			}
@@ -116,7 +116,7 @@ void ExperimentQuery::gen_requests(uint64_t thd_id, Workload * h_wl)
 			if (conflict) {
 				continue;
 			} else {
-				for (UInt32 i = 0; i < req->scan_len; i++) {
+				for (uint32_t i = 0; i < req->scan_len; i++) {
 					all_keys.insert(req->key + i);
 				}
 				access_cnt += SCAN_LEN;
@@ -135,7 +135,7 @@ void ExperimentQuery::gen_requests(uint64_t thd_id, Workload * h_wl)
 					requests[j] = requests[j + 1];
 					requests[j + 1] = tmp;
 				}
-		for (UInt32 i = 0; i < request_cnt - 1; i++)
+		for (uint32_t i = 0; i < request_cnt - 1; i++)
 			assert(requests[i].key < requests[i + 1].key);
 	}
 

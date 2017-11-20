@@ -3,7 +3,7 @@
 
 class Row_vll {
 public:
-	void init(Row * row);
+	void initialize(Row * row);
 	// return true   : the access is blocked.
 	// return false	 : the access is NOT blocked 
 	bool insert_access(AccessType type);

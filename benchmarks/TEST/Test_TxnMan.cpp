@@ -73,7 +73,7 @@ TestTxnMan::testConflict(int access_num)
 			row_local->set_value(3, str);
 			sleep(1);
 		} else {
-			rc = Abort;
+			rc = ABORT;
 			break;
 		}
 	}

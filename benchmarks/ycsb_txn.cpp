@@ -1,8 +1,6 @@
 #include "global.h"
 #include "helper.h"
 #include "ycsb.h"
-#include "ycsb_workload.h"
-#include "database.h"
 #include "table.h"
 #include "row.h"
 #include "index_hash.h"
@@ -13,7 +11,6 @@
 #include "row_ts.h"
 #include "row_mvcc.h"
 #include "mem_alloc.h"
-#include "query.h"
 
 void YCSBTransactionManager::initialize(Database * database, INDEX * index, uint32_t thread_id) {
 	txn_man::initialize(database, thread_id);
@@ -85,3 +82,20 @@ final:
 	return rc;
 }
 
+void YCSBExecutor::initialize(uint32_t num_threads) {
+	BenchmarkExecutor::initialize(num_threads);
+
+	//Build database in parallel
+	_db = new YCSBDatabase();
+	_db->initialize();
+	_db->load();
+
+	//Generate workload in parallel
+	_generator = new YCSBWorkloadGenerator();
+	_generator->initialize(_num_threads, MAX_TXN_PER_PART * _num_threads, NULL);
+
+	//Initialize each thread
+	for(uint32_t i = 0; i < _num_threads; i++) {
+		_threads[i].initialize(i, _db, _generator->get_queries(i), MAX_TXN_PER_PART, true);
+	}
+}

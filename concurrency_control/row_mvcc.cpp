@@ -314,7 +314,7 @@ void Row_mvcc::update_buffer(txn_man * txn, TsType type) {
 	// the current txn performs WR or XP.
 	// immediate following R_REQ and P_REQ should return.
 	ts_t ts = txn->get_ts();
-	// figure out the ts for the next pending P_REQ
+	// figure out the ts for the next_query pending P_REQ
 	ts_t next_pre_ts = UINT64_MAX ;
 	for (uint32_t i = 0; i < _req_len; i++)	
 		if (_requests[i].valid && _requests[i].type == P_REQ

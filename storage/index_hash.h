@@ -15,9 +15,9 @@ public:
 		items = NULL;
 	}
 	idx_key_t 		key;
-	// The node for the next key	
+	// The node for the next_query key
 	BucketNode * 	next;	
-	// NOTE. The items can be a list of items connected by the next pointer. 
+	// NOTE. The items can be a list of items connected by the next_query pointer.
 	itemid_t * 		items;
 };
 

@@ -55,6 +55,11 @@ public:
 	void 			set_ts(ts_t timestamp);
 	ts_t 			get_ts();
 
+	void reset(txnid_t txnid) {
+		this->txn_id = txnid;
+		this->abort_cnt = 0;
+	}
+
 	Database * 			database;
 	myrand * 			mrand;
 	uint64_t 			abort_cnt;

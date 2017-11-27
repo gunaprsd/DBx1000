@@ -669,7 +669,7 @@ void index_btree::print_btree(bt_node * start) {
 					printf("%lld,", c->keys[i]);
 			}
 			cout << "|";
-			c = c->next;
+			c = c->next_query;
 		}
 		cout << endl;
 	} while (!last_iter);

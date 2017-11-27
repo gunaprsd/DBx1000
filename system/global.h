@@ -35,7 +35,6 @@ class mem_alloc;
 class Stats;
 class DL_detect;
 class Manager;
-class Query_queue;
 class Plock;
 class OptCC;
 class VLLMan;
@@ -54,7 +53,6 @@ extern mem_alloc mem_allocator;
 extern Stats stats;
 extern DL_detect dl_detector;
 extern Manager * glob_manager;
-extern Query_queue * query_queue;
 extern Plock part_lock_man;
 extern OptCC occ_man;
 #if CC_ALG == VLL

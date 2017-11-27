@@ -9,7 +9,7 @@ class txn_man;
 class Manager {
 public:
 	void 			init();
-	// returns the next timestamp.
+	// returns the next_query timestamp.
 	ts_t			get_ts(uint64_t thread_id);
 
 	// For MVCC. To calculate the min active ts in the system

@@ -3,7 +3,6 @@
 #include "table.h"
 #include "row.h"
 #include "row_vll.h"
-#include "ycsb_workload.h"
 #include "ycsb.h"
 #include "catalog.h"
 #include "mem_alloc.h"

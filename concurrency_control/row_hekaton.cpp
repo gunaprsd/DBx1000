@@ -123,7 +123,7 @@ Row_hekaton::reserveRow(txn_man * txn)
 	}
 	
 	if ((_his_latest + 1) % _his_len != _his_oldest) 
-		// _write_history is not full, return the next entry.
+		// _write_history is not full, return the next_query entry.
 		idx = (_his_latest + 1) % _his_len;
 	else { 
 		// write_history is already full

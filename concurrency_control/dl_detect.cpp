@@ -62,7 +62,7 @@ DL_detect::nextNode(uint64_t txnid, DetectData * detect_data) {
 	for (n = 0; n < txnid_num; n++) {
 		int nextthd = get_thdid_from_txnid( txnids[n] );
 
-		// next node not visited and txnid is not stale
+		// next_query node not visited and txnid is not stale
 		if ( detect_data->recStack[nextthd] ) {
 			if ((SInt32)txnids[n] == dependency[nextthd].txnid) {
 				detect_data->loop = true;

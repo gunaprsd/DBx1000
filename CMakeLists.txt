@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 11)
 set(SOURCE_FILES
         benchmarks/ycsb.h
         benchmarks/ycsb_workload.cpp
-        benchmarks/ycsb_workload.h
         benchmarks/ycsb_txn.cpp
         benchmarks/ycsb_database.cpp
         concurrency_control/dl_detect.cpp

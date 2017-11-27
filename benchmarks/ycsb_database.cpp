@@ -1,9 +1,5 @@
 #include <sched.h>
-#include "global.h"
-#include "helper.h"
 #include "ycsb.h"
-#include "database.h"
-#include "workload.h"
 #include "table.h"
 #include "row.h"
 #include "index_hash.h"
@@ -14,8 +10,6 @@
 #include "row_ts.h"
 #include "row_mvcc.h"
 #include "mem_alloc.h"
-#include "query.h"
-#include "ycsb_database.h"
 
 
 

@@ -1,9 +1,10 @@
 #include "global.h"
 #include "config.h"
+#include "thread.h"
+#include "manager.h"
 #include "mem_alloc.h"
 
-#include "ycsb_database.h"
-#include "ycsb_workload.h"
+#include "ycsb.h"
 
 void parser(int argc, char * argv[]);
 
@@ -12,8 +13,23 @@ int main(int argc, char* argv[]) {
     mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt);
     stats.init();
 
-    YCSBWorkloadGenerator * workload = new YCSBWorkloadGenerator();
-    workload->initialize(2, 1024 * 1024, NULL);
-    workload->generate();
+    //Initialize global manager
+    glob_manager = (Manager *) _mm_malloc(sizeof(Manager), 64);
+    glob_manager->init();
+
+    //CC protocol specific initializations
+#if CC_ALG == DL_DETECT
+    dl_detector.init();
+#elif CC_ALG == HSTORE
+    part_lock_man.init();
+#elif CC_ALG == OCC
+    occ_man.init();
+#elif CC_ALG == VLL
+    vll_man.init();
+#endif
+
+    YCSBExecutor * executor = new YCSBExecutor();
+    executor->initialize(g_thread_cnt);
+    executor->execute();
     return 0;
 }

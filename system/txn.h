@@ -2,12 +2,11 @@
 
 #include "global.h"
 #include "helper.h"
+#include "database.h"
 
-class workload;
-class thread_t;
 class row_t;
 class table_t;
-class base_query;
+class BaseQuery;
 class INDEX;
 
 // each thread has a txn_man. 
@@ -38,24 +37,31 @@ public:
 class txn_man
 {
 public:
-	virtual void init(thread_t * h_thd, workload * h_wl, uint64_t part_id);
-	void release();
-	thread_t * h_thd;
-	workload * h_wl;
-	myrand * mrand;
-	uint64_t abort_cnt;
+	virtual void 	initialize(Database * db, uint32_t thread_id);
+	virtual RC 		run_txn(BaseQuery * m_query) = 0;
+	void 			release();
+	void 			cleanup(RC rc);
+	RC 				finish(RC rc);
+	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
+	void 			index_read(INDEX * index, idx_key_t key, int part_id, itemid_t *& item);
+	row_t * 		get_row(row_t * row, access_t type);
 
-	virtual RC 		run_txn(base_query * m_query) = 0;
 	uint64_t 		get_thd_id();
-	workload * 		get_wl();
+	Database * 		get_db();
+
 	void 			set_txn_id(txnid_t txn_id);
 	txnid_t 		get_txn_id();
 
 	void 			set_ts(ts_t timestamp);
 	ts_t 			get_ts();
 
-	pthread_mutex_t txn_lock;
-	row_t * volatile cur_row;
+	Database * 			database;
+	myrand * 			mrand;
+	uint64_t 			abort_cnt;
+	uint32_t 			thread_id;
+	pthread_mutex_t 	txn_lock;
+	row_t * volatile 	cur_row;
+
 #if CC_ALG == HEKATON
 	void * volatile history_entry;
 #endif
@@ -66,8 +72,7 @@ public:
 	bool volatile 	ts_ready; 
 	// [HSTORE]
 	int volatile 	ready_part;
-	RC 				finish(RC rc);
-	void 			cleanup(RC rc);
+
 #if CC_ALG == TICTOC
 	ts_t 			get_max_wts() 	{ return _max_wts; }
 	void 			update_max_wts(ts_t max_wts);
@@ -76,7 +81,7 @@ public:
 #elif CC_ALG == SILO
 	ts_t 			last_tid;
 #endif
-	
+
 	// For OCC
 	uint64_t 		start_ts;
 	uint64_t 		end_ts;
@@ -88,9 +93,7 @@ public:
 
 	// For VLL
 	TxnType 		vll_txn_type;
-	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
-	void 			index_read(INDEX * index, idx_key_t key, int part_id, itemid_t *& item);
-	row_t * 		get_row(row_t * row, access_t type);
+
 protected:	
 	void 			insert_row(row_t * row, table_t * table);
 private:

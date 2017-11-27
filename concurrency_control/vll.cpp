@@ -3,11 +3,8 @@
 #include "table.h"
 #include "row.h"
 #include "row_vll.h"
-#include "ycsb_query.h"
+#include "ycsb_workload.h"
 #include "ycsb.h"
-#include "experiment_query.h"
-#include "experiment.h"
-#include "wl.h"
 #include "catalog.h"
 #include "mem_alloc.h"
 #if CC_ALG == VLL
@@ -19,14 +16,14 @@ void VLLMan::init()
 	_txn_queue_tail = NULL;
 }
 
-void VLLMan::vllMainLoop(txn_man * txn, base_query * query) 
+void VLLMan::vllMainLoop(txn_man * txn, BaseQuery * query)
 {
 	
-	ycsb_query * m_query = (ycsb_query *) query;
+	ycsb_params * m_query = & ((ycsb_query *) query)->params;
 	// access the indexes. This is not in the critical section
-	for (int rid = 0; rid < m_query->request_cnt; rid ++) {
+	for (uint32_t rid = 0; rid < m_query->request_cnt; rid ++) {
 		ycsb_request * req = &m_query->requests[rid];
-		ycsb_wl * wl = (ycsb_wl *) txn->get_wl();
+		YCSBDatabase * wl = (YCSBDatabase *) txn->get_db();
 		int part_id = wl->key_to_part( req->key );
 		INDEX * index = wl->the_index;
 		itemid_t * item;
@@ -34,7 +31,7 @@ void VLLMan::vllMainLoop(txn_man * txn, base_query * query)
 		row_t * row = ((row_t *)item->location);
 		// the following line adds the read/write sets to txn->accesses
 		txn->get_row(row, req->rtype);
-		int cs = row->manager->get_cs();
+		//int cs = row->manager->get_cs();
 	}
 
 	bool done = false;
@@ -69,7 +66,7 @@ void VLLMan::vllMainLoop(txn_man * txn, base_query * query)
 	return;
 }
 
-int VLLMan::beginTxn(txn_man * txn, base_query * query, TxnQEntry *& entry) 
+int VLLMan::beginTxn(txn_man * txn, BaseQuery * query, TxnQEntry *& entry)
 {
 
 	int ret = -1;	
@@ -95,25 +92,25 @@ int VLLMan::beginTxn(txn_man * txn, base_query * query, TxnQEntry *& entry)
 	return ret;
 }
 
-void VLLMan::execute(txn_man * txn, base_query * query) 
+void VLLMan::execute(txn_man * txn, BaseQuery * query)
 {
-	RC rc;
+	//RC rc;
 	uint64_t t3 = get_sys_clock();
-	ycsb_query * m_query = (ycsb_query *) query;
-	ycsb_wl * wl = (ycsb_wl *) txn->get_wl();
+	//ycsb_params * m_query = & ((ycsb_query *) query)->params;
+	YCSBDatabase * wl = (YCSBDatabase *) txn->get_db();
 	Catalog * schema = wl->the_table->get_schema();
-	uint64_t average;
+	//uint64_t average;
 	for (int rid = 0; rid < txn->row_cnt; rid ++) {
 		row_t * row = txn->accesses[rid]->orig_row;
 		access_t type = txn->accesses[rid]->type;
 		if (type == RD) {
-			for (int fid = 0; fid < schema->get_field_cnt(); fid++) {
-				char * data = row->get_data();
-				uint64_t fval = *(uint64_t *)(&data[fid * 100]);
+			for (uint32_t fid = 0; fid < schema->get_field_cnt(); fid++) {
+				//char * data = row->get_data();
+				//uint64_t fval = *(uint64_t *)(&data[fid * 100]);
            	}
 		} else {
 			assert(type == WR);
-			for (int fid = 0; fid < schema->get_field_cnt(); fid++) {
+			for (uint32_t fid = 0; fid < schema->get_field_cnt(); fid++) {
 				char * data = row->get_data();
 				*(uint64_t *)(&data[fid * 100]) = 0;
 			}

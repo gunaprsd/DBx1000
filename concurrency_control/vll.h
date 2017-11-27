@@ -17,13 +17,13 @@ public:
 class VLLMan {
 public:
 	void init();
-	void vllMainLoop(txn_man * next_txn, base_query * query);
+	void vllMainLoop(txn_man * next_txn, BaseQuery * query);
 	// 	 1: txn is blocked
 	//	 2: txn is not blocked. Can run.
 	//   3: txn_queue is full. 
-	int beginTxn(txn_man * txn, base_query * query, TxnQEntry *& entry);
+	int beginTxn(txn_man * txn, BaseQuery * query, TxnQEntry *& entry);
 	void finishTxn(txn_man * txn, TxnQEntry * entry);
-	void execute(txn_man * txn, base_query * query);
+	void execute(txn_man * txn, BaseQuery * query);
 private:
     TxnQEntry * 			_txn_queue;
     TxnQEntry * 			_txn_queue_tail;

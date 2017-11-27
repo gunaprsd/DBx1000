@@ -1,9 +1,8 @@
 #include "global.h"
 #include "helper.h"
 #include "ycsb.h"
-#include "ycsb_query.h"
-#include "wl.h"
-#include "thread.h"
+#include "ycsb_workload.h"
+#include "database.h"
 #include "table.h"
 #include "row.h"
 #include "index_hash.h"
@@ -16,15 +15,16 @@
 #include "mem_alloc.h"
 #include "query.h"
 
-void ycsb_txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
-	txn_man::init(h_thd, h_wl, thd_id);
-	_wl = (ycsb_wl *) h_wl;
+void YCSBTransactionManager::initialize(Database * database, INDEX * index, uint32_t thread_id) {
+	txn_man::initialize(database, thread_id);
+	ycsb_database = (YCSBDatabase *) database;
+	the_index = index;
 }
 
-RC ycsb_txn_man::run_txn(base_query * query) {
+RC YCSBTransactionManager::run_txn(BaseQuery * query) {
 	RC rc;
-	ycsb_query * m_query = (ycsb_query *) query;
-	ycsb_wl * wl = (ycsb_wl *) h_wl;
+	ycsb_params * m_query = & ((ycsb_query *) query)->params;
+	YCSBDatabase * wl = (YCSBDatabase *) database;
 	itemid_t * m_item = NULL;
   	row_cnt = 0;
 
@@ -35,11 +35,11 @@ RC ycsb_txn_man::run_txn(base_query * query) {
 		UInt32 iteration = 0;
 		while ( !finish_req ) {
 			if (iteration == 0) {
-				m_item = index_read(_wl->the_index, req->key, part_id);
+				m_item = index_read(the_index, req->key, part_id);
 			} 
 #if INDEX_STRUCT == IDX_BTREE
 			else {
-				_wl->the_index->index_next(get_thd_id(), m_item);
+				the_index->index_next(get_thd_id(), m_item);
 				if (m_item == NULL)
 					break;
 			}

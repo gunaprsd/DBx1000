@@ -1,9 +1,6 @@
 #include "txn.h"
 #include "row.h"
-#include "wl.h"
 #include "ycsb.h"
-#include "experiment.h"
-#include "thread.h"
 #include "mem_alloc.h"
 #include "occ.h"
 #include "table.h"
@@ -11,9 +8,9 @@
 #include "index_btree.h"
 #include "index_hash.h"
 
-void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
-	this->h_thd = h_thd;
-	this->h_wl = h_wl;
+void txn_man::initialize(Database * h_wl, uint32_t thd_id) {
+	this->thread_id = thd_id;
+	this->database = h_wl;
 	pthread_mutex_init(&txn_lock, NULL);
 	lock_ready = false;
 	ready_part = 0;
@@ -51,12 +48,12 @@ txnid_t txn_man::get_txn_id() {
 	return this->txn_id;
 }
 
-workload * txn_man::get_wl() {
-	return h_wl;
+Database * txn_man::get_db() {
+	return database;
 }
 
 uint64_t txn_man::get_thd_id() {
-	return h_thd->get_thd_id();
+	return thread_id;
 }
 
 void txn_man::set_ts(ts_t timestamp) {
@@ -233,8 +230,7 @@ RC txn_man::finish(RC rc) {
 	return rc;
 }
 
-void
-txn_man::release() {
+void txn_man::release() {
 	for (int i = 0; i < num_accesses_alloc; i++)
 		mem_allocator.free(accesses[i], 0);
 	mem_allocator.free(accesses, 0);

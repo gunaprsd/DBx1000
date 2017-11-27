@@ -1,42 +1,39 @@
 #ifndef _SYNTH_BM_H_
 #define _SYNTH_BM_H_
 
-#include "wl.h"
+#include "database.h"
 #include "txn.h"
 #include "global.h"
 #include "helper.h"
+#include "query.h"
+#include "ycsb_database.h"
 
-class ycsb_query;
-
-class ycsb_wl : public workload {
-public :
-	RC init();
-	RC init_table();
-	RC init_schema(string schema_file);
-	RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
-	int key_to_part(uint64_t key);
-	INDEX * the_index;
-	table_t * the_table;
-private:
-	void init_table_parallel();
-	void * init_table_slice();
-	static void * threadInitTable(void * This) {
-		((ycsb_wl *)This)->init_table_slice(); 
-		return NULL;
-	}
-	pthread_mutex_t insert_lock;
-	//  For parallel initialization
-	static int next_tid;
+class ycsb_request {
+public:
+	access_t rtype;
+	uint64_t key;
+	char value;
+	// only for (qtype == SCAN)
+	UInt32 scan_len;
 };
 
-class ycsb_txn_man : public txn_man
+struct ycsb_params {
+	uint64_t 		request_cnt;
+	ycsb_request 	requests[MAX_REQ_PER_QUERY];
+};
+
+typedef Query<ycsb_params> ycsb_query;
+
+
+class YCSBTransactionManager : public txn_man
 {
 public:
-	void init(thread_t * h_thd, workload * h_wl, uint64_t part_id); 
-	RC run_txn(base_query * query);
-private:
-	uint64_t row_cnt;
-	ycsb_wl * _wl;
+	void initialize(Database * database, INDEX * index, uint32_t thread_id);
+	RC run_txn(BaseQuery * query) override;
+
+	uint64_t 		row_cnt;
+	YCSBDatabase * 	ycsb_database;
+	INDEX *			the_index;
 };
 
 #endif

@@ -6,7 +6,7 @@
 
 class row_t;
 class table_t;
-class BaseQuery;
+struct BaseQuery;
 class INDEX;
 
 // each thread has a txn_man. 

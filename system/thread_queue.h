@@ -55,11 +55,11 @@ public:
         //we are not done if a query is being executed
         bool finish = ! _query_not_returned;
         //main array is done
-        finish &= _query_list->done();
+        finish = finish && _query_list->done();
         //abort buffer must be empty if enabled
-        finish &= _abort_buffer_enable ? (_abort_buffer_empty_slots == _abort_buffer_size) : true;
+        finish = finish && (_abort_buffer_enable ? (_abort_buffer_empty_slots == _abort_buffer_size) : true);
         //previous query status must be RCOK, if no abort buffer
-        finish &= _abort_buffer_enable ? true : _previous_query_status == RCOK;
+        finish = finish && (_abort_buffer_enable ? true : _previous_query_status == RCOK);
         return finish;
     }
 

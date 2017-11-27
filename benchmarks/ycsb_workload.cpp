@@ -126,18 +126,18 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 }
 
 void YCSBWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params, char *base_file_name) {
-	WorkloadGenerator::initialize(num_threads, num_params, base_file_name);
-	YCSBWorkloadGenerator::initialize_zipf_distribution(_num_threads);
+    WorkloadGenerator::initialize(num_threads, num_params, base_file_name);
+    YCSBWorkloadGenerator::initialize_zipf_distribution(_num_threads);
     _queries = new ycsb_query * [_num_threads];
     for(uint32_t i = 0; i < _num_threads; i++) {
-        _queries[i] = (ycsb_query *) _mm_malloc(sizeof(ycsb_query) * _num_params_per_thread, 64);
+      _queries[i] = new ycsb_query[_num_params_per_thread];
     }
 }
 
 BaseQueryList * YCSBWorkloadGenerator::get_queries_list(uint32_t thread_id) {
-	auto queryList = (QueryList<ycsb_params> *) _mm_malloc(sizeof(QueryList<ycsb_params>), 64);
-	queryList->initialize(_queries[thread_id], _num_params_per_thread);
-	return queryList;
+  auto queryList = new QueryList<ycsb_params>();
+  queryList->initialize(_queries[thread_id], _num_params_per_thread);
+  return queryList;
 }
 
 void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {

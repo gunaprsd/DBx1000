@@ -35,7 +35,7 @@ int YCSBDatabase::key_to_part(uint64_t key) {
 }
 
 txn_man *  YCSBDatabase::get_txn_man(uint32_t thread_id) {
-	auto txn_manager = (YCSBTransactionManager *) _mm_malloc(sizeof(YCSBTransactionManager), 64);
+        auto txn_manager = new YCSBTransactionManager();
 	txn_manager->initialize(this, the_index, thread_id);
 	return txn_manager;
 }

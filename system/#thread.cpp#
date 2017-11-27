@@ -1,0 +1,126 @@
+#include <sched.h>
+#include "global.h"
+#include "manager.h"
+#include "thread.h"
+#include "txn.h"
+#include "database.h"
+#include "query.h"
+#include "plock.h"
+#include "occ.h"
+#include "vll.h"
+#include "mem_alloc.h"
+#include "thread.h"
+#include "thread_queue.h"
+
+void Thread::initialize(uint32_t id, Database * db, BaseQuery * queries, uint64_t num_queries, bool abort_buffer_enable) {
+    this->thread_id = id;
+    this->db = db;
+    this->query_queue = new ThreadQueue();
+    query_queue->initialize(id, queries, num_queries, true);
+}
+
+RC Thread::run() {
+    stats.init(thread_id);
+    set_affinity(thread_id);
+
+    RC rc = RCOK;
+    txn_man * m_txn = db->get_txn_man(thread_id);
+    glob_manager->set_txn_man(m_txn);
+
+    BaseQuery * m_query = NULL;
+    uint64_t thd_txn_id = 0;
+
+    while (!query_queue->done()) {
+        ts_t start_time = get_sys_clock();
+
+        //Step 1: Obtain a query from the query queue
+        m_query = query_queue->next_query();
+	assert(m_query != NULL;)
+        INC_STATS(thread_id, time_query, get_sys_clock() - start_time);
+
+        //Step 2: Prepare the transaction manager
+        uint64_t global_txn_id = thread_id + thd_txn_id * g_thread_cnt;
+        thd_txn_id++;
+        m_txn->reset(global_txn_id);
+
+
+        //Step 3: Execute the transaction
+        rc = RCOK;
+#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
+        rc = m_txn->run_txn(m_query);
+#endif
+
+        //Step 4: Return status to query queue
+        query_queue->return_status(rc);
+
+        ts_t end_time = get_sys_clock();
+
+        //Step 5: Update statistics
+        uint64_t duration = end_time - start_time;
+        INC_STATS(thread_id, run_time, duration);
+        INC_STATS(thread_id, latency, duration);
+        if (rc == RCOK) {
+            INC_STATS(thread_id, txn_cnt, 1);
+            stats.commit(thread_id);
+        } else if (rc == Abort) {
+            INC_STATS(thread_id, time_abort, duration);
+            INC_STATS(thread_id, abort_cnt, 1);
+            stats.abort(thread_id);
+        }
+    }
+
+    return FINISH;
+}
+
+ts_t Thread::get_next_ts() {
+    if (g_ts_batch_alloc) {
+        if (_curr_ts % g_ts_batch_num == 0) {
+            _curr_ts = glob_manager->get_ts(thread_id);
+            _curr_ts ++;
+        } else {
+            _curr_ts ++;
+        }
+        return _curr_ts - 1;
+    } else {
+        _curr_ts = glob_manager->get_ts(thread_id);
+        return _curr_ts;
+    }
+}
+
+void BenchmarkExecutor::initialize(uint32_t num_threads) {
+    _num_threads = num_threads;
+    _threads = (Thread *) _mm_malloc(sizeof(Thread) * _num_threads, 64);
+}
+
+void BenchmarkExecutor::execute() {
+    pthread_t threads[_num_threads];
+    ThreadLocalData data[_num_threads];
+
+    uint64_t start_time = get_server_clock();
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        data[i].fields[0] = (uint64_t)this;
+        data[i].fields[1] = (uint64_t)i;
+        pthread_create(&threads[i], NULL, execute_helper, (void *)&data[i]);
+    }
+
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    uint64_t end_time = get_server_clock();
+    double duration = ((double)(end_time - start_time)) / 1000.0 / 1000.0 / 1000.0;
+    printf("Total Runtime : %lf secs", duration);
+    if (STATS_ENABLE) {
+        stats.print();
+    }
+}
+
+void * BenchmarkExecutor::execute_helper(void * ptr) {
+    //Threads must be initialize before
+    ThreadLocalData * data = (ThreadLocalData *) ptr;
+    BenchmarkExecutor * executor = (BenchmarkExecutor *) data->fields[0];
+    uint32_t thread_id = (uint32_t) data->fields[1];
+    executor->_threads[thread_id].run();
+    return NULL;
+}
+

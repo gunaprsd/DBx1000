@@ -70,7 +70,6 @@ public :
 protected:
 	void        load_tables(uint32_t thread_id) override;
 	void        load_main_table(uint32_t thread_id);
-
 };
 
 class YCSBExecutor : public BenchmarkExecutor {

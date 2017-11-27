@@ -25,7 +25,7 @@ public:
 template<typename T>
 class QueryList: public BaseQueryList {
 public:
-    void initialize(Query<T> *  queries, uint32_t num_queries) {
+    void initialize(Query<T> *  queries, uint64_t num_queries) {
         this->queries = queries;
         this->num_queries = num_queries;
         this->current = 0;
@@ -45,8 +45,8 @@ public:
 
 protected:
     Query<T> * queries;
-    uint32_t num_queries;
-    uint32_t current;
+    uint64_t num_queries;
+    uint64_t current;
 };
 
 

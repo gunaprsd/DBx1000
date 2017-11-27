@@ -30,7 +30,8 @@ void YCSBDatabase::initialize(uint32_t num_threads) {
 	
 int YCSBDatabase::key_to_part(uint64_t key) {
 	uint64_t rows_per_part = g_synth_table_size / g_part_cnt;
-	return key / rows_per_part;
+	int part_id = key/rows_per_part;
+	return part_id < (int)g_part_cnt ? part_id : (int)g_part_cnt - 1;
 }
 
 txn_man *  YCSBDatabase::get_txn_man(uint32_t thread_id) {

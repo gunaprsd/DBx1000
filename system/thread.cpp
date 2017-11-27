@@ -12,11 +12,11 @@
 #include "thread.h"
 #include "thread_queue.h"
 
-void Thread::initialize(uint32_t id, Database * db, BaseQuery * queries, uint64_t num_queries, bool abort_buffer_enable) {
+void Thread::initialize(uint32_t id, Database * db, BaseQueryList * query_list, uint64_t num_queries, bool abort_buffer_enable) {
     this->thread_id = id;
     this->db = db;
     this->query_queue = new ThreadQueue();
-    query_queue->initialize(id, queries, num_queries, true);
+    query_queue->initialize(id, query_list, true);
 }
 
 RC Thread::run() {

@@ -7,7 +7,7 @@
 
 class Thread {
 public:
-    void 		    initialize(uint32_t id, Database * db, BaseQuery * queries, uint64_t num_queries, bool abort_buffer_enable = true);
+    void 		    initialize(uint32_t id, Database * db, BaseQueryList * query_list, uint64_t num_queries, bool abort_buffer_enable = true);
     RC 			    run();
 
 

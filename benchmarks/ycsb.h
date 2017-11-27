@@ -41,7 +41,7 @@ public:
 class YCSBWorkloadGenerator : public WorkloadGenerator {
 public:
 	void initialize(uint32_t num_threads, uint64_t num_params, char * base_file_name) override;
-	BaseQuery *     get_queries(uint32_t thread_id) override;
+	BaseQueryList *     get_queries_list(uint32_t thread_id) override;
 protected:
 	void            per_thread_generate(uint32_t thread_id) override;
 	void            per_thread_write_to_file(uint32_t thread_id, FILE * file) override;

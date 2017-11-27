@@ -134,8 +134,10 @@ void YCSBWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params
     }
 }
 
-BaseQuery * YCSBWorkloadGenerator::get_queries(uint32_t thread_id) {
-	return _queries[thread_id];
+BaseQueryList * YCSBWorkloadGenerator::get_queries_list(uint32_t thread_id) {
+	auto queryList = (QueryList<ycsb_params> *) _mm_malloc(sizeof(QueryList<ycsb_params>), 64);
+	queryList->initialize(_queries[thread_id], _num_params_per_thread);
+	return queryList;
 }
 
 void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {

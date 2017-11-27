@@ -13,7 +13,7 @@ public:
     static  void *    run_helper(void *ptr);
 
     //The following must be implemented by the user
-    virtual BaseQuery *     get_queries(uint32_t thread_id) = 0;
+    virtual BaseQueryList *     get_queries_list(uint32_t thread_id) = 0;
 protected:
     virtual void            per_thread_generate(uint32_t thread_id) = 0;
     virtual void            per_thread_write_to_file(uint32_t thread_id, FILE * file) = 0;
@@ -33,7 +33,7 @@ public:
     static  void *   run_helper(void *ptr);
 
     //The following must be implemented by the benchmark
-    virtual BaseQuery * get_queries(uint32_t thread_id) = 0;
+    virtual BaseQueryList * get_queries_list(uint32_t thread_id) = 0;
 protected:
     virtual void per_thread_load(uint32_t thread_id, FILE * file) = 0;
 

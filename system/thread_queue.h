@@ -24,13 +24,15 @@
  * spurious aborts, we sleep for a penalty amount of time before retrying.
  */
 
+
 class ThreadQueue {
     struct AbortBufferEntry	{
         ts_t ready_time;
         BaseQuery * query;
     };
+
 public:
-    void initialize(uint32_t thread_id, BaseQuery * queries, uint64_t num_queries, bool abort_buffer = true) {
+    void initialize(uint32_t thread_id, BaseQueryList * query_list, bool abort_buffer = true) {
         _thread_id = thread_id;
         srand48_r((_thread_id + 1) * get_sys_clock(), &_rand_buffer);
 
@@ -39,9 +41,7 @@ public:
         _previous_query = NULL;
         _previous_query_status = RCOK;
 
-        _queries = queries;
-        _num_queries = num_queries;
-        _array_pointer = 0;
+        _query_list = query_list;
 
         _abort_buffer_enable = abort_buffer;
         if(_abort_buffer_enable) {
@@ -55,7 +55,7 @@ public:
         //we are not done if a query is being executed
         bool finish = ! _query_not_returned;
         //main array is done
-        finish &= (_num_queries == _array_pointer);
+        finish &= _query_list->done();
         //abort buffer must be empty if enabled
         finish &= _abort_buffer_enable ? (_abort_buffer_empty_slots == _abort_buffer_size) : true;
         //previous query status must be RCOK, if no abort buffer
@@ -92,22 +92,21 @@ public:
             }
 
             //Obtain a query from the main array
-            if(_current_query == NULL && _array_pointer < _num_queries) {
-                _current_query = & _queries[_array_pointer++];
+            if(_current_query == NULL) {
+                _current_query = _query_list->next();
             }
 
         } else {
             //Take from main list only when previous txn status is OK
             if(_previous_query_status == RCOK) {
-                if(_array_pointer < _num_queries) {
-                    _current_query = & _queries[_array_pointer++];
-                }
+                _current_query = _query_list->next();
             } else {
                 _current_query  = _previous_query;
             }
         }
 
         _query_not_returned = true;
+        assert(_current_query != NULL);
         return _current_query;
     }
 
@@ -153,9 +152,7 @@ protected:
     RC              _previous_query_status;
 
     //Main Queue fields
-    BaseQuery *     _queries;
-    uint64_t        _num_queries;
-    uint64_t        _array_pointer;
+    BaseQueryList * _query_list;
 
     //Abort buffer fields
     bool                _abort_buffer_enable;

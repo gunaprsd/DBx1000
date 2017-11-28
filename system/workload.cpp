@@ -6,7 +6,7 @@
 #include <string.h>
 #include "workload.h"
 
-void WorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name) {
+void ParallelWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name) {
     if(base_file_name == NULL) {
         _write_to_file = false;
         _base_file_name = NULL;
@@ -20,7 +20,7 @@ void WorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per
     _num_params = _num_params_per_thread * _num_threads;
 }
 
-void WorkloadGenerator::generate() {
+void ParallelWorkloadGenerator::generate() {
     pthread_t threads[_num_threads];
     ThreadLocalData data[_num_threads];
 
@@ -40,9 +40,9 @@ void WorkloadGenerator::generate() {
     printf("Workload Generation Completed in %lf secs\n", duration);
 }
 
-void * WorkloadGenerator::run_helper(void *ptr) {
+void * ParallelWorkloadGenerator::run_helper(void *ptr) {
     ThreadLocalData * data = (ThreadLocalData *)ptr;
-    WorkloadGenerator * generator = (WorkloadGenerator*)data->fields[0];
+    ParallelWorkloadGenerator * generator = (ParallelWorkloadGenerator*)data->fields[0];
     uint32_t thread_id = (uint32_t)((uint64_t)data->fields[1]);
 
     generator->per_thread_generate(thread_id);
@@ -68,15 +68,17 @@ void * WorkloadGenerator::run_helper(void *ptr) {
     return NULL;
 }
 
+void ParallelWorkloadGenerator::finalize() {}
 
-void WorkloadLoader::initialize(uint32_t num_threads, uint64_t num_params, char * base_file_name) {
+
+void ParallelWorkloadLoader::initialize(uint32_t num_threads, uint64_t num_params_per_thread, char * base_file_name) {
     _base_file_name = base_file_name;
     _num_threads = num_threads;
-    _num_params = num_params;
-    _num_params_per_thread = _num_params / _num_threads;
+    _num_params_per_thread = num_params_per_thread;
+    _num_params = _num_params_per_thread * _num_threads;
 }
 
-void WorkloadLoader::load() {
+void ParallelWorkloadLoader::load() {
     pthread_t threads[_num_threads];
     ThreadLocalData data[_num_threads];
 
@@ -96,9 +98,9 @@ void WorkloadLoader::load() {
     printf("Workload Loading Completed in %lf secs", duration);
 }
 
-void * WorkloadLoader::run_helper(void* ptr) {
+void * ParallelWorkloadLoader::run_helper(void* ptr) {
     ThreadLocalData * data = (ThreadLocalData *)ptr;
-    WorkloadLoader * loader = (WorkloadLoader*)data->fields[0];
+    ParallelWorkloadLoader * loader = (ParallelWorkloadLoader*)data->fields[0];
     uint32_t thread_id = (uint32_t)((uint64_t)data->fields[1]);
 
     //Obtain the filename
@@ -118,6 +120,91 @@ void * WorkloadLoader::run_helper(void* ptr) {
     fclose(file);
 
     return NULL;
+}
+
+void ParallelWorkloadLoader::finalize() {
+
+}
+
+
+void WorkloadPartitioner::initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt, const char * base_file_name) {
+    _num_threads = num_threads;
+    _num_params_per_thread = num_params_per_thread;
+    _num_params_pgpt = num_params_pgpt;
+    _base_file_name = new char[100];
+    strcpy(_base_file_name, base_file_name);
+    open_all_files();
+
+    num_iterations = 0;
+    read_duration               = 0.0;
+    write_duration              = 0.0;
+    data_statistics_duration    = 0.0;
+    graph_init_duration         = 0.0;
+    partition_duration          = 0.0;
+}
+
+void WorkloadPartitioner::partition() {
+    uint64_t num_params_done_pt = 0;
+    num_iterations = 0;
+    while(num_params_done_pt < _num_params_per_thread) {
+        //specify region to read
+        uint64_t start_offset = num_iterations * _num_params_pgpt;
+        uint64_t num_records = min(start_offset + _num_params_pgpt, _num_params_per_thread) - start_offset;
+
+        //create and write conflict graph
+        partition_workload_part(num_iterations, num_records);
+
+        //move to next region
+        num_params_done_pt += _num_params_pgpt;
+        num_iterations++;
+    }
+}
+
+void WorkloadPartitioner::finalize() {
+    close_all_files();
+    printf("************** Workload Partition Summary **************** \n");
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Reading from File", read_duration, read_duration / num_iterations);
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Obtain Data Statistics", data_statistics_duration, data_statistics_duration / num_iterations);
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Graph Structures Init", graph_init_duration, graph_init_duration / num_iterations);
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Graph Clustering", partition_duration, partition_duration / num_iterations);
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Shuffle Write to File", write_duration, write_duration / num_iterations);
+}
+
+void WorkloadPartitioner::open_all_files() {
+    _files      = new FILE * [_num_threads];
+    _out_files  = new FILE * [_num_threads];
+    char * file_name;
+    char * out_file_name;
+
+    for(uint32_t thread_id = 0; thread_id < _num_threads; thread_id++) {
+        file_name       = get_workload_file(_base_file_name, thread_id);
+        out_file_name   = new char[100];
+        strcpy(out_file_name, "partitioned_");
+        strcat(out_file_name, file_name);
+
+        _files[thread_id]     = fopen(file_name, "r");
+        _out_files[thread_id] = fopen(out_file_name, "w");
+
+        if(_files[thread_id] == NULL) {
+            printf("Error opening file: %s\n", file_name);
+            exit(0);
+        }
+
+        if(_out_files[thread_id] == NULL) {
+            printf("Error opening file: %s\n", out_file_name);
+            exit(0);
+        }
+
+        delete file_name;
+        delete out_file_name;
+    }
+}
+
+void WorkloadPartitioner::close_all_files() {
+    for(uint32_t thread_id = 0; thread_id < _num_threads; thread_id++) {
+        fclose(_files[thread_id]);
+        fclose(_out_files[thread_id]);
+    }
 }
 
 

@@ -115,12 +115,12 @@ public:
 
     void finalize() {
         close_all_files();
-        printf("******* Execution Summary ********** ");
-        printf("%30s :: total: %10lf, avg: %10lf\n", "Reading from File", read_duration, read_duration / num_iterations);
-        printf("%30s :: total: %10lf, avg: %10lf\n", "Obtain Data Statistics", data_statistics_duration, data_statistics_duration / num_iterations);
-        printf("%30s :: total: %10lf, avg: %10lf\n", "Graph Structures Init", graph_init_duration, graph_init_duration / num_iterations);
-        printf("%30s :: total: %10lf, avg: %10lf\n", "Graph Clustering", partition_duration, partition_duration / num_iterations);
-        printf("%30s :: total: %10lf, avg: %10lf\n", "Shuffle Write to File", write_duration, write_duration / num_iterations);
+        printf("******* Execution Summary ********** \n");
+        printf("%-25s :: total: %10lf, avg: %10lf\n", "Reading from File", read_duration, read_duration / num_iterations);
+        printf("%-25s :: total: %10lf, avg: %10lf\n", "Obtain Data Statistics", data_statistics_duration, data_statistics_duration / num_iterations);
+        printf("%-25s :: total: %10lf, avg: %10lf\n", "Graph Structures Init", graph_init_duration, graph_init_duration / num_iterations);
+        printf("%-25s :: total: %10lf, avg: %10lf\n", "Graph Clustering", partition_duration, partition_duration / num_iterations);
+        printf("%-25s :: total: %10lf, avg: %10lf\n", "Shuffle Write to File", write_duration, write_duration / num_iterations);
     }
 
 protected:

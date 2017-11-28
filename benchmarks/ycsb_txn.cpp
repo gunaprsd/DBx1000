@@ -136,12 +136,12 @@ void YCSBGraphGenerator::create_conflict_graph(uint64_t start_offset, uint64_t n
     uint64_t  num_edges = 0;
     for(uint64_t i = 0; i < num_total_queries; i++) {
         fprintf(out_file, "%ld", all_queries[i].params.request_cnt);
-        for(uint64_t j = i + 1; j < num_total_queries; j++) {
+        for(uint64_t j = 0; j < num_total_queries; j++) {
             double weight = compute_weight(& all_queries[i], & all_queries[j], data_info);
             if(weight < 0) {
                 continue;
             } else {
-                fprintf(out_file, " %ld %lf", j+1, weight);
+	      fprintf(out_file, " %ld %ld", j+1, (long)weight);
                 num_edges++;
             }
         }
@@ -149,5 +149,5 @@ void YCSBGraphGenerator::create_conflict_graph(uint64_t start_offset, uint64_t n
     }
 
     fseek(out_file, 0, SEEK_SET);
-    fprintf(out_file, "%ld %ld %s\n", num_total_queries, num_edges, "100");
+    fprintf(out_file, "%ld %ld %s\n", num_total_queries, num_edges/2, "011");
 }

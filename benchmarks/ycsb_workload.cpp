@@ -193,7 +193,6 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 	creator->initialize(num_total_queries);
 	for(uint64_t i = 0; i < num_total_queries; i++) {
 		creator->move_to_next_vertex();
-
 		for(uint64_t j = 0; j < num_total_queries; j++) {
 			double weight = compute_weight(& all_queries[i], & all_queries[j], data_info);
 			if(weight < 0) {
@@ -206,6 +205,8 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 	creator->finish();
 	end_time = get_server_clock();
 	graph_init_duration += DURATION(end_time, start_time);
+
+
 
 	start_time = get_server_clock();
 	creator->do_cluster(_num_threads);

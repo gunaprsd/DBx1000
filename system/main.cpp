@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     generator->generate();
 
     YCSBWorkloadPartitioner * partitioner = new YCSBWorkloadPartitioner();
-    partitioner->initialize(2, 8 * 1024, 8 * 1024, "ycsb_test");
+    partitioner->initialize(2, 8 * 1024, 1024, "ycsb_test");
     partitioner->partition_workload();
     partitioner->finalize();
     return 0;

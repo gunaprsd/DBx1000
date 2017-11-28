@@ -32,9 +32,9 @@ int main(int argc, char* argv[]) {
     generator->initialize(2, 8 * 1024, "ycsb_test");
     generator->generate();
 
-    YCSBGraphGenerator * graph_generator = new YCSBGraphGenerator();
-    graph_generator->initialize(2, 8 * 1024, 8 * 1024, "ycsb_test");
-    graph_generator->create_all_conflict_graphs();
-    graph_generator->finalize();
+    YCSBWorkloadPartitioner * partitioner = new YCSBWorkloadPartitioner();
+    partitioner->initialize(2, 8 * 1024, 8 * 1024, "ycsb_test");
+    partitioner->partition_workload();
+    partitioner->finalize();
     return 0;
 }

@@ -1,5 +1,6 @@
 #include "mem_alloc.h"
 #include "ycsb.h"
+#include "graph_creator.h"
 
 uint64_t 	YCSBWorkloadGenerator::the_n = 0;
 double 		YCSBWorkloadGenerator::zeta_n_theta = 0;
@@ -152,4 +153,71 @@ void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *f
 	fwrite(thread_queries, sizeof(ycsb_query), _num_params_per_thread, file);
 }
 
+void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
+	uint64_t start_time, end_time;
 
+	//Step 1: read all the queries into an array
+	start_time = get_server_clock();
+	ycsb_query * all_queries = new ycsb_query[num_records * _num_threads];
+	for(uint32_t thread_id = 0; thread_id < _num_threads; thread_id++) {
+		ycsb_query * ptr = all_queries + (thread_id * num_records);
+		size_t read_bytes = fread(ptr, sizeof(ycsb_query), num_records, _files[thread_id]);
+		assert(read_bytes == num_records);
+	}
+	end_time = get_server_clock();
+	read_duration += DURATION(end_time, start_time);
+
+	//Step 2: create a DataNode map for items in the transaction
+	start_time = get_server_clock();
+	uint64_t num_total_queries = num_records * _num_threads;
+	uint64_t hash_size = 16 * num_total_queries * MAX_REQ_PER_QUERY;
+	DataInfo * data_info = new DataInfo[hash_size];
+	for(uint64_t i = 0; i < num_total_queries; i++) {
+		ycsb_query * query = & all_queries[i];
+		for(uint32_t j = 0; j < query->params.request_cnt; j++) {
+			uint64_t  key_hash = hash(query->params.requests[j].key);
+			key_hash = key_hash % hash_size;
+			if(query->params.requests[j].rtype == RD) {
+				data_info[key_hash].num_reads++;
+			} else {
+				data_info[key_hash].num_writes++;
+			}
+		}
+	}
+	end_time = get_server_clock();
+	data_statistics_duration += DURATION(end_time, start_time);
+
+	//Step 3: Creating graph structures
+	start_time = get_server_clock();
+	GraphCreator * creator = new GraphCreator();
+	creator->initialize(num_total_queries);
+	for(uint64_t i = 0; i < num_total_queries; i++) {
+		creator->move_to_next_vertex();
+
+		for(uint64_t j = 0; j < num_total_queries; j++) {
+			double weight = compute_weight(& all_queries[i], & all_queries[j], data_info);
+			if(weight < 0) {
+				continue;
+			} else {
+				creator->add_edge((int)j, (int)weight);
+			}
+		}
+	}
+	creator->finish();
+	end_time = get_server_clock();
+	graph_init_duration += DURATION(end_time, start_time);
+
+	start_time = get_server_clock();
+	creator->do_cluster(_num_threads);
+	end_time = get_server_clock();
+	partition_duration += DURATION(end_time, start_time);
+
+
+	for(uint32_t i = 0; i < num_total_queries; i++) {
+		int partition = creator->get_cluster_id(i);
+		fwrite(& all_queries[i], sizeof(ycsb_query), 1, _out_files[partition]);
+	}
+	write_duration += DURATION(end_time, start_time);
+
+	creator->release();
+}

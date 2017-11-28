@@ -71,5 +71,6 @@ include_directories(benchmarks)
 include_directories(concurrency_control)
 include_directories(storage)
 include_directories(system)
+include_directories(libs/include)
 
 add_executable(DBx1000 ${SOURCE_FILES})

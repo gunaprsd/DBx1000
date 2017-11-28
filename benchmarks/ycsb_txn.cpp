@@ -8,6 +8,8 @@
 #include "row_lock.h"
 #include "row_ts.h"
 #include "row_mvcc.h"
+#include "graph_creator.h"
+#include <vector>
 #include "mem_alloc.h"
 
 void YCSBTransactionManager::initialize(Database * database, INDEX * index, uint32_t thread_id) {

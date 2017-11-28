@@ -230,3 +230,5 @@ inline void set_affinity(uint64_t thd_id) {
 char * get_workload_file(char *base_file_name, uint32_t thread_id);
 
 char * get_graph_file_name(char * base_file_name, uint32_t iteration);
+
+#define DURATION(e, s) ((double)e-(double)s)/1000.0/1000.0/1000.0

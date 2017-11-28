@@ -6,14 +6,18 @@
 #include <string.h>
 #include "workload.h"
 
-void WorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params, char * base_file_name) {
-    _base_file_name = base_file_name;
-    _num_threads = num_threads;
-    _num_params = num_params;
-    _num_params_per_thread = _num_params / _num_threads;
-    if(_base_file_name == NULL) {
+void WorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name) {
+    if(base_file_name == NULL) {
         _write_to_file = false;
+        _base_file_name = NULL;
+    } else {
+        _write_to_file = true;
+        _base_file_name = new char[100];
+        strcpy(_base_file_name, base_file_name);
     }
+    _num_threads = num_threads;
+    _num_params_per_thread = num_params_per_thread;
+    _num_params = _num_params_per_thread * _num_threads;
 }
 
 void WorkloadGenerator::generate() {
@@ -44,7 +48,7 @@ void * WorkloadGenerator::run_helper(void *ptr) {
     generator->per_thread_generate(thread_id);
     if(generator->_write_to_file) {
         //Obtain the filename
-        char * file_name = GetFileName(generator->_base_file_name, thread_id);
+        char * file_name = get_workload_file(generator->_base_file_name, thread_id);
 
         //open the file
         FILE* file = fopen(file_name, "w");
@@ -98,7 +102,7 @@ void * WorkloadLoader::run_helper(void* ptr) {
     uint32_t thread_id = (uint32_t)((uint64_t)data->fields[1]);
 
     //Obtain the filename
-    char * file_name = GetFileName(loader->_base_file_name, thread_id);
+    char * file_name = get_workload_file(loader->_base_file_name, thread_id);
 
     //open the file
     FILE* file = fopen(file_name, "r");
@@ -116,12 +120,4 @@ void * WorkloadLoader::run_helper(void* ptr) {
     return NULL;
 }
 
-char * GetFileName(char * base_file_name, uint32_t thread_id)
-{
-    char * file_name = new char[100];
-    strcpy(file_name, base_file_name);
-    strcat(file_name, "_");
-    sprintf(file_name + strlen(file_name), "%d", (int)thread_id);
-    strcat(file_name, ".dat");
-    return file_name;
-}
+

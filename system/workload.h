@@ -9,7 +9,7 @@
 class WorkloadGenerator {
 public:
     void    generate();
-    virtual void    initialize(uint32_t num_threads, uint64_t num_params, char * base_file_name);
+    virtual void    initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name);
     static  void *    run_helper(void *ptr);
 
     //The following must be implemented by the user
@@ -45,6 +45,5 @@ protected:
 };
 
 
-char * GetFileName(char * base_file_name, uint32_t thread_id);
 
 #endif //DBX1000_WORKLOAD_GENERATOR_H

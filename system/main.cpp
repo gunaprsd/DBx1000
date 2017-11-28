@@ -28,8 +28,13 @@ int main(int argc, char* argv[]) {
     vll_man.init();
 #endif
 
-    YCSBExecutor * executor = new YCSBExecutor();
-    executor->initialize(g_thread_cnt);
-    executor->execute();
+    YCSBWorkloadGenerator * generator = new YCSBWorkloadGenerator();
+    generator->initialize(2, 8 * 1024, "ycsb_test");
+    generator->generate();
+
+    YCSBGraphGenerator * graph_generator = new YCSBGraphGenerator();
+    graph_generator->initialize(2, 8 * 1024, 8 * 1024, "ycsb_test");
+    graph_generator->create_all_conflict_graphs();
+    graph_generator->finalize();
     return 0;
 }

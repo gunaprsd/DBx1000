@@ -125,8 +125,8 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 
 }
 
-void YCSBWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params, char *base_file_name) {
-    WorkloadGenerator::initialize(num_threads, num_params, base_file_name);
+void YCSBWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name) {
+    WorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
     YCSBWorkloadGenerator::initialize_zipf_distribution(_num_threads);
     _queries = new ycsb_query * [_num_threads];
     for(uint32_t i = 0; i < _num_threads; i++) {

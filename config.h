@@ -127,7 +127,7 @@
 #define POS_IN_TXN					1
 
 // ==== [YCSB] ====
-#define ZIPF_THETA 					0.8
+#define ZIPF_THETA 					0.5
 #define PART_PER_TXN 				1
 #define PERC_MULTI_PART				1
 #define REQ_PER_QUERY				16

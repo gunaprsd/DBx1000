@@ -225,3 +225,8 @@ inline void set_affinity(uint64_t thd_id) {
 	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 	*/
 }
+
+
+char * get_workload_file(char *base_file_name, uint32_t thread_id);
+
+char * get_graph_file_name(char * base_file_name, uint32_t iteration);

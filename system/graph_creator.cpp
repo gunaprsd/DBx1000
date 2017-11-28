@@ -75,9 +75,18 @@ void GraphCreator::do_cluster(int num_clusters) {
     graph->options[METIS_OPTION_PTYPE]      = METIS_PTYPE_KWAY;
     graph->options[METIS_OPTION_OBJTYPE]    = METIS_OBJTYPE_CUT;
     graph->options[METIS_OPTION_CTYPE]      = METIS_CTYPE_SHEM;
+    graph->options[METIS_OPTION_IPTYPE]     = METIS_IPTYPE_RANDOM;
+    graph->options[METIS_OPTION_NCUTS]      = 1;
+    graph->options[METIS_OPTION_NITER]      = 10;
+    graph->options[METIS_OPTION_SEED]       = 123;
+    graph->options[METIS_OPTION_MINCONN]    = 0;
+    graph->options[METIS_OPTION_NO2HOP]     = 0;
+    graph->options[METIS_OPTION_CONTIG]     = 0;
+    graph->options[METIS_OPTION_COMPRESS]   = 0;
+    graph->options[METIS_OPTION_CCORDER]    = 0;
     graph->options[METIS_OPTION_NUMBERING]  = 0;
     graph->options[METIS_OPTION_MINCONN]    = 1;
-    graph->options[METIS_OPTION_UFACTOR]    = 250;
+    graph->options[METIS_OPTION_UFACTOR]    = 30;
 
 
     int result = METIS_PartGraphKway(& graph->nvtxs,

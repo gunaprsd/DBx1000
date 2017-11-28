@@ -29,12 +29,14 @@ int main(int argc, char* argv[]) {
 #endif
 
     YCSBWorkloadGenerator * generator = new YCSBWorkloadGenerator();
-    generator->initialize(2, 8 * 1024, "ycsb_test");
+    generator->initialize(16, 1024 * 1024, "ycsb_test");
     generator->generate();
+    generator->finalize();
 
     YCSBWorkloadPartitioner * partitioner = new YCSBWorkloadPartitioner();
-    partitioner->initialize(2, 8 * 1024, 1024, "ycsb_test");
-    partitioner->partition_workload();
+    partitioner->initialize(16, 128 * 1024, 1024, "ycsb_test");
+    partitioner->partition();
     partitioner->finalize();
+
     return 0;
 }

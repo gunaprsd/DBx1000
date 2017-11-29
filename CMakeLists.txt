@@ -53,6 +53,8 @@ set(SOURCE_FILES
         storage/row.h
         storage/table.cpp
         storage/table.h
+        system/graph_creator.h
+        system/graph_creator.cpp
         system/global.cpp
         system/global.h
         system/helper.cpp

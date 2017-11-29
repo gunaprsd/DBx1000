@@ -1,6 +1,6 @@
-#include "graph_creator.h"
+#include "graph_partitioner.h"
 
-void GraphCreator::begin(uint32_t num_vertices) {
+void GraphPartitioner::begin(uint32_t num_vertices) {
     graph           = new Graph();
     graph->nvtxs    = (idx_t) num_vertices;
     graph->ncon     = 1;
@@ -18,12 +18,12 @@ void GraphCreator::begin(uint32_t num_vertices) {
     current_adjwgt      = (idx_t *) malloc(sizeof(idx_t) * current_batch_size);
 }
 
-void GraphCreator::move_to_next_vertex() {
+void GraphPartitioner::move_to_next_vertex() {
     graph->xadj[cvtx] = cpos;
     cvtx++;
 }
 
-void GraphCreator::add_edge(uint32_t adj_vertex, uint32_t weight) {
+void GraphPartitioner::add_edge(uint32_t adj_vertex, uint32_t weight) {
     //Add edge into array
     current_adjncy[current_offset] = (idx_t) adj_vertex;
     current_adjwgt[current_offset] = (idx_t) weight;
@@ -48,7 +48,7 @@ void GraphCreator::add_edge(uint32_t adj_vertex, uint32_t weight) {
     cpos++;
 }
 
-void GraphCreator::finish() {
+void GraphPartitioner::finish() {
     assert(cvtx == graph->nvtxs);
     graph->xadj[cvtx] = cpos;
     graph->nedges = cpos / 2;
@@ -56,7 +56,7 @@ void GraphCreator::finish() {
     prepare();
 }
 
-void GraphCreator::do_cluster(int num_clusters) {
+void GraphPartitioner::do_cluster(int num_clusters) {
     assert(graph != NULL);
     assert(graph->xadj != NULL);
     assert(graph->adjncy != NULL);
@@ -76,7 +76,7 @@ void GraphCreator::do_cluster(int num_clusters) {
     graph->options[METIS_OPTION_OBJTYPE]    = METIS_OBJTYPE_CUT;
     graph->options[METIS_OPTION_CTYPE]      = METIS_CTYPE_SHEM;
     graph->options[METIS_OPTION_IPTYPE]     = METIS_IPTYPE_RANDOM;
-    graph->options[METIS_OPTION_NCUTS]      = 1;
+    graph->options[METIS_OPTION_NCUTS]      = num_clusters;
     graph->options[METIS_OPTION_NITER]      = 10;
     graph->options[METIS_OPTION_SEED]       = 123;
     graph->options[METIS_OPTION_MINCONN]    = 0;
@@ -114,7 +114,7 @@ void GraphCreator::do_cluster(int num_clusters) {
     }
 }
 
-void GraphCreator::prepare() {
+void GraphPartitioner::prepare() {
     if(current_index > 0) {
         graph->adjncy = (idx_t *) malloc(sizeof(idx_t) * graph->adjncy_size);
         graph->adjwgt = (idx_t *) malloc(sizeof(idx_t) * graph->adjncy_size);
@@ -146,7 +146,7 @@ void GraphCreator::prepare() {
 
 }
 
-void GraphCreator::release() {
+void GraphPartitioner::release() {
     graph->release();
     graph->reset();
 }

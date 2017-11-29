@@ -11,10 +11,10 @@ void TPCCWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
         double x = (double) (rand() % 100) / 100.0;
         if(x < g_perc_payment) {
             _queries[thread_id][i].type = TPCC_PAYMENT_QUERY;
-            gen_payment_request(thread_id, & _queries[thread_id][i]);
+            gen_payment_request(thread_id, (tpcc_payment_params *)&(_queries[thread_id][i].params));
         } else {
             _queries[thread_id][i].type = TPCC_NEW_ORDER_QUERY;
-            gen_new_order_request(thread_id, & _queries[thread_id][i]);
+            gen_new_order_request(thread_id, (tpcc_new_order_params *)&(_queries[thread_id][i].params));
         }
     }
 }
@@ -24,23 +24,18 @@ void TPCCWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *f
     fwrite(thread_queries, sizeof(tpcc_query), _num_params_per_thread, file);
 }
 
-void TPCCWorkloadGenerator::gen_payment_request(uint64_t thd_id, tpcc_query *query) {
-    tpcc_params * tpcc_params = & query->params;
-    auto params = (tpcc_payment_params *) tpcc_params;
-
+void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id, tpcc_payment_params * params) {
     if(FIRST_PART_LOCAL) {
-        params->w_id = thd_id % g_num_wh + 1;
+        params->w_id = thread_id % g_num_wh + 1;
     } else {
-        params->w_id = URand(1, g_num_wh, thd_id % g_num_wh);
+        params->w_id = URand(1, g_num_wh, thread_id % g_num_wh);
     }
 
     params->d_w_id = params->w_id;
     params->d_id = URand(1, DIST_PER_WARE, params->w_id - 1);
     params->h_amount = URand(1, 5000, params->w_id - 1);
-    int x = (int) URand(1, 100, params->w_id - 1);
-    int y = (int) URand(1, 100, params->w_id - 1);
 
-
+    auto x = (int) URand(1, 100, params->w_id - 1);
     if(x <= 85) {
         // home warehouse
         params->c_d_id = params->d_id;
@@ -49,45 +44,47 @@ void TPCCWorkloadGenerator::gen_payment_request(uint64_t thd_id, tpcc_query *que
         // remote warehouse
         params->c_d_id = URand(1, DIST_PER_WARE, params->w_id - 1);
         if(g_num_wh > 1) {
+            //generate something other than params->w_id
             while((params->c_w_id = URand(1, g_num_wh, params->w_id - 1)) == params->w_id) {}
         } else {
             params->c_w_id = params->w_id;
         }
     }
 
+    auto y = (int) URand(1, 100, params->w_id - 1);
     if(y <= 60) {
         // by last name
         params->by_last_name = true;
         Lastname(NURand(255,0,999, params->w_id - 1), params->c_last);
     } else {
-        // by cust id
+        // by customer id
         params->by_last_name = false;
         params->c_id = NURand(1023, 1, g_cust_per_dist, params->w_id-1);
     }
 }
 
-void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thd_id, tpcc_query *query) {
-    tpcc_params * tpcc_params = & query->params;
-    auto params = (tpcc_new_order_params *) tpcc_params;
-
+void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thd_id, tpcc_new_order_params * params) {
+    //choose a home warehouse
     if (FIRST_PART_LOCAL) {
         params->w_id = thd_id % g_num_wh + 1;
     } else {
         params->w_id = URand(1, g_num_wh, thd_id % g_num_wh);
     }
 
-    params->d_id = URand(1, DIST_PER_WARE, params->w_id - 1);
-    params->c_id = NURand(1023, 1, g_cust_per_dist, params->w_id - 1);
+    params->d_id    = URand(1, DIST_PER_WARE, params->w_id - 1);
+    params->c_id    = NURand(1023, 1, g_cust_per_dist, params->w_id - 1);
+    params->rbk     = (bool) URand(1, 100, params->w_id - 1);
 
-    params->rbk = (bool) URand(1, 100, params->w_id - 1);
-    params->ol_cnt = URand(5, 15, params->w_id - 1);
-    params->o_entry_d = 2013;
+    params->o_entry_d   = 2013;
+    params->ol_cnt      = URand(5, 15, params->w_id - 1);
 
     params->remote = false;
-    for (UInt32 oid = 0; oid < params->ol_cnt; oid ++) {
+    for (uint32_t oid = 0; oid < params->ol_cnt; oid ++) {
+        //choose a random item
         params->items[oid].ol_i_id = NURand(8191, 1, g_max_items, params->w_id - 1);
-        UInt32 x = (UInt32) URand(1, 100, params->w_id - 1);
 
+        //1% of ol items go remote
+        auto x = (uint32_t) URand(1, 100, params->w_id - 1);
         if (x > 1 || g_num_wh == 1) {
             params->items[oid].ol_supply_w_id = params->w_id;
         } else {
@@ -97,10 +94,10 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thd_id, tpcc_query *q
         }
 
         // Remove duplicate items
-        for (UInt32 i = 0; i < params->ol_cnt; i++) {
-            for (UInt32 j = 0; j < i; j++) {
+        for (uint32_t i = 0; i < params->ol_cnt; i++) {
+            for (uint32_t j = 0; j < i; j++) {
                 if (params->items[i].ol_i_id == params->items[j].ol_i_id) {
-                    for (UInt32 k = i; k < params->ol_cnt - 1; k++) {
+                    for (uint32_t k = i; k < params->ol_cnt - 1; k++) {
                         params->items[k] = params->items[k + 1];
                     }
                     params->ol_cnt--;
@@ -109,8 +106,8 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thd_id, tpcc_query *q
             }
         }
 
-        for (UInt32 i = 0; i < params->ol_cnt; i++) {
-            for (UInt32 j = 0; j < i; j++) {
+        for (uint32_t i = 0; i < params->ol_cnt; i++) {
+            for (uint32_t j = 0; j < i; j++) {
                 assert(params->items[(int)i].ol_i_id != params->items[(int)j].ol_i_id);
             }
         }

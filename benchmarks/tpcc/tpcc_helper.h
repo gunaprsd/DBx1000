@@ -25,6 +25,9 @@ uint64_t NURand(uint64_t A, uint64_t x, uint64_t y, uint64_t thd_id);
 uint64_t MakeAlphaString(int min, int max, char * str, uint64_t thd_id);
 uint64_t MakeNumberString(int min, int max, char* str, uint64_t thd_id);
 
-uint64_t wh_to_part(uint64_t wid);
+int wh_to_part(uint64_t wid);
+
+
+#define COPY_CONST_STRING(dst, src, len) memcpy(dst, src, len); dst[len] = '\0';
 
 #endif

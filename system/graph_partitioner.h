@@ -55,7 +55,7 @@ struct Graph {
     }
 };
 
-class GraphCreator {
+class GraphPartitioner {
 public:
     void begin(uint32_t num_vertices);
 

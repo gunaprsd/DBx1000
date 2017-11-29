@@ -53,8 +53,8 @@ set(SOURCE_FILES
         storage/row.h
         storage/table.cpp
         storage/table.h
-        system/graph_creator.h
-        system/graph_creator.cpp
+        system/graph_partitioner.h
+        system/graph_partitioner.cpp
         system/global.cpp
         system/global.h
         system/helper.cpp
@@ -69,6 +69,8 @@ set(SOURCE_FILES
         system/txn.cpp
         system/txn.h
         system/query.h
+        system/database.h
+        system/database.cpp
         system/workload.h
         system/workload.cpp
         config-std.h
@@ -77,7 +79,7 @@ set(SOURCE_FILES
 
 include_directories(.)
 include_directories(benchmarks/ycsb)
-
+include_directories(benchmarks/tpcc)
 include_directories(concurrency_control)
 include_directories(storage)
 include_directories(system)

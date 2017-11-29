@@ -8,7 +8,7 @@
 #include "row_lock.h"
 #include "row_ts.h"
 #include "row_mvcc.h"
-#include "graph_creator.h"
+#include "graph_partitioner.h"
 #include <vector>
 #include "mem_alloc.h"
 

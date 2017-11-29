@@ -56,7 +56,7 @@ public:
 private:
 
     TPCCDatabase * db;
-    RC run_payment(tpcc_payment_params * m_query);
+    RC run_payment(tpcc_payment_params * params);
     RC run_new_order(tpcc_new_order_params * m_query);
 };
 
@@ -71,7 +71,7 @@ public:
     table_t *		t_history;
     table_t *		t_new_order;
     table_t *		t_order;
-    table_t *		t_orderline;
+    table_t *		t_order_line;
     table_t *		t_item;
     table_t *		t_stock;
 
@@ -81,9 +81,10 @@ public:
     INDEX * 	i_customer_id;
     INDEX * 	i_customer_last;
     INDEX * 	i_stock;
+
 protected:
-    void        load_tables(uint32_t thread_id) override;
-    drand48_data * * rand_buffer;
+    void                load_tables(uint32_t thread_id) override;
+    drand48_data * *    rand_buffer;
 private:
     void load_items_table();
     void load_warehouse_table   (uint32_t wid);
@@ -106,8 +107,8 @@ public:
 protected:
     void            per_thread_generate(uint32_t thread_id) override;
     void            per_thread_write_to_file(uint32_t thread_id, FILE * file) override;
-    void 	    gen_payment_request(uint64_t thd_id, tpcc_query * query);
-    void            gen_new_order_request(uint64_t thd_id, tpcc_query * query);
+    void 	        gen_payment_request(uint64_t thread_id, tpcc_payment_params * params);
+    void            gen_new_order_request(uint64_t thd_id, tpcc_new_order_params * params);
 
     tpcc_query * * 		_queries;
 };

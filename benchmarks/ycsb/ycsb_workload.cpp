@@ -1,6 +1,6 @@
 #include "mem_alloc.h"
 #include "ycsb.h"
-#include "graph_creator.h"
+#include "graph_partitioner.h"
 
 uint64_t 	YCSBWorkloadGenerator::the_n = 0;
 double 		YCSBWorkloadGenerator::zeta_n_theta = 0;
@@ -189,7 +189,7 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 
 	//Step 3: Creating graph structures
 	start_time = get_server_clock();
-	GraphCreator * creator = new GraphCreator();
+	GraphPartitioner * creator = new GraphPartitioner();
     creator->begin(num_total_queries);
 	for(uint64_t i = 0; i < num_total_queries; i++) {
 		creator->move_to_next_vertex();

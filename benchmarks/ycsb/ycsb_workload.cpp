@@ -190,7 +190,7 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 	//Step 3: Creating graph structures
 	start_time = get_server_clock();
 	GraphCreator * creator = new GraphCreator();
-	creator->initialize(num_total_queries);
+    creator->begin(num_total_queries);
 	for(uint64_t i = 0; i < num_total_queries; i++) {
 		creator->move_to_next_vertex();
 		for(uint64_t j = 0; j < num_total_queries; j++) {

@@ -8,7 +8,6 @@
 #include "txn.h"
 #include "query.h"
 #include "thread.h"
-#include "conflict_graph.h"
 
 class ycsb_request {
 public:
@@ -30,19 +29,31 @@ class YCSBDatabase;
 
 class YCSBTransactionManager : public txn_man {
 public:
-	void initialize(Database * database, INDEX * index, uint32_t thread_id);
+	void initialize(Database * database, uint32_t thread_id) override;
 	RC run_txn(BaseQuery * query) override;
 
 	uint64_t 		row_cnt;
-	YCSBDatabase * 	ycsb_database;
-	INDEX *			the_index;
+	YCSBDatabase * 	db;
+};
+
+class YCSBDatabase : public Database {
+public :
+	void        initialize(uint32_t num_threads) override;
+	txn_man *   get_txn_man(uint32_t thread_id) override;
+	int         key_to_part(uint64_t key);
+	INDEX * the_index;
+	table_t * the_table;
+
+protected:
+	void        load_tables(uint32_t thread_id) override;
+	void        load_main_table(uint32_t thread_id);
 };
 
 class YCSBWorkloadGenerator : public ParallelWorkloadGenerator {
 public:
 	void initialize(uint32_t num_threads,
-		   			uint64_t num_params_per_thread,
-		   			const char * base_file_name) override;
+					uint64_t num_params_per_thread,
+					const char * base_file_name) override;
 
 	BaseQueryList * get_queries_list(uint32_t thread_id) override;
 protected:
@@ -62,41 +73,11 @@ protected:
 	static 	uint64_t 			the_n;
 };
 
-class YCSBDatabase : public Database {
-public :
-	void        initialize(uint32_t num_threads = INIT_PARALLELISM) override;
-	txn_man *   get_txn_man(uint32_t thread_id) override;
-	int         key_to_part(uint64_t key);
-	INDEX * the_index;
-	table_t * the_table;
-
-protected:
-	void        load_tables(uint32_t thread_id) override;
-	void        load_main_table(uint32_t thread_id);
-};
-
-class YCSBExecutor : public BenchmarkExecutor {
-public:
-	void initialize(uint32_t num_threads) override;
-protected:
-	YCSBDatabase * 			_db;
-	YCSBWorkloadGenerator * _generator;
-};
-
 class YCSBWorkloadPartitioner : public WorkloadPartitioner {
-    struct DataInfo {
-        uint64_t num_reads;
-        uint64_t num_writes;
-    };
-
 protected:
     void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
-
 private:
-    uint64_t hash(uint64_t key) {
-        return key;
-    }
-
+    uint64_t hash(uint64_t key) { return key; }
     double compute_weight(ycsb_query * q1, ycsb_query * q2, DataInfo * data) {
         bool conflict = false;
         double weight = 0.0;
@@ -112,6 +93,14 @@ private:
         }
         return conflict ? weight : -1.0;
     }
-
 };
+
+class YCSBExecutor : public BenchmarkExecutor {
+public:
+    void initialize(uint32_t num_threads) override;
+protected:
+    YCSBDatabase * 			_db;
+    YCSBWorkloadGenerator * _generator;
+};
+
 #endif

@@ -12,10 +12,9 @@
 #include <vector>
 #include "mem_alloc.h"
 
-void YCSBTransactionManager::initialize(Database * database, INDEX * index, uint32_t thread_id) {
+void YCSBTransactionManager::initialize(Database * database, uint32_t thread_id) {
 	txn_man::initialize(database, thread_id);
-	ycsb_database = (YCSBDatabase *) database;
-	the_index = index;
+	db = (YCSBDatabase *) database;
 }
 
 RC YCSBTransactionManager::run_txn(BaseQuery * query) {
@@ -32,7 +31,7 @@ RC YCSBTransactionManager::run_txn(BaseQuery * query) {
 		UInt32 iteration = 0;
 		while ( !finish_req ) {
 			if (iteration == 0) {
-				m_item = index_read(the_index, req->key, part_id);
+				m_item = index_read(db->the_index, req->key, part_id);
 			} 
 #if INDEX_STRUCT == IDX_BTREE
 			else {
@@ -81,6 +80,7 @@ final:
 	rc = finish(rc);
 	return rc;
 }
+
 
 void YCSBExecutor::initialize(uint32_t num_threads) {
 	BenchmarkExecutor::initialize(num_threads);

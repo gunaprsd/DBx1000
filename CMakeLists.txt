@@ -4,10 +4,17 @@ project(DBx1000)
 set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES
-        benchmarks/ycsb.h
-        benchmarks/ycsb_workload.cpp
-        benchmarks/ycsb_txn.cpp
-        benchmarks/ycsb_database.cpp
+        benchmarks/ycsb/ycsb.h
+        benchmarks/ycsb/ycsb_workload.cpp
+        benchmarks/ycsb/ycsb_txn.cpp
+        benchmarks/ycsb/ycsb_database.cpp
+        benchmarks/tpcc/tpcc.h
+        benchmarks/tpcc/tpcc_const.h
+        benchmarks/tpcc/tpcc_helper.h
+        benchmarks/tpcc/tpcc_helper.cpp
+        benchmarks/tpcc/tpcc_workload.cpp
+        benchmarks/tpcc/tpcc_txn.cpp
+        benchmarks/tpcc/tpcc_database.cpp
         concurrency_control/dl_detect.cpp
         concurrency_control/dl_detect.h
         concurrency_control/hekaton.cpp
@@ -67,7 +74,8 @@ set(SOURCE_FILES
         config.h)
 
 include_directories(.)
-include_directories(benchmarks)
+include_directories(benchmarks/ycsb)
+
 include_directories(concurrency_control)
 include_directories(storage)
 include_directories(system)

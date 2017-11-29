@@ -17,7 +17,7 @@ class ParallelWorkloadGenerator
 public:
     virtual void    initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name = NULL);
             void    generate();
-            void    finalize();
+    virtual void    release();
 
     virtual BaseQueryList * get_queries_list(uint32_t thread_id) = 0;
 protected:
@@ -45,7 +45,7 @@ class ParallelWorkloadLoader
 public:
     virtual void    initialize(uint32_t num_threads, uint64_t num_params_per_thread, char * base_file_name);
             void    load();
-            void    finalize();
+    virtual void    release();
 
     virtual BaseQueryList * get_queries_list(uint32_t thread_id) = 0;
 protected:
@@ -72,7 +72,7 @@ class WorkloadPartitioner /* Single Threaded */
 public:
     virtual void    initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt,  const char * base_file_name);
             void    partition();
-            void    finalize();
+    virtual void    release();
 protected:
             void    open_all_files();
             void    close_all_files();

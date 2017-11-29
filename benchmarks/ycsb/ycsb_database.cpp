@@ -18,10 +18,10 @@ void YCSBDatabase::initialize(uint32_t num_threads) {
 	char * cpath = getenv("GRAPHITE_HOME");
 	string path;
 	if (cpath == NULL) 
-		path = "./benchmarks/YCSB_schema.txt";
+		path = "./benchmarks/ycsb/schema.txt";
 	else { 
 		path = string(cpath);
-		path += "/tests/apps/dbms/YCSB_schema.txt";
+		path += "/tests/apps/dbms/schema.txt";
 	}
 	Database::initialize_schema(path);
 	the_table = tables["MAIN_TABLE"];

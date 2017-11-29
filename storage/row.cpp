@@ -222,7 +222,7 @@ RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
 	txn->cur_row->init(get_table(), this->get_part_id());
   #endif
 
-	// TODO need to initialize the table/catalog information.
+	// TODO need to begin the table/catalog information.
 	TsType ts_type = (type == RD)? R_REQ : P_REQ; 
 	rc = this->manager->access(txn, ts_type, row);
 	if (rc == RCOK ) {

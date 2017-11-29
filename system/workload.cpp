@@ -68,7 +68,7 @@ void * ParallelWorkloadGenerator::run_helper(void *ptr) {
     return NULL;
 }
 
-void ParallelWorkloadGenerator::finalize() {}
+void ParallelWorkloadGenerator::release() {}
 
 
 void ParallelWorkloadLoader::initialize(uint32_t num_threads, uint64_t num_params_per_thread, char * base_file_name) {
@@ -122,9 +122,7 @@ void * ParallelWorkloadLoader::run_helper(void* ptr) {
     return NULL;
 }
 
-void ParallelWorkloadLoader::finalize() {
-
-}
+void ParallelWorkloadLoader::release() {}
 
 
 void WorkloadPartitioner::initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt, const char * base_file_name) {
@@ -160,7 +158,7 @@ void WorkloadPartitioner::partition() {
     }
 }
 
-void WorkloadPartitioner::finalize() {
+void WorkloadPartitioner::release() {
     close_all_files();
     printf("************** Workload Partition Summary **************** \n");
     printf("%-25s :: total: %10lf, avg: %10lf\n", "Reading from File", read_duration, read_duration / num_iterations);

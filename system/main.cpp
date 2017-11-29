@@ -3,8 +3,7 @@
 #include "thread.h"
 #include "manager.h"
 #include "mem_alloc.h"
-
-#include "ycsb.h"
+#include "tpcc.h"
 
 void parser(int argc, char * argv[]);
 
@@ -28,15 +27,15 @@ int main(int argc, char* argv[]) {
     vll_man.init();
 #endif
 
-    YCSBWorkloadGenerator * generator = new YCSBWorkloadGenerator();
-    generator->initialize(16, 1024 * 1024, "ycsb_test");
+    TPCCWorkloadGenerator * generator = new TPCCWorkloadGenerator();
+    generator->initialize(16, 1024 * 1024, "tpcc_test");
     generator->generate();
-    generator->finalize();
+    generator->release();
 
-    YCSBWorkloadPartitioner * partitioner = new YCSBWorkloadPartitioner();
-    partitioner->initialize(16, 128 * 1024, 1024, "ycsb_test");
+    TPCCWorkloadPartitioner * partitioner = new TPCCWorkloadPartitioner();
+    partitioner->initialize(16, 128 * 1024, 1024, "tpcc_test");
     partitioner->partition();
-    partitioner->finalize();
+    partitioner->release();
 
     return 0;
 }

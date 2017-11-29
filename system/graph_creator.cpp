@@ -1,6 +1,6 @@
 #include "graph_creator.h"
 
-void GraphCreator::initialize(uint32_t num_vertices) {
+void GraphCreator::begin(uint32_t num_vertices) {
     graph           = new Graph();
     graph->nvtxs    = (idx_t) num_vertices;
     graph->ncon     = 1;
@@ -135,4 +135,9 @@ void GraphCreator::prepare() {
     }
 
 
+}
+
+void GraphCreator::release() {
+    graph->release();
+    graph->reset();
 }

@@ -57,7 +57,7 @@ struct Graph {
 
 class GraphCreator {
 public:
-    void initialize(uint32_t num_vertices);
+    void begin(uint32_t num_vertices);
 
     void move_to_next_vertex();
 
@@ -67,15 +67,12 @@ public:
 
     void do_cluster(int num_clusters);
 
+    void release();
+
     uint32_t get_cluster_id(uint32_t vtx) {
         assert(vtx < graph->nvtxs);
         assert(graph->parts != NULL);
         return graph->parts[vtx];
-    }
-
-    void release() {
-        graph->release();
-        graph->reset();
     }
 
 protected:

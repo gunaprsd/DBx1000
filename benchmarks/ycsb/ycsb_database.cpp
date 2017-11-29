@@ -36,7 +36,7 @@ int YCSBDatabase::key_to_part(uint64_t key) {
 
 txn_man *  YCSBDatabase::get_txn_man(uint32_t thread_id) {
         auto txn_manager = new YCSBTransactionManager();
-	txn_manager->initialize(this, the_index, thread_id);
+	txn_manager->initialize(this, thread_id);
 	return txn_manager;
 }
 

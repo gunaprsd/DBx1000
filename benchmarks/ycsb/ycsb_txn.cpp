@@ -87,7 +87,7 @@ void YCSBExecutor::initialize(uint32_t num_threads) {
 
 	//Build database in parallel
 	_db = new YCSBDatabase();
-	_db->initialize();
+	_db->initialize(INIT_PARALLELISM);
 	_db->load();
 
 	//Generate workload in parallel

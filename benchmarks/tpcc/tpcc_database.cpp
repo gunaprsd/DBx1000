@@ -13,7 +13,7 @@ void TPCCDatabase::initialize(uint32_t num_threads) {
         path += "/tests/apps/dbms/schema.txt";
     }
     Database::initialize_schema(path);
-    rand_buffer = new drand_data * [_num_threads];
+    rand_buffer = new drand48_data * [_num_threads];
     t_warehouse = tables["WAREHOUSE"];
     t_district = tables["DISTRICT"];
     t_customer = tables["CUSTOMER"];
@@ -326,7 +326,7 @@ void TPCCDatabase::initialize_permutation(uint64_t * perm_c_id, uint64_t wid) {
 
 void TPCCDatabase::load_tables(uint32_t thread_id) {
     uint32_t wid = thread_id + 1;
-    rand_buffer[thread_id] = (drand_data *) _mm_malloc(sizeof(drand_data), 64);
+    rand_buffer[thread_id] = (drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
     assert((uint64_t)thread_id < g_num_wh);
     srand48_r(wid, rand_buffer[thread_id]);
 

@@ -3,7 +3,7 @@ CFLAGS=-Wall -g -std=c++0x
 
 .SUFFIXES: .o .cpp .h
 
-SRC_DIRS = ./ ./benchmarks/ycsb ./benchmarks/tpcc ./concurrency_control/ ./storage/ ./system/
+SRC_DIRS = ./ ./benchmarks/ycsb/ ./benchmarks/tpcc/ ./concurrency_control/ ./storage/ ./system/
 INCLUDE = -I. -I./benchmarks/ycsb -I./benchmarks/tpcc -I./concurrency_control -I./storage -I./system -I./libs/include
 
 CFLAGS += $(INCLUDE) -D NOGRAPHITE=1 -Werror -O3

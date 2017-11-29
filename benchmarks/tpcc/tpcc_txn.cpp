@@ -7,13 +7,15 @@ void TPCCTransactionManager::initialize(Database *database, uint32_t thread_id) 
 }
 
 RC TPCCTransactionManager::run_txn(BaseQuery *query) {
-    auto tpcc_query = ((tpcc_query *) query);
+    tpcc_query * t_query = ((tpcc_query *) query);
+    tpcc_payment_params * payment_params = NULL;
+    tpcc_new_order_params * new_order_params = NULL;
     switch (query->type) {
         case TPCC_PAYMENT_QUERY:
-            auto payment_params = ((tpcc_payment_params *) (& tpcc_query->params));
+	    payment_params = ((tpcc_payment_params *) (& t_query->params));
             return run_payment(payment_params);
         case TPCC_NEW_ORDER_QUERY:
-            auto new_order_params = ((tpcc_new_order_params *) (& tpcc_query->params));
+            new_order_params = ((tpcc_new_order_params *) (& t_query->params));
             return run_new_order(new_order_params);
         default:
             printf("Transaction type not supported!");

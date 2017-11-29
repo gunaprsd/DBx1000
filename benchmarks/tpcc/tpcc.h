@@ -106,7 +106,7 @@ public:
 protected:
     void            per_thread_generate(uint32_t thread_id) override;
     void            per_thread_write_to_file(uint32_t thread_id, FILE * file) override;
-    void 			gen_payment_request(uint64_t thd_id, tpcc_query * query);
+    void 	    gen_payment_request(uint64_t thd_id, tpcc_query * query);
     void            gen_new_order_request(uint64_t thd_id, tpcc_query * query);
 
     tpcc_query * * 		_queries;

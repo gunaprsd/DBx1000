@@ -1,14 +1,5 @@
 #include "tpcc.h"
 
-void TPCCWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char *base_file_name) {
-    ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
-    //nothing more to initialize
-    _queries = new tpcc_query * [_num_threads];
-    for(uint32_t i = 0; i < _num_threads; i++) {
-        _queries[i] = new tpcc_query[_num_params_per_thread];
-    }
-}
-
 BaseQueryList * TPCCWorkloadGenerator::get_queries_list(uint32_t thread_id) {
     auto queryList = new QueryList<tpcc_params>();
     queryList->initialize(_queries[thread_id], _num_params_per_thread);
@@ -120,9 +111,17 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thd_id, tpcc_query *q
 
         for (UInt32 i = 0; i < params->ol_cnt; i++) {
             for (UInt32 j = 0; j < i; j++) {
-                assert(params->items[i].ol_i_id != params->items[j].ol_i_id);
+                assert(params->items[(int)i].ol_i_id != params->items[(int)j].ol_i_id);
             }
         }
+    }
+}
+
+void TPCCWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char *base_file_name) {
+    ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
+    _queries = new tpcc_query * [_num_threads];
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        _queries[i] = new tpcc_query[_num_params_per_thread];
     }
 }
 

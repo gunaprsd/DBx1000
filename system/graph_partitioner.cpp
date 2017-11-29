@@ -76,7 +76,7 @@ void GraphPartitioner::do_cluster(int num_clusters) {
     graph->options[METIS_OPTION_OBJTYPE]    = METIS_OBJTYPE_CUT;
     graph->options[METIS_OPTION_CTYPE]      = METIS_CTYPE_SHEM;
     graph->options[METIS_OPTION_IPTYPE]     = METIS_IPTYPE_RANDOM;
-    graph->options[METIS_OPTION_NCUTS]      = num_clusters;
+    graph->options[METIS_OPTION_NCUTS]      = 25;
     graph->options[METIS_OPTION_NITER]      = 10;
     graph->options[METIS_OPTION_SEED]       = 123;
     graph->options[METIS_OPTION_MINCONN]    = 0;

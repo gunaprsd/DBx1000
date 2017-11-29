@@ -127,12 +127,12 @@
 #define POS_IN_TXN					1
 
 // ==== [YCSB] ====
-#define ZIPF_THETA 				0.1
+#define ZIPF_THETA 				0
 #define PART_PER_TXN 				1
 #define PERC_MULTI_PART				1
 #define REQ_PER_QUERY				16
 #define FIELD_PER_TUPLE				10
-#define MAX_REQ_PER_QUERY			16
+#define MAX_REQ_PER_QUERY			8
 
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
@@ -141,11 +141,11 @@
 // Some of the transactions read the data but never use them. 
 // If TPCC_ACCESS_ALL == fales, then these parts of the transactions
 // are not modeled.
-#define TPCC_ACCESS_ALL 			false 
+#define TPCC_ACCESS_ALL 			        false 
 #define WH_UPDATE					true
 #define NUM_WH 						1
-#define MAX_NUM_ORDER_LINE			16
-//
+#define MAX_NUM_ORDER_LINE			        16
+
 enum TPCCTxnType {TPCC_ALL, 
 				TPCC_PAYMENT, 
 				TPCC_NEW_ORDER, 
@@ -166,11 +166,11 @@ extern TPCCTxnType 					g_tpcc_txn_type;
 // TODO centralized CC management. 
 /***********************************************/
 #define MAX_LOCK_CNT				(20 * THREAD_CNT) 
-#define TSTAB_SIZE                  50 * THREAD_CNT
-#define TSTAB_FREE                  TSTAB_SIZE 
-#define TSREQ_FREE                  4 * TSTAB_FREE
-#define MVHIS_FREE                  4 * TSTAB_FREE
-#define SPIN                        false
+#define TSTAB_SIZE                              50 * THREAD_CNT
+#define TSTAB_FREE                              TSTAB_SIZE 
+#define TSREQ_FREE                              4 * TSTAB_FREE
+#define MVHIS_FREE                              4 * TSTAB_FREE
+#define SPIN                                    false
 
 /***********************************************/
 // Test cases
@@ -189,9 +189,9 @@ extern TestCases					g_test_case;
 #define VERB_ALLOC					true
 
 #define DEBUG_LOCK					false
-#define DEBUG_TIMESTAMP				false
+#define DEBUG_TIMESTAMP				        false
 #define DEBUG_SYNTH					false
-#define DEBUG_ASSERT				false
+#define DEBUG_ASSERT				        false
 #define DEBUG_CC					false //true
 
 /***********************************************/
@@ -212,16 +212,16 @@ extern TestCases					g_test_case;
 #define TIMESTAMP					4
 #define MVCC						5
 #define HSTORE						6
-#define OCC							7
+#define OCC						7
 #define TICTOC						8
 #define SILO						9
-#define VLL							10
+#define VLL						10
 #define HEKATON 					11
 #define NONE						12
 //Isolation Levels 
-#define SERIALIZABLE				1
+#define SERIALIZABLE				        1
 #define SNAPSHOT					2
-#define REPEATABLE_READ				3
+#define REPEATABLE_READ				        3
 // TIMESTAMP allocation method.
 #define TS_MUTEX					1
 #define TS_CAS						2

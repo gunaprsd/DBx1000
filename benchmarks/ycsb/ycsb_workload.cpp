@@ -169,32 +169,35 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 
 	//Step 2: create a DataNode map for items in the transaction
 	start_time = get_server_clock();
-	uint64_t num_total_queries = num_records * _num_threads;
-	uint64_t hash_size = 16 * num_total_queries * MAX_REQ_PER_QUERY;
-	DataInfo * data_info = new DataInfo[hash_size];
-	for(uint64_t i = 0; i < num_total_queries; i++) {
-		ycsb_query * query = & all_queries[i];
-		for(uint32_t j = 0; j < query->params.request_cnt; j++) {
-			uint64_t  key_hash = hash(query->params.requests[j].key);
-			key_hash = key_hash % hash_size;
-			if(query->params.requests[j].rtype == RD) {
-				data_info[key_hash].num_reads++;
-			} else {
-				data_info[key_hash].num_writes++;
-			}
-		}
-	}
+       	uint64_t num_total_queries = num_records * _num_threads;
+	//uint64_t hash_size = 16 * num_total_queries * MAX_REQ_PER_QUERY;
+	//DataInfo * data_info = new DataInfo[hash_size];
+	//for(uint64_t i = 0; i < num_total_queries; i++) {
+	//	ycsb_query * query = & all_queries[i];
+	//	for(uint32_t j = 0; j < query->params.request_cnt; j++) {
+	//		uint64_t  key_hash = hash(query->params.requests[j].key);
+	//		key_hash = key_hash % hash_size;
+	//		if(query->params.requests[j].rtype == RD) {
+	//			data_info[key_hash].num_reads++;
+	//		} else {
+	//			data_info[key_hash].num_writes++;
+	//			}
+	//}
+	//}
 	end_time = get_server_clock();
 	data_statistics_duration += DURATION(end_time, start_time);
 
 	//Step 3: Creating graph structures
 	start_time = get_server_clock();
 	GraphPartitioner * creator = new GraphPartitioner();
-    creator->begin(num_total_queries);
+	creator->begin(num_total_queries);
 	for(uint64_t i = 0; i < num_total_queries; i++) {
 		creator->move_to_next_vertex();
 		for(uint64_t j = 0; j < num_total_queries; j++) {
-			double weight = compute_weight(& all_queries[i], & all_queries[j], data_info);
+		  if(i == j) {
+		    continue;
+		  }
+			double weight = compute_weight(& all_queries[i], & all_queries[j], nullptr);
 			if(weight < 0) {
 				continue;
 			} else {

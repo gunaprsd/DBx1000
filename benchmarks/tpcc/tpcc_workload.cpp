@@ -184,3 +184,31 @@ BaseQueryList *TPCCWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
     queryList->initialize(_partitioned_queries[thread_id], _tmp_queries[thread_id].size());
     return queryList;
 }
+
+void TPCCWorkloadPartitioner::initialize(uint32_t num_threads,
+                                         uint64_t num_params_per_thread,
+                                         uint64_t num_params_pgpt,
+                                         ParallelWorkloadGenerator *generator) {
+    WorkloadPartitioner::initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
+    auto t_generator = (TPCCWorkloadGenerator *) generator;
+    _orig_queries = t_generator->_queries;
+    _partitioned_queries = nullptr;
+}
+
+void TPCCWorkloadPartitioner::partition() {
+    WorkloadPartitioner::partition();
+
+    uint64_t start_time, end_time;
+    start_time = get_server_clock();
+    _partitioned_queries = new tpcc_query * [_num_threads];
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        _partitioned_queries[i] = (tpcc_query *) _mm_malloc(sizeof(tpcc_query) * _tmp_queries[i].size(), 64);
+        uint32_t offset = 0;
+        for(auto iter = _tmp_queries[i].begin(); iter != _tmp_queries[i].end(); iter++) {
+            memcpy(& _partitioned_queries[i][offset], * iter, sizeof(tpcc_query));
+            offset++;
+        }
+    }
+    end_time = get_server_clock();
+    shuffle_duration += DURATION(end_time, start_time);
+}

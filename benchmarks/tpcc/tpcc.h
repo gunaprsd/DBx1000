@@ -115,7 +115,11 @@ protected:
 };
 
 class TPCCWorkloadPartitioner : public WorkloadPartitioner {
-    void initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt, ParallelWorkloadGenerator * generator);
+public:
+    void initialize(uint32_t num_threads,
+                    uint64_t num_params_per_thread,
+                    uint64_t num_params_pgpt,
+                    ParallelWorkloadGenerator * generator) override;
     BaseQueryList * get_queries_list(uint32_t thread_id) override;
     void partition() override;
  protected:

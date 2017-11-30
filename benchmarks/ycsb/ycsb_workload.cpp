@@ -15,9 +15,6 @@ void YCSBWorkloadGenerator::initialize_zipf_distribution(uint32_t num_threads) {
 	zeta_2_theta = zeta(2, g_zipf_theta);
 	zeta_n_theta = zeta(the_n, g_zipf_theta);
 	buffers = new drand48_data * [num_threads];
-	for(uint32_t i = 0; i < num_threads; i++) {
-		buffers[i] = (drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
-	}
 }
 
 double YCSBWorkloadGenerator::zeta(uint64_t n, double theta) {
@@ -142,6 +139,8 @@ BaseQueryList * YCSBWorkloadGenerator::get_queries_list(uint32_t thread_id) {
 }
 
 void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
+  buffers[thread_id] =(drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
+  srand48_r(thread_id + 1, buffers[thread_id]);
 	for(uint64_t i = 0; i < _num_params_per_thread; i++) {
 		gen_requests(thread_id, & (_queries[thread_id][i]));
 	}
@@ -361,19 +360,22 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 			fprintf(post_partition_file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
 				}
 		}
-		printf("\n");
+		fprintf(post_partition_file, "\n");
 	}
 	fflush(post_partition_file);
 	fclose(post_partition_file);
 
 	printf("******** PARTITION SUMMARY AT ITERATION %d ***********\n", iteration);
-	printf("%-30s: %10d\n", "Num Vertices", num_total_queries);
-	printf("%-30s: %10d\n", "Num Edges", num_edges);
-	printf("%-30s: %10d --> %10d\n", "Cross-Core Edges", pre_num_cross_edges, post_num_cross_edges);
-	printf("%-30s: %10d --> %10d\n", "Cross-Core Weights", pre_total_weight, post_total_weight);
+	printf("%-30s: %d\n", "Num Vertices", num_total_queries);
+	printf("%-30s: %d\n", "Num Edges", num_edges);
+	printf("%-30s: %-10d --> %d\n", "Cross-Core Edges", pre_num_cross_edges, post_num_cross_edges);
+	printf("%-30s: %-10d --> %d\n", "Cross-Core Weights", pre_total_weight, post_total_weight);
 	printf("%-30s: [", "Partition Sizes");
 	for(uint32_t i = 0; i < _num_threads; i++) {
+	  if(i != _num_threads - 1)
 		printf("%d, ", (int)(_tmp_queries[i].size() - init_sizes[i]));
+	  else
+	    printf("%d", (int)(_tmp_queries[i].size() - init_sizes[i]));
 	}
 	printf("]\n");
 

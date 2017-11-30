@@ -34,8 +34,8 @@ int main(int argc, char* argv[]) {
     generator = new YCSBWorkloadGenerator();
     partitioner = new YCSBWorkloadPartitioner();
     uint32_t num_threads = 4;
-    uint64_t num_params_per_thread = 1024;
-    uint64_t num_params_pgpt = 128;
+    uint64_t num_params_per_thread = 16 * 1024;
+    uint64_t num_params_pgpt = 1024;
 
     generator->initialize(num_threads, num_params_per_thread, nullptr);
     generator->generate();

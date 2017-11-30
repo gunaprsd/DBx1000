@@ -68,7 +68,7 @@ protected:
 	static 	double 		zeta(uint64_t n, double theta);
 	static 	uint64_t 	zipf(uint32_t thread_id, uint64_t n, double theta);
 
-	static drand48_data * *		buffers;
+	static drand48_data * *		        buffers;
 	static 	double 				zeta_n_theta;
 	static 	double 				zeta_2_theta;
 	static 	uint64_t 			the_n;
@@ -82,6 +82,7 @@ protected:
 private:
     uint64_t hash(uint64_t key) { return key; }
     double compute_weight(ycsb_query * q1, ycsb_query * q2, DataInfo * data) {
+        assert(q1 != q2);
         bool conflict = false;
         double weight = 0.0;
         ycsb_params * p1 = & q1->params;
@@ -114,6 +115,7 @@ protected:
 
 private:
 	int compute_weight(ycsb_query * q1, ycsb_query * q2, DataInfo * data) {
+	        assert(q1 != q2); 
 		bool conflict = false;
 		int weight = 0;
 		ycsb_params * p1 = & q1->params;

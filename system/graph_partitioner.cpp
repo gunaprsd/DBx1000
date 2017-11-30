@@ -20,6 +20,7 @@ void GraphPartitioner::begin(uint32_t num_vertices) {
 
 void GraphPartitioner::move_to_next_vertex() {
     graph->xadj[cvtx] = cpos;
+    graph->vwgt[cvtx] = 1;
     cvtx++;
 }
 
@@ -65,30 +66,20 @@ void GraphPartitioner::do_cluster(int num_clusters) {
 
     //Initiate number of partitions
     graph->nparts   = num_clusters;
-
+    graph->ncon     = 1;
+    
     //Create result locations
     graph->objval   = 0;
     graph->parts    = (idx_t *) malloc(sizeof(idx_t) * graph->nvtxs);
-
+    for(uint32_t i = 0; i < graph->nvtxs; i++) {
+      graph->parts[i] = -1;
+    }
+    
     //Create options
     graph->options  = (idx_t *) malloc(sizeof(idx_t) * METIS_NOPTIONS);
-    graph->options[METIS_OPTION_PTYPE]      = METIS_PTYPE_KWAY;
-    graph->options[METIS_OPTION_OBJTYPE]    = METIS_OBJTYPE_CUT;
-    graph->options[METIS_OPTION_CTYPE]      = METIS_CTYPE_SHEM;
-    graph->options[METIS_OPTION_IPTYPE]     = METIS_IPTYPE_RANDOM;
-    graph->options[METIS_OPTION_NCUTS]      = 25;
-    graph->options[METIS_OPTION_NITER]      = 10;
-    graph->options[METIS_OPTION_SEED]       = 123;
-    graph->options[METIS_OPTION_MINCONN]    = 0;
-    graph->options[METIS_OPTION_NO2HOP]     = 0;
-    graph->options[METIS_OPTION_CONTIG]     = 0;
-    graph->options[METIS_OPTION_COMPRESS]   = 0;
-    graph->options[METIS_OPTION_CCORDER]    = 0;
-    graph->options[METIS_OPTION_NUMBERING]  = 0;
-    graph->options[METIS_OPTION_MINCONN]    = 1;
-    graph->options[METIS_OPTION_UFACTOR]    = 30;
-
-
+    METIS_SetDefaultOptions(graph->options);
+    graph->options[METIS_OPTION_UFACTOR] = 1;
+    graph->options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
     int result = METIS_PartGraphKway(& graph->nvtxs,
                                      & graph->ncon,
                                      graph->xadj,

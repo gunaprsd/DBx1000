@@ -239,11 +239,12 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 
 	start_time = get_server_clock();
 	auto creator = new GraphPartitioner();
+
+    int pre_total_weight = 0;
 	creator->begin((uint32_t)num_total_queries);
 	for(uint64_t i = 0; i < num_total_queries; i++) {
 		creator->move_to_next_vertex();
 		ycsb_query * q1 = & (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]);
-
 		for(uint64_t j = 0; j < num_total_queries; j++) {
 			if(i == j) {
 				continue;
@@ -253,6 +254,9 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 				if(weight < 0) {
 					continue;
 				} else {
+                    if(i / num_records != j / num_records) {
+                        pre_total_weight += weight;
+                    }
 					creator->add_edge((int)j, weight);
 				}
 			}
@@ -267,12 +271,41 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 	end_time = get_server_clock();
 	partition_duration += DURATION(end_time, start_time);
 
+    uint32_t init_sizes[_num_threads];
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        init_sizes[i] = (uint32_t)_tmp_queries[i].size();
+    }
+
 	for(uint32_t i = 0; i < num_total_queries; i++) {
 		int partition = creator->get_cluster_id(i);
 		_tmp_queries[partition].push_back(& (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]));
 	}
-
 	creator->release();
+
+    int post_total_weight = 0;
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        for(uint32_t j = 0; j < _num_threads; j++) {
+            if(i == j) {
+                continue;
+            } else {
+                for(uint32_t i_ctr = init_sizes[i]; i_ctr < (uint32_t)_tmp_queries[i].size(); i_ctr++) {
+                    for(uint32_t j_ctr = init_sizes[j]; j_ctr < (uint32_t)_tmp_queries[j].size(); j_ctr++) {
+                        ycsb_query * q1 = (ycsb_query *)_tmp_queries[i][i_ctr];
+                        ycsb_query * q2 = (ycsb_query *)_tmp_queries[j][j_ctr];
+                        int weight = compute_weight(q1, q2, nullptr);
+                        if(weight < 0) {
+                            continue;
+                        } else {
+                            post_total_weight += weight;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    printf("%-30s: %10d\n", "Pre-Partition Cross-Core Weight", pre_total_weight);
+    printf("%-30s: %10d\n", "Post-Partition Cross-Core Weight", post_total_weight);
 }
 
 void YCSBWorkloadPartitioner::partition() {

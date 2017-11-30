@@ -28,22 +28,19 @@ int main(int argc, char* argv[]) {
     vll_man.init();
 #endif
 
+    ParallelWorkloadGenerator * generator = nullptr;
+    WorkloadPartitioner * partitioner = nullptr;
+
+    generator = new YCSBWorkloadGenerator();
+    partitioner = new YCSBWorkloadPartitioner();
     uint32_t num_threads = 4;
-    TPCCWorkloadGenerator * generator = new TPCCWorkloadGenerator();
-    generator->initialize(num_threads, 32 * 1024, nullptr);
+    uint64_t num_params_per_thread = 1024;
+    uint64_t num_params_pgpt = 128;
+
+    generator->initialize(num_threads, num_params_per_thread, nullptr);
     generator->generate();
 
-
-    for(uint32_t i = 0; i < num_threads; i++) {
-        BaseQueryList * qlist = generator->get_queries_list(i);
-        while(!qlist->done()) {
-            ycsb_query * query = (ycsb_query *) qlist->next();
-            assert(query->params.request_cnt <= MAX_REQ_PER_QUERY);
-        }
-    }
-
-    TPCCWorkloadPartitioner * partitioner = new TPCCWorkloadPartitioner();
-    partitioner->initialize(num_threads, 32 * 1024, 1024 , generator);
+    partitioner->initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
     partitioner->partition();
     partitioner->release();
 

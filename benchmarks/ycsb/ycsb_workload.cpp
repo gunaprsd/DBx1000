@@ -218,7 +218,6 @@ void YCSBWorkloadPartitioner::initialize(uint32_t num_threads,
 										 uint64_t num_params_pgpt,
 										 ParallelWorkloadGenerator * generator) {
 	WorkloadPartitioner::initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
-	_tmp_queries = new std::vector<ycsb_query*> [_num_threads];
 	_orig_queries = ((YCSBWorkloadGenerator *) generator)->_queries;
 	_partitioned_queries = nullptr;
 }
@@ -293,12 +292,4 @@ void YCSBWorkloadPartitioner::partition() {
 	}
 	end_time = get_server_clock();
 	shuffle_duration += DURATION(end_time, start_time);
-
-
-	printf("***************** PARTITION SUMMARY ******************\n");
-	for(uint32_t i = 0; i < _num_threads; i++) {
-		printf("Thread Id: %10ld\t Queue Size: %10d\n", (long int)i, (int)_tmp_queries[i].size());
-	}
-	printf("******************************************************\n");
-
 }

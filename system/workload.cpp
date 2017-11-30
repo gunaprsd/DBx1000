@@ -214,6 +214,7 @@ void WorkloadPartitioner::initialize(uint32_t num_threads,
     _num_params_pgpt = num_params_pgpt;
     assert(_num_params_per_thread % _num_params_pgpt == 0);
     _generator = generator;
+    _tmp_queries = new std::vector<BaseQuery*> [_num_threads];
 
     num_iterations = 0;
     data_statistics_duration    = 0.0;
@@ -236,11 +237,23 @@ void WorkloadPartitioner::partition() {
         //move to next region
         num_params_done_pt += _num_params_pgpt;
         num_iterations++;
+
+
+        printf("***************** PARTITION SUMMARY AT ITERATION %d ******************\n", num_iterations);
+        for(uint32_t i = 0; i < _num_threads; i++) {
+            printf("Thread Id: %10ld\t Queue Size: %10d\n", (long int)i, (int)_tmp_queries[i].size());
+        }
+        printf("******************************************************\n");
     }
 }
 
 void WorkloadPartitioner::release() {
     //maybe cleanup?
+    printf("***************** FINAL PARTITION SUMMARY ******************\n");
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        printf("Thread Id: %10ld\t Queue Size: %10d\n", (long int)i, (int)_tmp_queries[i].size());
+    }
+    printf("******************************************************\n");
     printf("************** EXECUTION SUMMARY **************** \n");
     printf("%-25s :: total: %10lf, avg: %10lf\n", "Obtain Data Statistics", data_statistics_duration, data_statistics_duration / num_iterations);
     printf("%-25s :: total: %10lf, avg: %10lf\n", "Graph Structures Init", graph_init_duration, graph_init_duration / num_iterations);

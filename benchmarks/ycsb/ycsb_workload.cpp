@@ -229,83 +229,125 @@ BaseQueryList *YCSBWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
 }
 
 void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
-	/*
-	 * ith query in the overall array can be accessed by
-	 * thread_id = i / num_records
-	 * offset = i % num_records
-	 */
-	uint64_t start_time, end_time;
-	uint64_t num_total_queries = num_records * _num_threads;
+  /*
+   * ith query in the overall array can be accessed by
+   * thread_id = i / num_records
+   * offset = i % num_records
+   */
+  uint64_t start_time, end_time;
+  uint64_t num_total_queries = num_records * _num_threads;
 
-	start_time = get_server_clock();
-	auto creator = new GraphPartitioner();
+  start_time = get_server_clock();
+  auto creator = new GraphPartitioner();
 
-    int pre_total_weight = 0;
-	creator->begin((uint32_t)num_total_queries);
-	for(uint64_t i = 0; i < num_total_queries; i++) {
-		creator->move_to_next_vertex();
-		ycsb_query * q1 = & (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]);
-		for(uint64_t j = 0; j < num_total_queries; j++) {
-			if(i == j) {
-				continue;
-			} else {
-				ycsb_query * q2 = & (_orig_queries[j / num_records][(iteration * num_records) + (j % num_records)]);
-				int weight = compute_weight(q1, q2, nullptr);
-				if(weight < 0) {
-					continue;
-				} else {
-                    if(i / num_records != j / num_records) {
-                        pre_total_weight += weight;
-                    }
-					creator->add_edge((int)j, weight);
-				}
-			}
-		}
-	}
-	creator->finish();
-	end_time = get_server_clock();
-	graph_init_duration += DURATION(end_time, start_time);
-
-	start_time = get_server_clock();
-	creator->do_cluster(_num_threads);
-	end_time = get_server_clock();
-	partition_duration += DURATION(end_time, start_time);
-
-    uint32_t init_sizes[_num_threads];
-    for(uint32_t i = 0; i < _num_threads; i++) {
-        init_sizes[i] = (uint32_t)_tmp_queries[i].size();
+  char file_name[100];
+  sprintf(file_name, "pre_partition_%d.txt", iteration);
+  FILE * pre_partition_file = fopen(file_name, "w");
+  for(uint32_t i = 0; i < _num_threads; i++) {
+    fprintf(pre_partition_file, "Core\t:%d\tNum Queries\t:%ld\n", (int)i, (long int)num_records);
+    for(uint32_t j = (iteration * num_records); j < (iteration + 1)* num_records; j++) {
+      ycsb_query * query = & _orig_queries[i][j];
+      fprintf(pre_partition_file, "Transaction Id: (%d, %d)\n", (int)i, (int)j);
+      for(uint64_t k = 0; k < query->params.request_cnt; k++) {
+	fprintf(pre_partition_file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
+      }
     }
+    fprintf(pre_partition_file, "\n");
+  }
+  fflush(pre_partition_file);
+  fclose(pre_partition_file);	
 
-	for(uint32_t i = 0; i < num_total_queries; i++) {
-		int partition = creator->get_cluster_id(i);
-		_tmp_queries[partition].push_back(& (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]));
+  uint32_t pre_total_weight = 0;
+  uint32_t num_edges = 0;
+	
+  creator->begin((uint32_t)num_total_queries);
+  for(uint64_t i = 0; i < _num_threads; i++) {
+    for(uint64_t j = iteration * num_records; j < (iteration + 1) * num_records; j++) {
+      ycsb_query * q1 = & _orig_queries[i][j];
+      creator->move_to_next_vertex();
+      for(uint64_t k = 0; k < _num_threads; k++) {
+	for(uint64_t l = iteration * num_records; l < (itertion + 1) * num_records; l++) {
+	  ycsb_query * q2 = & _orig_queries[k][l];
+
+	  if(q1 != q2) {
+	    int weight = compute_weight(q1, q2, nullptr);
+	    if(weight > 0) {
+	      if(i != k) {
+		pre_total_weight += (uint32_t)weight;
+	      }
+	      num_edges++;
+	      creator->add_edge(k * num_records + (l - (iteration * num_records), weight);
+	    }
+	  }
+		  
 	}
-	creator->release();
-
-    int post_total_weight = 0;
-    for(uint32_t i = 0; i < _num_threads; i++) {
-        for(uint32_t j = 0; j < _num_threads; j++) {
-            if(i == j) {
-                continue;
-            } else {
-                for(uint32_t i_ctr = init_sizes[i]; i_ctr < (uint32_t)_tmp_queries[i].size(); i_ctr++) {
-                    for(uint32_t j_ctr = init_sizes[j]; j_ctr < (uint32_t)_tmp_queries[j].size(); j_ctr++) {
-                        ycsb_query * q1 = (ycsb_query *)_tmp_queries[i][i_ctr];
-                        ycsb_query * q2 = (ycsb_query *)_tmp_queries[j][j_ctr];
-                        int weight = compute_weight(q1, q2, nullptr);
-                        if(weight < 0) {
-                            continue;
-                        } else {
-                            post_total_weight += weight;
-                        }
-                    }
-                }
-            }
-        }
+      }
     }
+  }
+  creator->finish();  
+  end_time = get_server_clock();
+  graph_init_duration += DURATION(end_time, start_time);
 
-    printf("%-30s: %10d\n", "Pre-Partition Cross-Core Weight", pre_total_weight);
-    printf("%-30s: %10d\n", "Post-Partition Cross-Core Weight", post_total_weight);
+  start_time = get_server_clock();
+  creator->do_cluster(_num_threads);
+  end_time = get_server_clock();
+  partition_duration += DURATION(end_time, start_time);
+
+  uint32_t init_sizes[_num_threads];
+  for(uint32_t i = 0; i < _num_threads; i++) {
+    init_sizes[i] = (uint32_t)_tmp_queries[i].size();
+  }
+
+  for(uint32_t i = 0; i < _num_threads; i++) {
+    for(uint32_t j = iteration * num_records; j < (iteration + 1) * num_records; j++) {
+      uint32_t qid = i * num_records + (j - (iteration * num_records));
+      int partition = creator->get_cluster_id(qid);
+      _tmp_queries[partition].push_back(& _orig_queries[i][j]);
+    }
+  }
+  creator->release();
+
+  int post_total_weight = 0;
+  for(uint32_t i = 0; i < _num_threads; i++) {
+    for(uint32_t j = 0; j < _num_threads; j++) {
+      if(i == j) {
+	continue;
+      } else {
+	for(uint32_t i_ctr = init_sizes[i]; i_ctr < (uint32_t)_tmp_queries[i].size(); i_ctr++) {
+	  for(uint32_t j_ctr = init_sizes[j]; j_ctr < (uint32_t)_tmp_queries[j].size(); j_ctr++) {
+	    ycsb_query * q1 = (ycsb_query *)_tmp_queries[i][i_ctr];
+	    ycsb_query * q2 = (ycsb_query *)_tmp_queries[j][j_ctr];
+	    int weight = compute_weight(q1, q2, nullptr);
+	    if(weight < 0) {
+	      continue;
+	    } else {
+	      post_total_weight += weight;
+	    }
+	  }
+	}
+      }
+    }
+  }
+  
+  printf("%-30s: %10d\n", "Pre-Partition Cross-Core Weight", pre_total_weight);
+  printf("%-30s: %10d\n", "Post-Partition Cross-Core Weight", post_total_weight);
+
+  sprintf(file_name, "post_partition_%d.txt", iteration);
+  FILE * post_partition_file = fopen(file_name, "w");
+  for(uint32_t i = 0; i < _num_threads; i++) {
+    uint32_t num_queries = _tmp_queries[i].size() - init_sizes[i];
+    fprintf(post_partition_file, "Core\t:%d\tNum Queries\t:%ld\n", (int)i, (long int)num_queries);
+    for(uint32_t j = init_sizes[i]; j < (uint32_t)_tmp_queries[i].size(); j++) {
+      ycsb_query * query = (ycsb_query *)_tmp_queries[i][j];
+      fprintf(post_partition_file, "Transaction Id: (%d, %d)\n", (int)i, (int)j);
+      for(uint64_t k = 0; k < query->params.request_cnt; k++) {
+	fprintf(post_partition_file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
+      }
+    }
+    fprintf(post_partition_file, "******************************\n");
+  }
+  fflush(post_partition_file);
+  fclose(post_partition_file);
 }
 
 void YCSBWorkloadPartitioner::partition() {

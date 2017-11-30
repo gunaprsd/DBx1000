@@ -121,8 +121,9 @@ private:
 		for(uint32_t i = 0; i < p1->request_cnt; i++) {
 			for(uint32_t j = 0; j < p2->request_cnt; j++) {
 				if(p1->requests[i].key == p2->requests[j].key) {
-					weight += 1;
-					conflict = true;
+				  weight += 1;
+				  conflict = true;
+				  break;
 				}
 			}
 		}

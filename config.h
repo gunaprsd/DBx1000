@@ -116,7 +116,7 @@
 
 // === [EXPERIMENT & YCSB]
 #define INIT_PARALLELISM			40
-#define SYNTH_TABLE_SIZE 			10 * 1024 * 1024
+#define SYNTH_TABLE_SIZE 			10 * 1024
 #define READ_PERC 					0.9
 #define WRITE_PERC 					0.1
 #define SCAN_PERC 					0

@@ -1,6 +1,7 @@
 #include "query.h"
 #include "global.h"
 #include "helper.h"
+#include <vector>
 
 #ifndef DBX1000_WORKLOAD_H
 #define DBX1000_WORKLOAD_H
@@ -110,7 +111,7 @@ protected:
     uint64_t    _num_params_pgpt;
 
     ParallelWorkloadGenerator * _generator;
-    std::vector<BaseQuery*> *   _tmp_queries;
+    std::vector<BaseQuery*>*   _tmp_queries;
 
     uint32_t num_iterations;
     double data_statistics_duration;

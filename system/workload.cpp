@@ -239,21 +239,19 @@ void WorkloadPartitioner::partition() {
         num_iterations++;
 
 
-        printf("***************** PARTITION SUMMARY AT ITERATION %d ******************\n", num_iterations);
+        printf("******** PARTITION SUMMARY AT ITERATION %d ***********\n", num_iterations);
         for(uint32_t i = 0; i < _num_threads; i++) {
             printf("Thread Id: %10ld\t Queue Size: %10d\n", (long int)i, (int)_tmp_queries[i].size());
         }
-        printf("******************************************************\n");
     }
 }
 
 void WorkloadPartitioner::release() {
     //maybe cleanup?
-    printf("***************** FINAL PARTITION SUMMARY ******************\n");
+    printf("*************** FINAL PARTITION SUMMARY ***************\n");
     for(uint32_t i = 0; i < _num_threads; i++) {
         printf("Thread Id: %10ld\t Queue Size: %10d\n", (long int)i, (int)_tmp_queries[i].size());
     }
-    printf("******************************************************\n");
     printf("************** EXECUTION SUMMARY **************** \n");
     printf("%-25s :: total: %10lf, avg: %10lf\n", "Obtain Data Statistics", data_statistics_duration, data_statistics_duration / num_iterations);
     printf("%-25s :: total: %10lf, avg: %10lf\n", "Graph Structures Init", graph_init_duration, graph_init_duration / num_iterations);

@@ -58,8 +58,9 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 	lrand48_r(buffers[thread_id], &rint64);
 
 	uint64_t rid = 0;
-	for (UInt32 tmp = 0; tmp < g_req_per_query; tmp ++) {
+	for (UInt32 tmp = 0; tmp < MAX_REQ_PER_QUERY; tmp ++) {
 		drand48_r(buffers[thread_id], &r);
+		assert(rid < MAX_REQ_PER_QUERY);
 		ycsb_request * req = & (query->params.requests[rid]);
 		if (r < g_read_perc) {
 			req->rtype = RD;
@@ -105,10 +106,10 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 				access_cnt += SCAN_LEN;
 			}
 		}
+		assert(rid <= MAX_REQ_PER_QUERY);
 		rid ++;
 	}
 	query->params.request_cnt = rid;
-
 	// Sort the requests in key order.
 	if (g_key_order) {
 		for (int i = query->params.request_cnt - 1; i > 0; i--)
@@ -121,6 +122,8 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 		for (UInt32 i = 0; i < query->params.request_cnt - 1; i++)
 			assert(query->params.requests[i].key < query->params.requests[i + 1].key);
 	}
+
+	assert(query->params.request_cnt <= MAX_REQ_PER_QUERY);
 }
 
 void YCSBWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name) {

@@ -20,8 +20,8 @@ public:
 };
 
 struct ycsb_params {
-	uint64_t 		request_cnt;
-	ycsb_request 	requests[MAX_REQ_PER_QUERY];
+  uint64_t 	request_cnt;
+  ycsb_request 	requests[MAX_REQ_PER_QUERY];
 };
 
 typedef Query<ycsb_params> ycsb_query;
@@ -109,8 +109,6 @@ public:
 	BaseQueryList * get_queries_list(uint32_t thread_id) override;
 protected:
 	void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
-
-	std::vector<ycsb_query *> * _tmp_queries;
 	ycsb_query * * 				_orig_queries;
 	ycsb_query * * 				_partitioned_queries;
 

@@ -66,6 +66,10 @@ set(SOURCE_FILES
         system/parser.cpp
         system/stats.cpp
         system/stats.h
+        system/main.cpp
+        system/thread.h
+        system/thread.cpp
+        system/thread_queue.h
         system/txn.cpp
         system/txn.h
         system/query.h

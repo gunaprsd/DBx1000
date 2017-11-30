@@ -8,6 +8,7 @@
 #include "txn.h"
 #include "query.h"
 #include "thread.h"
+#include <vector>
 
 class ycsb_request {
 public:
@@ -71,9 +72,11 @@ protected:
 	static 	double 				zeta_n_theta;
 	static 	double 				zeta_2_theta;
 	static 	uint64_t 			the_n;
+
+	friend class YCSBWorkloadPartitioner;
 };
 
-class YCSBWorkloadPartitioner : public WorkloadPartitioner {
+class YCSBOfflineWorkloadPartitioner : public OfflineWorkloadPartitioner {
 protected:
     void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
 private:
@@ -94,6 +97,41 @@ private:
         return conflict ? weight : -1.0;
     }
 };
+
+
+class YCSBWorkloadPartitioner : public WorkloadPartitioner {
+public:
+	void initialize(uint32_t num_threads,
+					uint64_t num_params_per_thread,
+					uint64_t num_params_pgpt,
+					ParallelWorkloadGenerator * generator) override;
+	void 			partition() override;
+	BaseQueryList * get_queries_list(uint32_t thread_id) override;
+protected:
+	void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
+
+	std::vector<ycsb_query *> * _tmp_queries;
+	ycsb_query * * 				_orig_queries;
+	ycsb_query * * 				_partitioned_queries;
+
+private:
+	int compute_weight(ycsb_query * q1, ycsb_query * q2, DataInfo * data) {
+		bool conflict = false;
+		int weight = 0;
+		ycsb_params * p1 = & q1->params;
+		ycsb_params * p2 = & q2->params;
+		for(uint32_t i = 0; i < p1->request_cnt; i++) {
+			for(uint32_t j = 0; j < p2->request_cnt; j++) {
+				if(p1->requests[i].key == p2->requests[j].key) {
+					weight += 1;
+					conflict = true;
+				}
+			}
+		}
+		return conflict ? weight : -1;
+	}
+};
+
 
 class YCSBExecutor : public BenchmarkExecutor {
 public:

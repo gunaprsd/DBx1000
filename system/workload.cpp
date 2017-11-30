@@ -7,9 +7,9 @@
 #include "workload.h"
 
 void ParallelWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name) {
-    if(base_file_name == NULL) {
+    if(base_file_name == nullptr) {
         _write_to_file = false;
-        _base_file_name = NULL;
+        _base_file_name = nullptr;
     } else {
         _write_to_file = true;
         _base_file_name = new char[100];
@@ -53,7 +53,7 @@ void * ParallelWorkloadGenerator::run_helper(void *ptr) {
         //open the file
         FILE* file = fopen(file_name, "w");
 
-        if(file == NULL) {
+        if(file == nullptr) {
             printf("Error opening file: %s\n", file_name);
             exit(0);
         }
@@ -65,7 +65,7 @@ void * ParallelWorkloadGenerator::run_helper(void *ptr) {
         fclose(file);
     }
 
-    return NULL;
+    return nullptr;
 }
 
 void ParallelWorkloadGenerator::release() {}
@@ -125,7 +125,7 @@ void * ParallelWorkloadLoader::run_helper(void* ptr) {
 void ParallelWorkloadLoader::release() {}
 
 
-void WorkloadPartitioner::initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt, const char * base_file_name) {
+void OfflineWorkloadPartitioner::initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt, const char * base_file_name) {
     _num_threads = num_threads;
     _num_params_per_thread = num_params_per_thread;
     _num_params_pgpt = num_params_pgpt;
@@ -141,7 +141,7 @@ void WorkloadPartitioner::initialize(uint32_t num_threads, uint64_t num_params_p
     partition_duration          = 0.0;
 }
 
-void WorkloadPartitioner::partition() {
+void OfflineWorkloadPartitioner::partition() {
     uint64_t num_params_done_pt = 0;
     num_iterations = 0;
     while(num_params_done_pt < _num_params_per_thread) {
@@ -158,7 +158,7 @@ void WorkloadPartitioner::partition() {
     }
 }
 
-void WorkloadPartitioner::release() {
+void OfflineWorkloadPartitioner::release() {
     close_all_files();
     printf("************** Workload Partition Summary **************** \n");
     printf("%-25s :: total: %10lf, avg: %10lf\n", "Reading from File", read_duration, read_duration / num_iterations);
@@ -168,7 +168,7 @@ void WorkloadPartitioner::release() {
     printf("%-25s :: total: %10lf, avg: %10lf\n", "Shuffle Write to File", write_duration, write_duration / num_iterations);
 }
 
-void WorkloadPartitioner::open_all_files() {
+void OfflineWorkloadPartitioner::open_all_files() {
     _files      = new FILE * [_num_threads];
     _out_files  = new FILE * [_num_threads];
     char * file_name;
@@ -198,11 +198,53 @@ void WorkloadPartitioner::open_all_files() {
     }
 }
 
-void WorkloadPartitioner::close_all_files() {
+void OfflineWorkloadPartitioner::close_all_files() {
     for(uint32_t thread_id = 0; thread_id < _num_threads; thread_id++) {
         fclose(_files[thread_id]);
         fclose(_out_files[thread_id]);
     }
 }
 
+void WorkloadPartitioner::initialize(uint32_t num_threads,
+                                     uint64_t num_params_per_thread,
+                                     uint64_t num_params_pgpt,
+                                     ParallelWorkloadGenerator *generator) {
+    _num_threads = num_threads;
+    _num_params_per_thread = num_params_per_thread;
+    _num_params_pgpt = num_params_pgpt;
+    assert(_num_params_per_thread % _num_params_pgpt == 0);
+    _generator = generator;
 
+    num_iterations = 0;
+    data_statistics_duration    = 0.0;
+    graph_init_duration         = 0.0;
+    partition_duration          = 0.0;
+    shuffle_duration            = 0.0;
+}
+
+void WorkloadPartitioner::partition() {
+    uint64_t num_params_done_pt = 0;
+    num_iterations = 0;
+    while(num_params_done_pt < _num_params_per_thread) {
+        //specify region to read
+        uint64_t start_offset = num_iterations * _num_params_pgpt;
+        uint64_t num_records = min(start_offset + _num_params_pgpt, _num_params_per_thread) - start_offset;
+
+        //create and write conflict graph
+        partition_workload_part(num_iterations, num_records);
+
+        //move to next region
+        num_params_done_pt += _num_params_pgpt;
+        num_iterations++;
+    }
+}
+
+void WorkloadPartitioner::release() {
+    //maybe cleanup?
+    printf("************** EXECUTION SUMMARY **************** \n");
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Obtain Data Statistics", data_statistics_duration, data_statistics_duration / num_iterations);
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Graph Structures Init", graph_init_duration, graph_init_duration / num_iterations);
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Graph Clustering", partition_duration, partition_duration / num_iterations);
+    printf("%-25s :: total: %10lf, avg: %10lf\n", "Shuffle Duration", shuffle_duration, shuffle_duration / num_iterations);
+    printf("************************************************* \n");
+}

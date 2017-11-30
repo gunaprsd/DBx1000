@@ -113,7 +113,7 @@ protected:
     tpcc_query * * 		_queries;
 };
 
-class TPCCWorkloadPartitioner : public WorkloadPartitioner {
+class TPCCWorkloadPartitioner : public OfflineWorkloadPartitioner {
 protected:
     void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
 private:

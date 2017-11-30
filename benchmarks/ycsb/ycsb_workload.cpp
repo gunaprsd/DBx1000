@@ -153,7 +153,7 @@ void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *f
 	fwrite(thread_queries, sizeof(ycsb_query), _num_params_per_thread, file);
 }
 
-void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
+void YCSBOfflineWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
 	uint64_t start_time, end_time;
 
 	//Step 1: read all the queries into an array
@@ -168,22 +168,8 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 	read_duration += DURATION(end_time, start_time);
 
 	//Step 2: create a DataNode map for items in the transaction
+	uint64_t num_total_queries = num_records * _num_threads;
 	start_time = get_server_clock();
-       	uint64_t num_total_queries = num_records * _num_threads;
-	//uint64_t hash_size = 16 * num_total_queries * MAX_REQ_PER_QUERY;
-	//DataInfo * data_info = new DataInfo[hash_size];
-	//for(uint64_t i = 0; i < num_total_queries; i++) {
-	//	ycsb_query * query = & all_queries[i];
-	//	for(uint32_t j = 0; j < query->params.request_cnt; j++) {
-	//		uint64_t  key_hash = hash(query->params.requests[j].key);
-	//		key_hash = key_hash % hash_size;
-	//		if(query->params.requests[j].rtype == RD) {
-	//			data_info[key_hash].num_reads++;
-	//		} else {
-	//			data_info[key_hash].num_writes++;
-	//			}
-	//}
-	//}
 	end_time = get_server_clock();
 	data_statistics_duration += DURATION(end_time, start_time);
 
@@ -224,4 +210,95 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 	write_duration += DURATION(end_time, start_time);
 
 	creator->release();
+}
+
+
+void YCSBWorkloadPartitioner::initialize(uint32_t num_threads,
+										 uint64_t num_params_per_thread,
+										 uint64_t num_params_pgpt,
+										 ParallelWorkloadGenerator * generator) {
+	WorkloadPartitioner::initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
+	_tmp_queries = new std::vector<ycsb_query*> [_num_threads];
+	_orig_queries = ((YCSBWorkloadGenerator *) generator)->_queries;
+	_partitioned_queries = nullptr;
+}
+
+BaseQueryList *YCSBWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
+	assert(_partitioned_queries != nullptr);
+	auto queryList = new QueryList<ycsb_params>();
+	queryList->initialize(_partitioned_queries[thread_id], _tmp_queries[thread_id].size());
+	return queryList;
+}
+
+void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
+	/*
+	 * ith query in the overall array can be accessed by
+	 * thread_id = i / num_records
+	 * offset = i % num_records
+	 */
+	uint64_t start_time, end_time;
+	uint64_t num_total_queries = num_records * _num_threads;
+
+	start_time = get_server_clock();
+	auto creator = new GraphPartitioner();
+	creator->begin((uint32_t)num_total_queries);
+	for(uint64_t i = 0; i < num_total_queries; i++) {
+		creator->move_to_next_vertex();
+		ycsb_query * q1 = & _orig_queries[i / num_records][(iteration * num_records) + (i % num_records)];
+
+		for(uint64_t j = 0; j < num_total_queries; j++) {
+			if(i == j) {
+				continue;
+			} else {
+				ycsb_query * q2 = & _orig_queries[j / num_records][(iteration * num_records) + (j % num_records)];
+				int weight = compute_weight(q1, q2, nullptr);
+				if(weight < 0) {
+					continue;
+				} else {
+					creator->add_edge((int)j, weight);
+				}
+			}
+		}
+	}
+	creator->finish();
+	end_time = get_server_clock();
+	graph_init_duration += DURATION(end_time, start_time);
+
+	start_time = get_server_clock();
+	creator->do_cluster(_num_threads);
+	end_time = get_server_clock();
+	partition_duration += DURATION(end_time, start_time);
+
+	for(uint32_t i = 0; i < num_total_queries; i++) {
+		int partition = creator->get_cluster_id(i);
+		_tmp_queries[partition].push_back(& (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]));
+	}
+
+	creator->release();
+}
+
+void YCSBWorkloadPartitioner::partition() {
+	WorkloadPartitioner::partition();
+
+	uint64_t start_time, end_time;
+	start_time = get_server_clock();
+	_partitioned_queries = new ycsb_query * [_num_threads];
+	for(uint32_t i = 0; i < _num_threads; i++) {
+		_partitioned_queries[i] = (ycsb_query *) _mm_malloc(sizeof(ycsb_query) * _tmp_queries[i].size(), 64);
+		uint32_t offset = 0;
+		for(auto iter = _tmp_queries[i].begin(); iter != _tmp_queries[i].end(); iter++) {
+			memcpy(& _partitioned_queries[i][offset], * iter, sizeof(ycsb_query));
+			offset++;
+		}
+	}
+	end_time = get_server_clock();
+	shuffle_duration += DURATION(end_time, start_time);
+
+
+	printf("***************** PARTITION SUMMARY ******************\n");
+	for(uint32_t i = 0; i < _num_threads; i++) {
+		printf("Thread Id: %10ld\t Queue Size: %10d\n", (long int)i, (int)_tmp_queries[i].size());
+	}
+	printf("******************************************************\n");
+
 }

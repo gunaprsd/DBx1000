@@ -122,7 +122,15 @@ void TPCCWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params
     for(uint32_t i = 0; i < _num_threads; i++) {
         _queries[i] = new tpcc_query[_num_params_per_thread];
     }
+    if(tpcc_buffer == nullptr) {
+      tpcc_buffer = new drand48_data * [_num_threads];
+      for(uint32_t i = 0; i < _num_threads; i++) {
+	tpcc_buffer[i] = (drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
+	srand48_r(i, tpcc_buffer[i]);
+      }
+    }
 }
+
 
 void TPCCWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
     /*

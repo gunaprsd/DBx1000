@@ -1,6 +1,6 @@
 #include "tpcc_helper.h"
 
-drand48_data ** tpcc_buffer;
+drand48_data * * tpcc_buffer;
 
 uint64_t distKey(uint64_t d_id, uint64_t d_w_id)  {
 	return d_w_id * DIST_PER_WARE + d_id; 

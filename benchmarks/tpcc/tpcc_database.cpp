@@ -11,7 +11,7 @@ void TPCCDatabase::initialize(uint32_t num_threads) {
     Database::initialize_schema(path);
 
     //Allocate array to store rand buffer globally
-    rand_buffer = new drand48_data * [_num_threads];
+    tpcc_buffer = (drand48_data * *)(new drand48_data * [_num_threads]);
 
     //Obtain pointers for tables and indexes
     t_warehouse = tables["WAREHOUSE"];
@@ -411,9 +411,9 @@ void TPCCDatabase::load_tables(uint32_t thread_id) {
     //thread i loads warehouse information for wid = (i+1)
     uint32_t wid = thread_id + 1;
     //initialize rand_buffer
-    rand_buffer[thread_id] = (drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
+    tpcc_buffer[thread_id] = (drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
     assert((uint64_t)thread_id < g_num_wh);
-    srand48_r(wid, rand_buffer[thread_id]);
+    srand48_r(wid, tpcc_buffer[thread_id]);
 
     //only one thread generates items table
     if (thread_id == 0) {

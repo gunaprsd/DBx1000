@@ -84,7 +84,6 @@ public:
 
 protected:
     void                load_tables(uint32_t thread_id) override;
-    drand48_data * *    rand_buffer;
 private:
     void load_items_table();
     void load_warehouse_table   (uint32_t wid);
@@ -116,8 +115,10 @@ protected:
 };
 
 class TPCCWorkloadPartitioner : public WorkloadPartitioner {
+    void initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt, ParallelWorkloadGenerator * generator);
     BaseQueryList * get_queries_list(uint32_t thread_id) override;
-protected:
+    void partition() override;
+ protected:
     void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
     tpcc_query * * _orig_queries;
     tpcc_query * * _partitioned_queries;

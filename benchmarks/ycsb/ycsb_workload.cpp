@@ -57,12 +57,10 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 	drand48_r(buffers[thread_id], &r);
 	lrand48_r(buffers[thread_id], &rint64);
 
-	int rid = 0;
-	for (UInt32 tmp = 0; tmp < g_req_per_query; tmp ++) {		
-		
-		double r;
+	uint64_t rid = 0;
+	for (UInt32 tmp = 0; tmp < g_req_per_query; tmp ++) {
 		drand48_r(buffers[thread_id], &r);
-		ycsb_request * req = & query->params.requests[rid];
+		ycsb_request * req = & (query->params.requests[rid]);
 		if (r < g_read_perc) {
 			req->rtype = RD;
 		} else if (r >= g_read_perc && r < g_write_perc + g_read_perc) {
@@ -123,7 +121,6 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 		for (UInt32 i = 0; i < query->params.request_cnt - 1; i++)
 			assert(query->params.requests[i].key < query->params.requests[i + 1].key);
 	}
-
 }
 
 void YCSBWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name) {
@@ -142,9 +139,8 @@ BaseQueryList * YCSBWorkloadGenerator::get_queries_list(uint32_t thread_id) {
 }
 
 void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
-	ycsb_query * thread_queries = _queries[thread_id];
 	for(uint64_t i = 0; i < _num_params_per_thread; i++) {
-		gen_requests(thread_id, & (thread_queries[i]));
+		gen_requests(thread_id, & (_queries[thread_id][i]));
 	}
 }
 
@@ -243,13 +239,13 @@ void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64
 	creator->begin((uint32_t)num_total_queries);
 	for(uint64_t i = 0; i < num_total_queries; i++) {
 		creator->move_to_next_vertex();
-		ycsb_query * q1 = & _orig_queries[i / num_records][(iteration * num_records) + (i % num_records)];
+		ycsb_query * q1 = & (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]);
 
 		for(uint64_t j = 0; j < num_total_queries; j++) {
 			if(i == j) {
 				continue;
 			} else {
-				ycsb_query * q2 = & _orig_queries[j / num_records][(iteration * num_records) + (j % num_records)];
+				ycsb_query * q2 = & (_orig_queries[j / num_records][(iteration * num_records) + (j % num_records)]);
 				int weight = compute_weight(q1, q2, nullptr);
 				if(weight < 0) {
 					continue;

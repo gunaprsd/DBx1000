@@ -28,13 +28,22 @@ int main(int argc, char* argv[]) {
     vll_man.init();
 #endif
 
+    uint32_t num_threads = 16;
     YCSBWorkloadGenerator * generator = new YCSBWorkloadGenerator();
-    generator->initialize(16, 16 * 1024, nullptr);
+    generator->initialize(num_threads, 1024, nullptr);
     generator->generate();
-    generator->release();
+
+
+    for(uint32_t i = 0; i < num_threads; i++) {
+        BaseQueryList * qlist = generator->get_queries_list(i);
+        while(!qlist->done()) {
+            ycsb_query * query = (ycsb_query *) qlist->next();
+            assert(query->params.request_cnt < MAX_REQ_PER_QUERY);
+        }
+    }
 
     YCSBWorkloadPartitioner * partitioner = new YCSBWorkloadPartitioner();
-    partitioner->initialize(16, 16 * 1024, 1024, generator);
+    partitioner->initialize(num_threads, 1024, 128, generator);
     partitioner->partition();
     partitioner->release();
 

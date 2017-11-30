@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     uint32_t num_threads = 4;
-    YCSBWorkloadGenerator * generator = new YCSBWorkloadGenerator();
+    TPCCWorkloadGenerator * generator = new TPCCWorkloadGenerator();
     generator->initialize(num_threads, 32 * 1024, nullptr);
     generator->generate();
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    YCSBWorkloadPartitioner * partitioner = new YCSBWorkloadPartitioner();
+    TPCCWorkloadPartitioner * partitioner = new TPCCWorkloadPartitioner();
     partitioner->initialize(num_threads, 32 * 1024, 1024 , generator);
     partitioner->partition();
     partitioner->release();

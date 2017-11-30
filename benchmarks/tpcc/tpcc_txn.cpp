@@ -245,7 +245,7 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params * query) {
         INTO :d_next_o_id, :d_tax
         FROM district WHERE d_id = :d_id AND d_w_id = :w_id;
 
-        EXEC SQL UPDATE d istrict SET d _next_o_id = :d _next_o_id + 1
+        EXEC SQL UPDATE district SET d _next_o_id = :d _next_o_id + 1
         WHERE d _id = :d_id AN D d _w _id = :w _id ;
     +===================================================*/
 

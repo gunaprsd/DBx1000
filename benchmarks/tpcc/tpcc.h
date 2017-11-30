@@ -111,15 +111,78 @@ protected:
     void            gen_new_order_request(uint64_t thd_id, tpcc_new_order_params * params);
 
     tpcc_query * * 		_queries;
+
+    friend class TPCCWorkloadPartitioner;
 };
 
-class TPCCWorkloadPartitioner : public OfflineWorkloadPartitioner {
+class TPCCWorkloadPartitioner : public WorkloadPartitioner {
+    BaseQueryList * get_queries_list(uint32_t thread_id) override;
 protected:
     void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
+    tpcc_query * * _orig_queries;
+    tpcc_query * * _partitioned_queries;
 private:
-    uint64_t hash(uint64_t key) { return key; }
-    double compute_weight(tpcc_query * q1, tpcc_query * q2, DataInfo * data) {
-        return 0.0;
+
+    int compute_weight(tpcc_query * q1, tpcc_query * q2, DataInfo * data) {
+        if(q1->type == TPCC_PAYMENT_QUERY && q2->type == TPCC_PAYMENT_QUERY) {
+            return compute_weight((tpcc_payment_params *) & q1->params, (tpcc_payment_params *) & q2->params);
+        } else if(q1->type == TPCC_NEW_ORDER_QUERY && q2->type == TPCC_NEW_ORDER_QUERY) {
+            return compute_weight((tpcc_new_order_params *) & q1->params, (tpcc_new_order_params *) & q2->params);
+        } else if(q1->type == TPCC_PAYMENT_QUERY && q2->type == TPCC_NEW_ORDER_QUERY) {
+            return compute_weight((tpcc_payment_params *) & q1->params, (tpcc_new_order_params *) & q2->params);
+        } else {
+            return compute_weight((tpcc_payment_params *) & q2->params, (tpcc_new_order_params *) & q1->params);
+        }
+    }
+
+    int compute_weight(tpcc_payment_params * q1, tpcc_payment_params * q2) {
+        //Don't know if c_last and c_id match - so ignore!
+        if(q1->w_id == q2->w_id) {
+            if(q1->d_id == q2->d_id) {
+                return 10;
+            } else {
+                return 9;
+            }
+        } else {
+            return -1;
+        }
+    }
+
+    int compute_weight(tpcc_new_order_params * q1, tpcc_new_order_params * q2) {
+        int weight = -1;
+        if(q1->w_id == q2->w_id) {
+            if(q1->d_id == q2->d_id) {
+                weight += 20;
+            } else {
+                weight += 19;
+            }
+        }
+
+        for(uint32_t i = 0; i < q1->ol_cnt; i++) {
+            for(uint32_t j = 0; j < q2->ol_cnt; j++) {
+                if(q1->items[i].ol_supply_w_id == q2->items[i].ol_supply_w_id && q1->items[i].ol_i_id == q2->items[i].ol_i_id) {
+                        weight += 1;
+                }
+            }
+        }
+
+        return weight;
+    }
+
+    int compute_weight(tpcc_payment_params * q1, tpcc_new_order_params * q2) {
+        if(q1->w_id == q2->w_id) {
+            if(q1->d_id == q2->d_id) {
+                if(q1->c_id == q2->c_id) {
+                    return 10;
+                } else {
+                    return 9;
+                }
+            } else {
+                return 8;
+            }
+        } else {
+            return -1;
+        }
     }
 };
 

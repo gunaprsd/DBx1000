@@ -1,4 +1,6 @@
+#include "graph_partitioner.h"
 #include "tpcc.h"
+
 
 BaseQueryList * TPCCWorkloadGenerator::get_queries_list(uint32_t thread_id) {
     auto queryList = new QueryList<tpcc_params>();
@@ -123,5 +125,54 @@ void TPCCWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params
 }
 
 void TPCCWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
+    /*
+     * ith query in the overall array can be accessed by
+     * thread_id = i / num_records
+     * offset = i % num_records
+     */
+    uint64_t start_time, end_time;
+    uint64_t num_total_queries = num_records * _num_threads;
 
+    start_time = get_server_clock();
+    auto creator = new GraphPartitioner();
+    creator->begin((uint32_t)num_total_queries);
+    for(uint64_t i = 0; i < num_total_queries; i++) {
+        creator->move_to_next_vertex();
+        tpcc_query * q1 = & (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]);
+
+        for(uint64_t j = 0; j < num_total_queries; j++) {
+            if(i == j) {
+                continue;
+            } else {
+                tpcc_query * q2 = & (_orig_queries[j / num_records][(iteration * num_records) + (j % num_records)]);
+                int weight = compute_weight(q1, q2, nullptr);
+                if(weight < 0) {
+                    continue;
+                } else {
+                    creator->add_edge((int)j, weight);
+                }
+            }
+        }
+    }
+    creator->finish();
+    end_time = get_server_clock();
+    graph_init_duration += DURATION(end_time, start_time);
+
+    start_time = get_server_clock();
+    creator->do_cluster(_num_threads);
+    end_time = get_server_clock();
+    partition_duration += DURATION(end_time, start_time);
+
+    for(uint32_t i = 0; i < num_total_queries; i++) {
+        int partition = creator->get_cluster_id(i);
+        _tmp_queries[partition].push_back(& (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]));
+    }
+
+    creator->release();
+}
+
+BaseQueryList *TPCCWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
+    auto queryList = new QueryList<tpcc_params>();
+    queryList->initialize(_partitioned_queries[thread_id], _tmp_queries[thread_id].size());
+    return queryList;
 }

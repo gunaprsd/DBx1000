@@ -237,12 +237,6 @@ void WorkloadPartitioner::partition() {
         //move to next region
         num_params_done_pt += _num_params_pgpt;
         num_iterations++;
-
-
-        printf("******** PARTITION SUMMARY AT ITERATION %d ***********\n", num_iterations);
-        for(uint32_t i = 0; i < _num_threads; i++) {
-            printf("Thread Id: %10ld\t Queue Size: %10d\n", (long int)i, (int)_tmp_queries[i].size());
-        }
     }
 }
 

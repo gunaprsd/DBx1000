@@ -6,6 +6,7 @@
 #include "table.h"
 #include "database.h"
 #include "txn.h"
+#include "thread.h"
 #include "query.h"
 #include "workload.h"
 #include "tpcc_helper.h"
@@ -199,6 +200,13 @@ private:
     }
 };
 
-
+class TPCCExecutor : public BenchmarkExecutor {
+public:
+    void initialize(uint32_t num_threads) override;
+protected:
+    TPCCDatabase * 						_db;
+    TPCCWorkloadGenerator * 	_generator;
+    TPCCWorkloadPartitioner * _partitioner;
+};
 #endif //DBX1000_TPCC_H
 

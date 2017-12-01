@@ -8,14 +8,18 @@
       <w>byname</w>
       <w>cpos</w>
       <w>cvtx</w>
+      <w>hekaton</w>
+      <w>hstore</w>
       <w>initia</w>
       <w>metis</w>
+      <w>mvcc</w>
       <w>ncon</w>
       <w>nedges</w>
       <w>nparts</w>
       <w>nvtxs</w>
       <w>objval</w>
       <w>partitioner</w>
+      <w>tictoc</w>
       <w>tpwgts</w>
       <w>ubvec</w>
       <w>vsize</w>

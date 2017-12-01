@@ -8,6 +8,18 @@ double 		YCSBWorkloadGenerator::zeta_n_theta = 0;
 double 		YCSBWorkloadGenerator::zeta_2_theta = 0;
 drand48_data * * YCSBWorkloadGenerator::buffers = NULL;
 
+
+void YCSBWorkloadGenerator::initialize(uint32_t num_threads,
+																			 uint64_t num_params_per_thread,
+																			 const char * base_file_name) {
+	ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
+	YCSBWorkloadGenerator::initialize_zipf_distribution(_num_threads);
+	_queries = new ycsb_query * [_num_threads];
+	for(uint32_t i = 0; i < _num_threads; i++) {
+		_queries[i] = new ycsb_query[_num_params_per_thread];
+	}
+}
+
 void YCSBWorkloadGenerator::initialize_zipf_distribution(uint32_t num_threads) {
 	assert(the_n == 0);
 	uint64_t table_size = g_synth_table_size / g_virtual_part_cnt;
@@ -124,17 +136,6 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 	assert(query->params.request_cnt <= MAX_REQ_PER_QUERY);
 }
 
-void YCSBWorkloadGenerator::initialize(uint32_t num_threads,
-																			 uint64_t num_params_per_thread,
-																			 const char * base_file_name) {
-    ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
-    YCSBWorkloadGenerator::initialize_zipf_distribution(_num_threads);
-    _queries = new ycsb_query * [_num_threads];
-    for(uint32_t i = 0; i < _num_threads; i++) {
-      _queries[i] = new ycsb_query[_num_params_per_thread];
-    }
-}
-
 BaseQueryList * YCSBWorkloadGenerator::get_queries_list(uint32_t thread_id) {
   auto queryList = new QueryList<ycsb_params>();
   queryList->initialize(_queries[thread_id], _num_params_per_thread);
@@ -161,11 +162,40 @@ void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *f
 }
 
 
+
+
+BaseQueryList *YCSBWorkloadLoader::get_queries_list(uint32_t thread_id) {
+	auto queryList = new QueryList<ycsb_params>();
+	queryList->initialize(_queries[thread_id], _array_sizes[thread_id]);
+	return queryList;
+}
+
+void YCSBWorkloadLoader::per_thread_load(uint32_t thread_id, FILE *file) {
+	fseek(file, 0, SEEK_END);
+	size_t bytes_to_read = ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	_array_sizes[thread_id] = bytes_to_read / sizeof(ycsb_query);
+	_queries[thread_id] 		= (ycsb_query *) _mm_malloc(bytes_to_read, 64);
+
+	size_t bytes_read = fread(_queries[thread_id], sizeof(ycsb_query), _array_sizes[thread_id], file);
+	assert(bytes_read == bytes_to_read);
+}
+
+void YCSBWorkloadLoader::initialize(uint32_t num_threads, char *base_file_name) {
+	ParallelWorkloadLoader::initialize(num_threads, base_file_name);
+	_queries = new ycsb_query * [_num_threads];
+	_array_sizes = new uint32_t[_num_threads];
+}
+
+
+
+
 void YCSBWorkloadPartitioner::initialize(uint32_t num_threads,
-												      uint64_t num_params_per_thread,
+					 												       uint64_t num_params_pt,
 																				 uint64_t num_params_pgpt,
 																				 ParallelWorkloadGenerator * generator) {
-	WorkloadPartitioner::initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
+	WorkloadPartitioner::initialize(num_threads, num_params_pt, num_params_pgpt, generator);
 	_partitioned_queries = nullptr;
 }
 
@@ -210,4 +240,32 @@ void YCSBWorkloadPartitioner::partition() {
 	}
 	end_time = get_server_clock();
 	shuffle_duration += DURATION(end_time, start_time);
+}
+
+
+
+
+
+void YCSBExecutor::initialize(uint32_t num_threads) {
+	BenchmarkExecutor::initialize(num_threads);
+
+	//Build database in parallel
+	_db = new YCSBDatabase();
+	_db->initialize(INIT_PARALLELISM);
+	_db->load();
+
+	//Generate workload in parallel
+	_generator = new YCSBWorkloadGenerator();
+	_generator->initialize(_num_threads, MAX_TXN_PER_PART, nullptr);
+	_generator->generate();
+
+	_partitioner = new YCSBWorkloadPartitioner();
+	uint32_t num_params_pgpt = MAX_NODES_FOR_CLUSTERING / _num_threads;
+	_partitioner->initialize(_num_threads, MAX_TXN_PER_PART, num_params_pgpt, _generator);
+	_partitioner->partition();
+
+	//Initialize each thread
+	for(uint32_t i = 0; i < _num_threads; i++) {
+		_threads[i].initialize(i, _db, _partitioner->get_queries_list(i), true);
+	}
 }

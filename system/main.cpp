@@ -28,21 +28,11 @@ int main(int argc, char* argv[]) {
     vll_man.init();
 #endif
 
-    ParallelWorkloadGenerator * generator = nullptr;
-    WorkloadPartitioner * partitioner = nullptr;
+    auto executor = new YCSBExecutor();
+    executor->initialize(g_thread_cnt);
+    executor->execute();
+    executor->release();
 
-    generator = new TPCCWorkloadGenerator();
-    partitioner = new TPCCWorkloadPartitioner();
-    uint32_t num_threads = 4;
-    uint64_t num_params_per_thread = 16 * 1024;
-    uint64_t num_params_pgpt = 1024;
-
-    generator->initialize(num_threads, num_params_per_thread, nullptr);
-    generator->generate();
-
-    partitioner->initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
-    partitioner->partition();
-    partitioner->release();
 
     return 0;
 }

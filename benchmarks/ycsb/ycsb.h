@@ -78,10 +78,20 @@ protected:
 };
 
 
+class YCSBWorkloadLoader : public ParallelWorkloadLoader {
+public:
+		void 							initialize(uint32_t num_threads, char * base_file_name) override;
+		BaseQueryList *   get_queries_list(uint32_t thread_id) override;
+protected:
+		void            	per_thread_load(uint32_t thread_id, FILE * file) override;
+		ycsb_query * * 		_queries;
+		uint32_t	*				_array_sizes;
+};
+
 class YCSBWorkloadPartitioner : public WorkloadPartitioner {
 public:
 	void  					initialize				(uint32_t num_threads,
-																		 uint64_t num_params_per_thread,
+																		 uint64_t num_params_pt,
 																		 uint64_t num_params_pgpt,
 																		 ParallelWorkloadGenerator * generator) override;
 	void 						partition					() override;
@@ -97,8 +107,9 @@ class YCSBExecutor : public BenchmarkExecutor {
 public:
     void initialize(uint32_t num_threads) override;
 protected:
-    YCSBDatabase * 					_db;
-    YCSBWorkloadGenerator * _generator;
+    YCSBDatabase * 						_db;
+    YCSBWorkloadGenerator * 	_generator;
+		YCSBWorkloadPartitioner * _partitioner;
 };
 
 #endif

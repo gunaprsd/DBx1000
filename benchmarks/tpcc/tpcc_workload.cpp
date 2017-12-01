@@ -142,6 +142,32 @@ void TPCCWorkloadGenerator::initialize(uint32_t num_threads,
 
 
 
+BaseQueryList * TPCCWorkloadLoader::get_queries_list(uint32_t thread_id) {
+    auto queryList = new QueryList<tpcc_params>();
+    queryList->initialize(_queries[thread_id], _array_sizes[thread_id]);
+    return queryList;
+}
+
+void TPCCWorkloadLoader::per_thread_load(uint32_t thread_id, FILE *file) {
+    fseek(file, 0, SEEK_END);
+    size_t bytes_to_read = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    _array_sizes[thread_id] = bytes_to_read / sizeof(tpcc_query);
+    _queries[thread_id] 		= (tpcc_query *) _mm_malloc(bytes_to_read, 64);
+
+    size_t bytes_read = fread(_queries[thread_id], sizeof(tpcc_query), _array_sizes[thread_id], file);
+    assert(bytes_read == bytes_to_read);
+}
+
+void TPCCWorkloadLoader::initialize(uint32_t num_threads, char *base_file_name) {
+    ParallelWorkloadLoader::initialize(num_threads, base_file_name);
+    _queries = new tpcc_query * [_num_threads];
+    _array_sizes = new uint32_t[_num_threads];
+}
+
+
+
 BaseQueryList *TPCCWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
     auto queryList = new QueryList<tpcc_params>();
     queryList->initialize(_partitioned_queries[thread_id], _tmp_queries[thread_id].size());

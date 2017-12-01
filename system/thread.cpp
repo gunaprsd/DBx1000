@@ -12,7 +12,10 @@
 #include "thread.h"
 #include "thread_queue.h"
 
-void Thread::initialize(uint32_t id, Database * db, BaseQueryList * query_list, uint64_t num_queries, bool abort_buffer_enable) {
+void Thread::initialize(uint32_t id,
+                        Database * db,
+                        BaseQueryList * query_list,
+                        bool abort_buffer_enable) {
     this->thread_id = id;
     this->db = db;
     this->query_queue = new ThreadQueue();
@@ -121,5 +124,9 @@ void * BenchmarkExecutor::execute_helper(void * ptr) {
     uint32_t thread_id = (uint32_t) data->fields[1];
     executor->_threads[thread_id].run();
     return NULL;
+}
+
+void BenchmarkExecutor::release() {
+
 }
 

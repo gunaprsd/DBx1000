@@ -77,11 +77,9 @@ void ParallelWorkloadGenerator::release() {}
 
 
 void ParallelWorkloadLoader::initialize(uint32_t num_threads,
-                                        uint64_t num_params_per_thread,
                                         char * base_file_name) {
     _base_file_name = base_file_name;
     _num_threads = num_threads;
-    _num_params_per_thread = num_params_per_thread;
 }
 
 void ParallelWorkloadLoader::load() {

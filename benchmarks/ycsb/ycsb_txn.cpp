@@ -82,20 +82,5 @@ final:
 }
 
 
-void YCSBExecutor::initialize(uint32_t num_threads) {
-	BenchmarkExecutor::initialize(num_threads);
 
-	//Build database in parallel
-	_db = new YCSBDatabase();
-	_db->initialize(INIT_PARALLELISM);
-	_db->load();
 
-	//Generate workload in parallel
-	_generator = new YCSBWorkloadGenerator();
-	_generator->initialize(_num_threads, MAX_TXN_PER_PART * _num_threads, NULL);
-
-	//Initialize each thread
-	for(uint32_t i = 0; i < _num_threads; i++) {
-		_threads[i].initialize(i, _db, _generator->get_queries_list(i), MAX_TXN_PER_PART, true);
-	}
-}

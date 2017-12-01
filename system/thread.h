@@ -7,9 +7,8 @@
 
 class Thread {
 public:
-    void 		    initialize(uint32_t id, Database * db, BaseQueryList * query_list, uint64_t num_queries, bool abort_buffer_enable = true);
+    void 		    initialize(uint32_t id, Database * db, BaseQueryList * query_list, bool abort_buffer_enable = true);
     RC 			    run();
-
 
 private:
     uint64_t        thread_id;
@@ -22,12 +21,13 @@ private:
 
 class BenchmarkExecutor {
 public:
-    virtual void    initialize(uint32_t num_threads);
-    void execute();
-    static void *   execute_helper(void *);
+    virtual void    initialize		(uint32_t num_threads);
+		virtual	void 		execute				();
+		virtual	void 		release				();
 protected:
-    Thread *    _threads;
-    uint32_t    _num_threads;
+		static 	void *  execute_helper(void * data);
+    Thread *    		_threads;
+    uint32_t    		_num_threads;
 };
 
 #endif //DBX1000_THREAD_H

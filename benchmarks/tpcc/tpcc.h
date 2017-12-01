@@ -113,6 +113,16 @@ protected:
     tpcc_query * * 		_queries;
 };
 
+class TPCCWorkloadLoader : public ParallelWorkloadLoader {
+public:
+    void 							initialize(uint32_t num_threads, char * base_file_name) override;
+    BaseQueryList *   get_queries_list(uint32_t thread_id) override;
+protected:
+    void            	per_thread_load(uint32_t thread_id, FILE * file) override;
+    tpcc_query * * 		_queries;
+    uint32_t	*				_array_sizes;
+};
+
 class TPCCWorkloadPartitioner : public WorkloadPartitioner {
 public:
     void initialize(uint32_t num_threads,
@@ -188,6 +198,7 @@ private:
         }
     }
 };
+
 
 #endif //DBX1000_TPCC_H
 

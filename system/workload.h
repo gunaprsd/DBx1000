@@ -2,6 +2,7 @@
 #include "global.h"
 #include "helper.h"
 #include <vector>
+#include "graph_partitioner.h"
 
 #ifndef DBX1000_WORKLOAD_H
 #define DBX1000_WORKLOAD_H
@@ -16,22 +17,27 @@
 class ParallelWorkloadGenerator
 {
 public:
-    virtual void    initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name = NULL);
-            void    generate();
-    virtual void    release();
-
-    virtual BaseQueryList * get_queries_list(uint32_t thread_id) = 0;
+    virtual void    initialize  (uint32_t num_threads,
+                                 uint64_t num_params_per_thread,
+                                 const char * base_file_name = NULL);
+    virtual void    release     ();
+            void    generate    ();
 protected:
     static  void *  run_helper(void *ptr);
-    virtual void    per_thread_generate(uint32_t thread_id) = 0;
-    virtual void    per_thread_write_to_file(uint32_t thread_id, FILE * file) = 0;
 
-    //Data fields
     uint64_t    _num_params;
     uint32_t    _num_threads;
     uint64_t    _num_params_per_thread;
     char *      _base_file_name;
     bool        _write_to_file;
+
+/* Need to be implemented by benchmark */
+public:
+    virtual BaseQueryList *     get_queries_list(uint32_t thread_id) = 0;
+    virtual BaseQueryMatrix *   get_queries_matrix() = 0;
+protected:
+    virtual void    per_thread_generate(uint32_t thread_id) = 0;
+    virtual void    per_thread_write_to_file(uint32_t thread_id, FILE * file) = 0;
 };
 
 /*
@@ -44,79 +50,70 @@ protected:
 class ParallelWorkloadLoader
 {
 public:
-    virtual void    initialize(uint32_t num_threads, uint64_t num_params_per_thread, char * base_file_name);
-            void    load();
-    virtual void    release();
-
-    virtual BaseQueryList * get_queries_list(uint32_t thread_id) = 0;
+    virtual void                initialize  (uint32_t num_threads,
+                                             uint64_t num_params_per_thread,
+                                             char * base_file_name);
+    virtual void                release     ();
+            void                load        ();
 protected:
-    static  void *          run_helper(void *ptr);
-    virtual void            per_thread_load(uint32_t thread_id, FILE * file) = 0;
+    static  void *              run_helper  (void *ptr);
 
-
-    //Data fields
-    uint64_t    _num_params;
     uint32_t    _num_threads;
     uint64_t    _num_params_per_thread;
     char *      _base_file_name;
-};
 
+/* Need to be implemented by benchmark */
+public:
+    virtual BaseQueryList *     get_queries_list(uint32_t thread_id) = 0;
+    virtual BaseQueryMatrix *   get_queries_matrix() = 0;
+protected:
+    virtual void            per_thread_load(uint32_t thread_id, FILE * file) = 0;
+};
 
 /*
- * OfflineWorkloadPartitioner:
- * -------------------
- * Partitions a given workload from k files <base_file_name>_<i>.dat
- * and writes back partitioned_<base_file_name>_<i>.dat
+ * WorkloadPartitioner:
+ * --------------------
+ * Partitions a given workload using the METIS graph partitioner
+ * Any benchmark has to implement a compute weight function that is invoked
+ * for every pair of transactions.
  */
-class OfflineWorkloadPartitioner /* Single Threaded */
-{
-public:
-    virtual void    initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt,  const char * base_file_name);
-            void    partition();
-    virtual void    release();
-protected:
-            void    open_all_files();
-            void    close_all_files();
-    virtual void    partition_workload_part(uint32_t iteration, uint64_t num_records) = 0;
-
-    uint32_t    _num_threads;
-    uint64_t    _num_params_per_thread;
-    uint64_t    _num_params_pgpt;
-
-    char *      _base_file_name;
-    FILE * *    _files;
-    FILE * *    _out_files;
-
-    uint32_t num_iterations;
-    double read_duration;
-    double write_duration;
-    double data_statistics_duration;
-    double graph_init_duration;
-    double partition_duration;
-};
-
-
 class WorkloadPartitioner
 {
 public:
-    virtual void initialize(uint32_t num_threads, uint64_t num_params_per_thread, uint64_t num_params_pgpt, ParallelWorkloadGenerator * generator);
-    virtual void partition();
-    virtual void release();
-    virtual BaseQueryList * get_queries_list(uint32_t thread_id) = 0;
+    virtual void   initialize                   (uint32_t num_threads,
+                                                 uint64_t num_params_per_thread,
+                                                 uint64_t num_params_pgpt,
+                                                 ParallelWorkloadGenerator * generator);
+    virtual void    partition                   ();
+    virtual void    release                     ();
 protected:
-    virtual void partition_workload_part(uint32_t iteration, uint64_t num_records) = 0;
+    virtual void    compute_data_info          (uint32_t iteration, uint64_t num_records);
+            void    partition_workload_part    (uint32_t iteration, uint64_t num_records);
+            void    write_pre_partition_file   (uint32_t iteration, uint64_t num_records);
+            void    write_post_partition_file  (uint32_t iteration, uint64_t num_records);
 
     uint32_t    _num_threads;
     uint64_t    _num_params_per_thread;
     uint64_t    _num_params_pgpt;
 
     ParallelWorkloadGenerator * _generator;
-    std::vector<BaseQuery*>*   _tmp_queries;
+    std::vector<BaseQuery*>*    _tmp_queries;
+    uint32_t *                  _tmp_array_sizes;
+    BaseQueryMatrix *           _orig_queries;
 
     uint32_t num_iterations;
     double data_statistics_duration;
     double graph_init_duration;
     double partition_duration;
     double shuffle_duration;
+
+
+/** Need to be implemented by benchmarks */
+public:
+    virtual BaseQueryList * get_queries_list(uint32_t thread_id) = 0;
+protected:
+    virtual int             compute_weight(BaseQuery * q1, BaseQuery * q2) = 0;
 };
+
+
 #endif //DBX1000_WORKLOAD_H

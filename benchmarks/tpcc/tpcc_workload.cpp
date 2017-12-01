@@ -8,6 +8,12 @@ BaseQueryList * TPCCWorkloadGenerator::get_queries_list(uint32_t thread_id) {
     return queryList;
 }
 
+BaseQueryMatrix *TPCCWorkloadGenerator::get_queries_matrix() {
+    auto matrix = new QueryMatrix<tpcc_params>();
+    matrix->initialize(_queries, _num_threads, _num_params_per_thread);
+    return matrix;
+}
+
 void TPCCWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
     for(uint32_t i = 0; i < _num_params_per_thread; i++) {
         double x = (double) (rand() % 100) / 100.0;
@@ -116,68 +122,25 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thd_id, tpcc_new_orde
     }
 }
 
-void TPCCWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char *base_file_name) {
+void TPCCWorkloadGenerator::initialize(uint32_t num_threads,
+                                       uint64_t num_params_per_thread,
+                                       const char *base_file_name) {
     ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
     _queries = new tpcc_query * [_num_threads];
     for(uint32_t i = 0; i < _num_threads; i++) {
         _queries[i] = new tpcc_query[_num_params_per_thread];
     }
+
     if(tpcc_buffer == nullptr) {
-      tpcc_buffer = new drand48_data * [_num_threads];
-      for(uint32_t i = 0; i < _num_threads; i++) {
-	tpcc_buffer[i] = (drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
-	srand48_r(i, tpcc_buffer[i]);
-      }
-    }
-}
-
-
-void TPCCWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
-    /*
-     * ith query in the overall array can be accessed by
-     * thread_id = i / num_records
-     * offset = i % num_records
-     */
-    uint64_t start_time, end_time;
-    uint64_t num_total_queries = num_records * _num_threads;
-
-    start_time = get_server_clock();
-    auto creator = new GraphPartitioner();
-    creator->begin((uint32_t)num_total_queries);
-    for(uint64_t i = 0; i < num_total_queries; i++) {
-        creator->move_to_next_vertex();
-        tpcc_query * q1 = & (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]);
-
-        for(uint64_t j = 0; j < num_total_queries; j++) {
-            if(i == j) {
-                continue;
-            } else {
-                tpcc_query * q2 = & (_orig_queries[j / num_records][(iteration * num_records) + (j % num_records)]);
-                int weight = compute_weight(q1, q2, nullptr);
-                if(weight < 0) {
-                    continue;
-                } else {
-                    creator->add_edge((int)j, weight);
-                }
-            }
+        tpcc_buffer = new drand48_data * [_num_threads];
+        for(uint32_t i = 0; i < _num_threads; i++) {
+            tpcc_buffer[i] = (drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
+            srand48_r((i+1), tpcc_buffer[i]);
         }
     }
-    creator->finish();
-    end_time = get_server_clock();
-    graph_init_duration += DURATION(end_time, start_time);
-
-    start_time = get_server_clock();
-    creator->do_cluster(_num_threads);
-    end_time = get_server_clock();
-    partition_duration += DURATION(end_time, start_time);
-
-    for(uint32_t i = 0; i < num_total_queries; i++) {
-        int partition = creator->get_cluster_id(i);
-        _tmp_queries[partition].push_back(& (_orig_queries[i / num_records][(iteration * num_records) + (i % num_records)]));
-    }
-
-    creator->release();
 }
+
+
 
 BaseQueryList *TPCCWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
     auto queryList = new QueryList<tpcc_params>();
@@ -190,8 +153,6 @@ void TPCCWorkloadPartitioner::initialize(uint32_t num_threads,
                                          uint64_t num_params_pgpt,
                                          ParallelWorkloadGenerator *generator) {
     WorkloadPartitioner::initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
-    auto t_generator = (TPCCWorkloadGenerator *) generator;
-    _orig_queries = t_generator->_queries;
     _partitioned_queries = nullptr;
 }
 

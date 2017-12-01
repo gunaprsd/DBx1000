@@ -165,3 +165,9 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 struct ThreadLocalData {
 	uint64_t fields[8];
 };
+
+#define WRITE_PARTITIONS_TO_FILE true
+#define PRINT_PARTITION_SUMMARY true
+
+class BaseQuery;
+void print_query(FILE * file, BaseQuery * query);

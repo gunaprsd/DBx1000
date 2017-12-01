@@ -56,11 +56,12 @@ public:
 					uint64_t num_params_per_thread,
 					const char * base_file_name) override;
 
-	BaseQueryList * get_queries_list(uint32_t thread_id) override;
+	BaseQueryList * 		get_queries_list(uint32_t thread_id) override;
+	BaseQueryMatrix *   get_queries_matrix() override;
 protected:
 	void            per_thread_generate(uint32_t thread_id) override;
 	void            per_thread_write_to_file(uint32_t thread_id, FILE * file) override;
-	void 			gen_requests(uint64_t thd_id, ycsb_query * query);
+	void 						gen_requests(uint64_t thd_id, ycsb_query * query);
 
 	ycsb_query * * 		_queries;
 
@@ -76,61 +77,19 @@ protected:
 	friend class YCSBWorkloadPartitioner;
 };
 
-class YCSBOfflineWorkloadPartitioner : public OfflineWorkloadPartitioner {
-protected:
-    void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
-private:
-    uint64_t hash(uint64_t key) { return key; }
-    double compute_weight(ycsb_query * q1, ycsb_query * q2, DataInfo * data) {
-        assert(q1 != q2);
-        bool conflict = false;
-        double weight = 0.0;
-        ycsb_params * p1 = & q1->params;
-        ycsb_params * p2 = & q2->params;
-        for(uint32_t i = 0; i < p1->request_cnt; i++) {
-            for(uint32_t j = 0; j < p2->request_cnt; j++) {
-                if(p1->requests[i].key == p2->requests[j].key) {
-                    weight += 1.0;
-                    conflict = true;
-                }
-            }
-        }
-        return conflict ? weight : -1.0;
-    }
-};
-
 
 class YCSBWorkloadPartitioner : public WorkloadPartitioner {
 public:
-	void initialize(uint32_t num_threads,
-					uint64_t num_params_per_thread,
-					uint64_t num_params_pgpt,
-					ParallelWorkloadGenerator * generator) override;
-	void 			partition() override;
-	BaseQueryList * get_queries_list(uint32_t thread_id) override;
+	void  					initialize				(uint32_t num_threads,
+																		 uint64_t num_params_per_thread,
+																		 uint64_t num_params_pgpt,
+																		 ParallelWorkloadGenerator * generator) override;
+	void 						partition					() override;
+	BaseQueryList * get_queries_list	(uint32_t thread_id) override;
 protected:
-	void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
-	ycsb_query * * 				_orig_queries;
-	ycsb_query * * 				_partitioned_queries;
+	int 						compute_weight		(BaseQuery * q1, BaseQuery * q2) override;
 
-private:
-	int compute_weight(ycsb_query * q1, ycsb_query * q2, DataInfo * data) {
-	        assert(q1 != q2); 
-		bool conflict = false;
-		int weight = 0;
-		ycsb_params * p1 = & q1->params;
-		ycsb_params * p2 = & q2->params;
-		for(uint32_t i = 0; i < p1->request_cnt; i++) {
-			for(uint32_t j = 0; j < p2->request_cnt; j++) {
-				if(p1->requests[i].key == p2->requests[j].key) {
-				  weight += 1;
-				  conflict = true;
-				  break;
-				}
-			}
-		}
-		return conflict ? weight : -1;
-	}
+	ycsb_query * *  _partitioned_queries;
 };
 
 
@@ -138,7 +97,7 @@ class YCSBExecutor : public BenchmarkExecutor {
 public:
     void initialize(uint32_t num_threads) override;
 protected:
-    YCSBDatabase * 			_db;
+    YCSBDatabase * 					_db;
     YCSBWorkloadGenerator * _generator;
 };
 

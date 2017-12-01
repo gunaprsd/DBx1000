@@ -102,16 +102,15 @@ public:
                     uint64_t num_params_per_thread,
                     const char * base_file_name) override;
 
-    BaseQueryList * get_queries_list(uint32_t thread_id) override;
+    BaseQueryList *     get_queries_list(uint32_t thread_id) override;
+    BaseQueryMatrix *   get_queries_matrix() override;
 protected:
     void            per_thread_generate(uint32_t thread_id) override;
     void            per_thread_write_to_file(uint32_t thread_id, FILE * file) override;
-    void 	        gen_payment_request(uint64_t thread_id, tpcc_payment_params * params);
+    void 	          gen_payment_request(uint64_t thread_id, tpcc_payment_params * params);
     void            gen_new_order_request(uint64_t thd_id, tpcc_new_order_params * params);
 
     tpcc_query * * 		_queries;
-
-    friend class TPCCWorkloadPartitioner;
 };
 
 class TPCCWorkloadPartitioner : public WorkloadPartitioner {
@@ -121,14 +120,13 @@ public:
                     uint64_t num_params_pgpt,
                     ParallelWorkloadGenerator * generator) override;
     BaseQueryList * get_queries_list(uint32_t thread_id) override;
-    void partition() override;
+    void            partition() override;
  protected:
-    void partition_workload_part(uint32_t iteration, uint64_t num_records) override;
-    tpcc_query * * _orig_queries;
     tpcc_query * * _partitioned_queries;
 private:
-
-    int compute_weight(tpcc_query * q1, tpcc_query * q2, DataInfo * data) {
+    int compute_weight(BaseQuery * bq1, BaseQuery * bq2) override {
+        auto q1 = (tpcc_query *) bq1;
+        auto q2 = (tpcc_query *) bq2;
         if(q1->type == TPCC_PAYMENT_QUERY && q2->type == TPCC_PAYMENT_QUERY) {
             return compute_weight((tpcc_payment_params *) & q1->params, (tpcc_payment_params *) & q2->params);
         } else if(q1->type == TPCC_NEW_ORDER_QUERY && q2->type == TPCC_NEW_ORDER_QUERY) {

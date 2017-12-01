@@ -51,4 +51,31 @@ protected:
 };
 
 
+class BaseQueryMatrix
+{
+public:
+		virtual void initialize(uint32_t num_arrays, uint64_t num_queries_per_array) {
+			this->num_arrays = num_arrays;
+			this->num_queries_per_array = num_queries_per_array;
+		}
+		uint32_t num_arrays;
+		uint64_t num_queries_per_array;
+		virtual void get(uint32_t i, uint32_t j, BaseQuery * & query) = 0;
+};
+
+template<typename T>
+class QueryMatrix: public BaseQueryMatrix
+{
+public:
+		void initialize(Query<T> * * queries, uint32_t num_arrays, uint64_t num_queries_per_array) {
+			BaseQueryMatrix::initialize(num_arrays, num_queries_per_array);
+			this->queries = queries;
+		}
+		void get(uint32_t i, uint32_t j, BaseQuery * & query) override {  query = & queries[i][j]; }
+protected:
+		Query<T> * * queries;
+};
+
+
+
 #endif //DBX1000_QUERY_H

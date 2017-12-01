@@ -1,5 +1,6 @@
 #include "mem_alloc.h"
 #include "ycsb.h"
+#include "query.h"
 #include "graph_partitioner.h"
 
 uint64_t 	YCSBWorkloadGenerator::the_n = 0;
@@ -123,7 +124,9 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 	assert(query->params.request_cnt <= MAX_REQ_PER_QUERY);
 }
 
-void YCSBWorkloadGenerator::initialize(uint32_t num_threads, uint64_t num_params_per_thread, const char * base_file_name) {
+void YCSBWorkloadGenerator::initialize(uint32_t num_threads,
+																			 uint64_t num_params_per_thread,
+																			 const char * base_file_name) {
     ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
     YCSBWorkloadGenerator::initialize_zipf_distribution(_num_threads);
     _queries = new ycsb_query * [_num_threads];
@@ -136,6 +139,12 @@ BaseQueryList * YCSBWorkloadGenerator::get_queries_list(uint32_t thread_id) {
   auto queryList = new QueryList<ycsb_params>();
   queryList->initialize(_queries[thread_id], _num_params_per_thread);
   return queryList;
+}
+
+BaseQueryMatrix *YCSBWorkloadGenerator::get_queries_matrix() {
+	auto matrix = new QueryMatrix<ycsb_params>();
+	matrix->initialize(_queries, _num_threads, _num_params_per_thread);
+	return matrix;
 }
 
 void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
@@ -151,72 +160,12 @@ void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *f
 	fwrite(thread_queries, sizeof(ycsb_query), _num_params_per_thread, file);
 }
 
-void YCSBOfflineWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
-	uint64_t start_time, end_time;
-
-	//Step 1: read all the queries into an array
-	start_time = get_server_clock();
-	ycsb_query * all_queries = new ycsb_query[num_records * _num_threads];
-	for(uint32_t thread_id = 0; thread_id < _num_threads; thread_id++) {
-		ycsb_query * ptr = all_queries + (thread_id * num_records);
-		size_t read_bytes = fread(ptr, sizeof(ycsb_query), num_records, _files[thread_id]);
-		assert(read_bytes == num_records);
-	}
-	end_time = get_server_clock();
-	read_duration += DURATION(end_time, start_time);
-
-	//Step 2: create a DataNode map for items in the transaction
-	uint64_t num_total_queries = num_records * _num_threads;
-	start_time = get_server_clock();
-	end_time = get_server_clock();
-	data_statistics_duration += DURATION(end_time, start_time);
-
-	//Step 3: Creating graph structures
-	start_time = get_server_clock();
-	GraphPartitioner * creator = new GraphPartitioner();
-	creator->begin(num_total_queries);
-	for(uint64_t i = 0; i < num_total_queries; i++) {
-		creator->move_to_next_vertex();
-		for(uint64_t j = 0; j < num_total_queries; j++) {
-		  if(i == j) {
-		    continue;
-		  }
-			double weight = compute_weight(& all_queries[i], & all_queries[j], nullptr);
-			if(weight < 0) {
-				continue;
-			} else {
-				creator->add_edge((int)j, (int)weight);
-			}
-		}
-	}
-	creator->finish();
-	end_time = get_server_clock();
-	graph_init_duration += DURATION(end_time, start_time);
-
-
-
-	start_time = get_server_clock();
-	creator->do_cluster(_num_threads);
-	end_time = get_server_clock();
-	partition_duration += DURATION(end_time, start_time);
-
-
-	for(uint32_t i = 0; i < num_total_queries; i++) {
-		int partition = creator->get_cluster_id(i);
-		fwrite(& all_queries[i], sizeof(ycsb_query), 1, _out_files[partition]);
-	}
-	write_duration += DURATION(end_time, start_time);
-
-	creator->release();
-}
-
 
 void YCSBWorkloadPartitioner::initialize(uint32_t num_threads,
-										 uint64_t num_params_per_thread,
-										 uint64_t num_params_pgpt,
-										 ParallelWorkloadGenerator * generator) {
+																				 uint64_t num_params_per_thread,
+																				 uint64_t num_params_pgpt,
+																				 ParallelWorkloadGenerator * generator) {
 	WorkloadPartitioner::initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
-	_orig_queries = ((YCSBWorkloadGenerator *) generator)->_queries;
 	_partitioned_queries = nullptr;
 }
 
@@ -227,161 +176,23 @@ BaseQueryList *YCSBWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
 	return queryList;
 }
 
-void YCSBWorkloadPartitioner::partition_workload_part(uint32_t iteration, uint64_t num_records) {
-  /*
-   * ith query in the overall array can be accessed by
-   * thread_id = i / num_records
-   * offset = i % num_records
-   */
-	uint64_t start_time, end_time;
-	auto num_total_queries = static_cast<uint32_t>(num_records * _num_threads);
-
-	//Write the workload to a file before partitioning (for debugging purposes)
-	char file_name[100];
-	sprintf(file_name, "pre_partition_%d.txt", iteration);
-	FILE * pre_partition_file = fopen(file_name, "w");
-	for(uint32_t i = 0; i < _num_threads; i++) {
-		fprintf(pre_partition_file, "Core\t:%d\tNum Queries\t:%ld\n", (int)i, (long int)num_records);
-		for(auto j = static_cast<uint32_t>(iteration * num_records); j < (iteration + 1) * num_records; j++) {
-			ycsb_query * query = & _orig_queries[i][j];
-			fprintf(pre_partition_file, "Transaction Id: (%d, %d)\n", (int)i, (int)j);
-			for(uint64_t k = 0; k < query->params.request_cnt; k++) {
-				fprintf(pre_partition_file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
-			}
-		}
-		fprintf(pre_partition_file, "\n");
-	}
-	fflush(pre_partition_file);
-	fclose(pre_partition_file);
-
-
-
-	start_time = get_server_clock();
-	auto creator = new GraphPartitioner();
-
-	uint32_t num_edges 				= 0;
-	uint32_t pre_num_cross_edges 	= 0;
-	uint32_t pre_total_weight 		= 0;
-
-	creator->begin(num_total_queries);
-	for(uint64_t i = 0; i < _num_threads; i++) {
-		for(uint64_t j = iteration * num_records; j < (iteration + 1) * num_records; j++) {
-			//Move to the next vertex in xadj list
-			ycsb_query * q1 = & _orig_queries[i][j];
-			creator->move_to_next_vertex();
-
-			//Now identify adjacency list for q1
-			for(uint64_t k = 0; k < _num_threads; k++) {
-				for(uint64_t l = iteration * num_records; l < (iteration + 1) * num_records; l++) {
-					ycsb_query * q2 = & _orig_queries[k][l];
-
-					//Compute weight and add the edge
-					if(q1 != q2) {
-						int weight = compute_weight(q1, q2, nullptr);
-						if(weight > 0) {
-							num_edges++;
-							auto qid = static_cast<uint32_t>(k * num_records + (l - (iteration * num_records)));
-							creator->add_edge(qid, static_cast<uint32_t>(weight));
-							if(i != k) {
-								pre_total_weight += (uint32_t)weight;
-								pre_num_cross_edges++;
-							}
-						}
-		  			}
-
-				}
+int YCSBWorkloadPartitioner::compute_weight(BaseQuery * q1, BaseQuery * q2) {
+	assert(q1 != q2);
+	bool conflict = false;
+	int weight = 0;
+	ycsb_params * p1 = & ((ycsb_query *)q1)->params;
+	ycsb_params * p2 = & ((ycsb_query *)q2)->params;
+	for(uint32_t i = 0; i < p1->request_cnt; i++) {
+		for(uint32_t j = 0; j < p2->request_cnt; j++) {
+			if(p1->requests[i].key == p2->requests[j].key) {
+				weight += 1;
+				conflict = true;
+				break;
 			}
 		}
 	}
-	creator->finish();
-	end_time = get_server_clock();
-	graph_init_duration += DURATION(end_time, start_time);
-
-
-	//Do clustering
-	start_time = get_server_clock();
-	creator->do_cluster(_num_threads);
-	end_time = get_server_clock();
-	partition_duration += DURATION(end_time, start_time);
-
-	//Record init sizes of tmp_queries
-	uint32_t init_sizes[_num_threads];
-	for(uint32_t i = 0; i < _num_threads; i++) {
-		init_sizes[i] = (uint32_t)_tmp_queries[i].size();
-	}
-
-	//Shuffle queries into _tmp_queries array
-	for(uint64_t i = 0; i < _num_threads; i++) {
-		for(uint64_t j = iteration * num_records; j < (iteration + 1) * num_records; j++) {
-			auto qid = static_cast<uint32_t>(i * num_records + (j - (iteration * num_records)));
-			int partition = creator->get_cluster_id(qid);
-			_tmp_queries[partition].push_back(& _orig_queries[i][j]);
-		}
-	}
-	creator->release();
-
-	uint32_t post_num_cross_edges 	= 0;
-	uint32_t post_total_weight 		= 0;
-	for(uint64_t i = 0; i < _num_threads; i++) {
-		for(uint64_t j = init_sizes[i]; j < _tmp_queries[i].size(); j++) {
-			//Move to the next vertex in xadj list
-			ycsb_query * q1 = (ycsb_query *) _tmp_queries[i][j];
-
-			//Now identify adjacency list for q1
-			for(uint64_t k = 0; k < _num_threads; k++) {
-				if(i != k) {
-					//Not the same thread
-
-					for(uint64_t l = init_sizes[k]; l < _tmp_queries[k].size(); l++) {
-						ycsb_query * q2 = (ycsb_query *) _tmp_queries[k][l];
-
-						//Compute weight
-						int weight = compute_weight(q1, q2, nullptr);
-						if(weight > 0) {
-							post_total_weight += (uint32_t)weight;
-							post_num_cross_edges++;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	//Write back the post clustering file of transactions
-	sprintf(file_name, "post_partition_%d.txt", iteration);
-	FILE * post_partition_file = fopen(file_name, "w");
-	for(uint32_t i = 0; i < _num_threads; i++) {
-		uint32_t num_queries = static_cast<uint32_t>(_tmp_queries[i].size() - init_sizes[i]);
-		fprintf(post_partition_file, "Core\t:%d\tNum Queries\t:%ld\n", (int)i, static_cast<long>(num_queries));
-		for(uint32_t j = init_sizes[i]; j < (uint32_t)_tmp_queries[i].size(); j++) {
-				ycsb_query * query = (ycsb_query *)_tmp_queries[i][j];
-				fprintf(post_partition_file, "Transaction Id: (%d, %d)\n", (int)i, (int)j);
-				for(uint64_t k = 0; k < query->params.request_cnt; k++) {
-			fprintf(post_partition_file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
-				}
-		}
-		fprintf(post_partition_file, "\n");
-	}
-	fflush(post_partition_file);
-	fclose(post_partition_file);
-
-	printf("******** PARTITION SUMMARY AT ITERATION %d ***********\n", iteration);
-	printf("%-30s: %d\n", "Num Vertices", num_total_queries);
-	printf("%-30s: %d\n", "Num Edges", num_edges);
-	printf("%-30s: %-10d --> %d\n", "Cross-Core Edges", pre_num_cross_edges, post_num_cross_edges);
-	printf("%-30s: %-10d --> %d\n", "Cross-Core Weights", pre_total_weight, post_total_weight);
-	printf("%-30s: [", "Partition Sizes");
-	for(uint32_t i = 0; i < _num_threads; i++) {
-	  if(i != _num_threads - 1)
-		printf("%d, ", (int)(_tmp_queries[i].size() - init_sizes[i]));
-	  else
-	    printf("%d", (int)(_tmp_queries[i].size() - init_sizes[i]));
-	}
-	printf("]\n");
-
+	return conflict ? weight : -1;
 }
-
-
 
 void YCSBWorkloadPartitioner::partition() {
 	WorkloadPartitioner::partition();

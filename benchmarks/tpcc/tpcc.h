@@ -199,6 +199,13 @@ private:
     }
 };
 
-
+class TPCCExecutor : public BenchmarkExecutor {
+public:
+    void initialize(uint32_t num_threads) override;
+protected:
+    TPCCDatabase * 						_db;
+    TPCCWorkloadGenerator * 	_generator;
+    TPCCWorkloadPartitioner * _partitioner;
+};
 #endif //DBX1000_TPCC_H
 

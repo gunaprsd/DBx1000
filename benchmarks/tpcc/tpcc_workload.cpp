@@ -199,3 +199,28 @@ void TPCCWorkloadPartitioner::partition() {
     end_time = get_server_clock();
     shuffle_duration += DURATION(end_time, start_time);
 }
+
+
+void TPCCExecutor::initialize(uint32_t num_threads) {
+    BenchmarkExecutor::initialize(num_threads);
+
+    //Build database in parallel
+    _db = new TPCCDatabase();
+    _db->initialize(INIT_PARALLELISM);
+    _db->load();
+
+    //Generate workload in parallel
+    _generator = new TPCCWorkloadGenerator();
+    _generator->initialize(_num_threads, MAX_TXN_PER_PART, nullptr);
+    _generator->generate();
+
+    _partitioner = new TPCCWorkloadPartitioner();
+    uint32_t num_params_pgpt = MAX_NODES_FOR_CLUSTERING / _num_threads;
+    _partitioner->initialize(_num_threads, MAX_TXN_PER_PART, num_params_pgpt, _generator);
+    _partitioner->partition();
+
+    //Initialize each thread
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        _threads[i].initialize(i, _db, _partitioner->get_queries_list(i), true);
+    }
+}

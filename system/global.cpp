@@ -113,7 +113,9 @@ void print_query(FILE * file, BaseQuery * query) {
 			print_ycsb_query(file, (ycsb_query *)query);
 			break;
 		case TPCC_NEW_ORDER_QUERY:
+	case TPCC_PAYMENT_QUERY:
 			print_tpcc_query(file, (tpcc_query *)query);
+			break;
 		default:
 			assert(false);
 	}

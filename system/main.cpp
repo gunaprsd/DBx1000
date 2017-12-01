@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
     ParallelWorkloadGenerator * generator = nullptr;
     WorkloadPartitioner * partitioner = nullptr;
 
-    generator = new YCSBWorkloadGenerator();
-    partitioner = new YCSBWorkloadPartitioner();
+    generator = new TPCCWorkloadGenerator();
+    partitioner = new TPCCWorkloadPartitioner();
     uint32_t num_threads = 4;
     uint64_t num_params_per_thread = 16 * 1024;
     uint64_t num_params_pgpt = 1024;

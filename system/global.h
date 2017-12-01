@@ -166,7 +166,7 @@ struct ThreadLocalData {
 	uint64_t fields[8];
 };
 
-#define WRITE_PARTITIONS_TO_FILE true
+#define WRITE_PARTITIONS_TO_FILE false
 #define PRINT_PARTITION_SUMMARY true
 
 class BaseQuery;

@@ -16,7 +16,7 @@
 // # of transactions to run for warmup
 #define WARMUP						0
 // YCSB or TPCC
-#define WORKLOAD 					YCSB
+#define WORKLOAD 					TPCC
 // print the transaction latency distribution
 #define PRT_LAT_DISTR				false
 #define STATS_ENABLE				true
@@ -127,12 +127,12 @@
 #define POS_IN_TXN					1
 
 // ==== [YCSB] ====
-#define ZIPF_THETA 				0.5
+#define ZIPF_THETA 				0.8
 #define PART_PER_TXN 				1
 #define PERC_MULTI_PART				1
 #define REQ_PER_QUERY				16
 #define FIELD_PER_TUPLE				10
-#define MAX_REQ_PER_QUERY			8
+#define MAX_REQ_PER_QUERY			16
 
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
@@ -143,7 +143,7 @@
 // are not modeled.
 #define TPCC_ACCESS_ALL 			        false 
 #define WH_UPDATE					true
-#define NUM_WH 						1
+#define NUM_WH 						4
 #define MAX_NUM_ORDER_LINE			        16
 
 enum TPCCTxnType {TPCC_ALL, 

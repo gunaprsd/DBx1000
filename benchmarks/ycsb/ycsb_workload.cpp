@@ -162,7 +162,7 @@ void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *f
 
 
 void YCSBWorkloadPartitioner::initialize(uint32_t num_threads,
-																				 uint64_t num_params_per_thread,
+												      uint64_t num_params_per_thread,
 																				 uint64_t num_params_pgpt,
 																				 ParallelWorkloadGenerator * generator) {
 	WorkloadPartitioner::initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
@@ -184,7 +184,7 @@ int YCSBWorkloadPartitioner::compute_weight(BaseQuery * q1, BaseQuery * q2) {
 	ycsb_params * p2 = & ((ycsb_query *)q2)->params;
 	for(uint32_t i = 0; i < p1->request_cnt; i++) {
 		for(uint32_t j = 0; j < p2->request_cnt; j++) {
-			if(p1->requests[i].key == p2->requests[j].key) {
+		  if((p1->requests[i].key == p2->requests[j].key) && (p1->requests[i].rtype == WR || p2->requests[i].rtype == WR)) {
 				weight += 1;
 				conflict = true;
 				break;

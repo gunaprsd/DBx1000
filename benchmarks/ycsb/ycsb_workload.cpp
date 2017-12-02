@@ -57,7 +57,7 @@ uint64_t YCSBWorkloadGenerator::zipf(uint32_t thread_id, uint64_t n, double thet
 	return 1 + (uint64_t)(n * pow(eta*u -eta + 1, alpha));
 }
 
-void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query) {
+void YCSBWorkloadGenerator::gen_requests(uint32_t thread_id, ycsb_query * query) {
 	assert(g_virtual_part_cnt == 1 && g_part_cnt == 1);
 	int access_cnt = 0;
 	set<uint64_t> all_keys;
@@ -69,28 +69,29 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 
 	uint64_t rid = 0;
 	for (UInt32 tmp = 0; tmp < MAX_REQ_PER_QUERY; tmp ++) {
-		drand48_r(buffers[thread_id], &r);
 		assert(rid < MAX_REQ_PER_QUERY);
+
 		ycsb_request * req = & (query->params.requests[rid]);
+
+		//Choose the access type
+		drand48_r(buffers[thread_id], &r);
 		if (r < g_read_perc) {
 			req->rtype = RD;
-		} else if (r >= g_read_perc && r < g_write_perc + g_read_perc) {
-			req->rtype = WR;
 		} else {
-			req->rtype = SCAN;
-			req->scan_len = SCAN_LEN;
+			req->rtype = WR;
 		}
 
-		// the request will access part_id.
-		uint32_t part_id = 0;
-		uint64_t table_size = g_synth_table_size / g_virtual_part_cnt;
-		uint64_t row_id = zipf(thread_id, table_size - 1, g_zipf_theta);
-		assert(row_id < table_size);
-		uint64_t primary_key = row_id * g_virtual_part_cnt + part_id;
+		//Generate a key from the zipfian distribution
+		uint64_t row_id = zipf(thread_id, g_synth_table_size - 1, g_zipf_theta);
+		assert(row_id < g_synth_table_size);
+		uint64_t primary_key = row_id;
 		req->key = primary_key;
-		int64_t rint64;
+
+		//Generate random value for value
 		lrand48_r(buffers[thread_id], &rint64);
-		req->value = rint64 % (1<<8);
+		req->value = static_cast<char>(rint64 % (1 << 8));
+
+
 		// Make sure a single row is not accessed twice
 		if (req->rtype == RD || req->rtype == WR) {
 			if (all_keys.find(req->key) == all_keys.end()) {
@@ -99,30 +100,16 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 			} else {
 				continue;
 			}
-		} else {
-			bool conflict = false;
-			for (UInt32 i = 0; i < req->scan_len; i++) {
-				primary_key = (row_id + i) * g_part_cnt + part_id;
-				if (all_keys.find( primary_key )
-					!= all_keys.end())
-					conflict = true;
-			}
-			if (conflict) {
-				continue;
-			} else {
-				for (UInt32 i = 0; i < req->scan_len; i++) {
-					all_keys.insert( (row_id + i) * g_part_cnt + part_id);
-				}
-				access_cnt += SCAN_LEN;
-			}
 		}
 		assert(rid <= MAX_REQ_PER_QUERY);
-		rid ++;
+		rid++;
 	}
 	query->params.request_cnt = rid;
-	// Sort the requests in key order.
+
+
+	// Sort the requests in key order, if needed
 	if (g_key_order) {
-		for (int i = query->params.request_cnt - 1; i > 0; i--)
+		for (int i = static_cast<int>(query->params.request_cnt - 1); i > 0; i--)
 			for (int j = 0; j < i; j ++)
 				if (query->params.requests[j].key > query->params.requests[j + 1].key) {
 					ycsb_request tmp = query->params.requests[j];
@@ -132,7 +119,6 @@ void YCSBWorkloadGenerator::gen_requests(uint64_t thread_id, ycsb_query * query)
 		for (UInt32 i = 0; i < query->params.request_cnt - 1; i++)
 			assert(query->params.requests[i].key < query->params.requests[i + 1].key);
 	}
-
 	assert(query->params.request_cnt <= MAX_REQ_PER_QUERY);
 }
 
@@ -161,9 +147,6 @@ void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *f
 	fwrite(thread_queries, sizeof(ycsb_query), _num_params_per_thread, file);
 }
 
-
-
-
 BaseQueryList *YCSBWorkloadLoader::get_queries_list(uint32_t thread_id) {
 	auto queryList = new QueryList<ycsb_params>();
 	queryList->initialize(_queries[thread_id], _array_sizes[thread_id]);
@@ -191,11 +174,10 @@ void YCSBWorkloadLoader::initialize(uint32_t num_threads, char *base_file_name) 
 
 
 
-void YCSBWorkloadPartitioner::initialize(uint32_t num_threads,
-					 												       uint64_t num_params_pt,
-																				 uint64_t num_params_pgpt,
-																				 ParallelWorkloadGenerator * generator) {
-	WorkloadPartitioner::initialize(num_threads, num_params_pt, num_params_pgpt, generator);
+void YCSBWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
+																				 uint64_t max_cluster_graph_size,
+																				 uint32_t parallelism) {
+	ParallelWorkloadPartitioner::initialize(queries, max_cluster_graph_size, parallelism);
 	_partitioned_queries = nullptr;
 }
 
@@ -225,12 +207,12 @@ int YCSBWorkloadPartitioner::compute_weight(BaseQuery * q1, BaseQuery * q2) {
 }
 
 void YCSBWorkloadPartitioner::partition() {
-	WorkloadPartitioner::partition();
+	ParallelWorkloadPartitioner::partition();
 
 	uint64_t start_time, end_time;
 	start_time = get_server_clock();
-	_partitioned_queries = new ycsb_query * [_num_threads];
-	for(uint32_t i = 0; i < _num_threads; i++) {
+	_partitioned_queries = new ycsb_query * [_num_arrays];
+	for(uint32_t i = 0; i < _num_arrays; i++) {
 		_partitioned_queries[i] = (ycsb_query *) _mm_malloc(sizeof(ycsb_query) * _tmp_queries[i].size(), 64);
 		uint32_t offset = 0;
 		for(auto iter = _tmp_queries[i].begin(); iter != _tmp_queries[i].end(); iter++) {
@@ -242,8 +224,11 @@ void YCSBWorkloadPartitioner::partition() {
 	shuffle_duration += DURATION(end_time, start_time);
 }
 
-
-
+void YCSBWorkloadPartitioner::write_workload_file(uint32_t thread_id, FILE *file) {
+	ycsb_query * thread_queries = _partitioned_queries[thread_id];
+	uint32_t size = _tmp_array_sizes[thread_id];
+	fwrite(thread_queries, sizeof(ycsb_query), size, file);
+}
 
 
 void YCSBExecutor::initialize(uint32_t num_threads) {
@@ -260,8 +245,7 @@ void YCSBExecutor::initialize(uint32_t num_threads) {
 	_generator->generate();
 
 	_partitioner = new YCSBWorkloadPartitioner();
-	uint32_t num_params_pgpt = MAX_NODES_FOR_CLUSTERING / _num_threads;
-	_partitioner->initialize(_num_threads, MAX_TXN_PER_PART, num_params_pgpt, _generator);
+	_partitioner->initialize(_generator->get_queries_matrix(), MAX_NODES_FOR_CLUSTERING, INIT_PARALLELISM);
 	_partitioner->partition();
 
 	//Initialize each thread

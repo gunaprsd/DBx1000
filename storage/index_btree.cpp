@@ -101,7 +101,7 @@ RC index_btree::index_read(idx_key_t key, itemid_t *& item,
 			*cur_idx_per_thd[thd_id] = i;
 			return RCOK;
 		}
-	// release the latch after reading the node
+	// print_execution_summary the latch after reading the node
 
 	printf("key = %ld\n", key);
 	M_ASSERT(false, "the key does not exist!");
@@ -245,7 +245,7 @@ latch_t index_btree::release_latch(bt_node * node) {
 		while ( !ATOM_CAS(node->latch, false, true) ) {}
 //		pthread_mutex_lock(&node->locked);
 //		while (!ATOM_CAS(node->locked, false, true)) {}
-	M_ASSERT((node->latch_type != LATCH_NONE), "release latch fault");
+	M_ASSERT((node->latch_type != LATCH_NONE), "print_execution_summary latch fault");
 	if (node->latch_type == LATCH_EX)
 		node->latch_type = LATCH_NONE;
 	else if (node->latch_type == LATCH_SH) {
@@ -359,7 +359,7 @@ RC index_btree::find_leaf(glob_param params, idx_key_t key, idx_acc_t access_typ
 				release_latch(c);
 			}
 		} else
-			release_latch(c); // release the LATCH_SH on c
+			release_latch(c); // print_execution_summary the LATCH_SH on c
 		c = child;
 	}
 	// c is leaf		

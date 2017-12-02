@@ -253,7 +253,7 @@ final:
 //				Access * access = accesses[ i ];
 //				if (access->type == WR)
 //					access->orig_row->manager->write_data(access->data, max_wts);
-//				access->orig_row->manager->release();
+//				access->orig_row->manager->print_execution_summary();
 //			}
 #endif
 		}

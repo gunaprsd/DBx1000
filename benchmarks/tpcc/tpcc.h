@@ -124,15 +124,16 @@ protected:
     uint32_t	*				_array_sizes;
 };
 
-class TPCCWorkloadPartitioner : public WorkloadPartitioner {
+class TPCCWorkloadPartitioner : public ParallelWorkloadPartitioner {
 public:
-    void initialize(uint32_t num_threads,
-                    uint64_t num_params_per_thread,
-                    uint64_t num_params_pgpt,
-                    ParallelWorkloadGenerator * generator) override;
+    void initialize(BaseQueryMatrix * queries,
+                    uint64_t max_cluster_graph_size,
+                    uint32_t parallelism) override;
+
     BaseQueryList * get_queries_list(uint32_t thread_id) override;
     void            partition() override;
  protected:
+    void 					write_workload_file		(uint32_t thread_id, FILE * file) override;
     tpcc_query * * _partitioned_queries;
 private:
     int compute_weight(BaseQuery * bq1, BaseQuery * bq2) override {

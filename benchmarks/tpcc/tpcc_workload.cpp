@@ -174,21 +174,20 @@ BaseQueryList *TPCCWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
     return queryList;
 }
 
-void TPCCWorkloadPartitioner::initialize(uint32_t num_threads,
-                                         uint64_t num_params_per_thread,
-                                         uint64_t num_params_pgpt,
-                                         ParallelWorkloadGenerator *generator) {
-    WorkloadPartitioner::initialize(num_threads, num_params_per_thread, num_params_pgpt, generator);
+void TPCCWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
+                                         uint64_t max_cluster_graph_size,
+                                         uint32_t parallelism) {
+    ParallelWorkloadPartitioner::initialize(queries, max_cluster_graph_size, parallelism);
     _partitioned_queries = nullptr;
 }
 
 void TPCCWorkloadPartitioner::partition() {
-    WorkloadPartitioner::partition();
+    ParallelWorkloadPartitioner::partition();
 
     uint64_t start_time, end_time;
     start_time = get_server_clock();
-    _partitioned_queries = new tpcc_query * [_num_threads];
-    for(uint32_t i = 0; i < _num_threads; i++) {
+    _partitioned_queries = new tpcc_query * [_num_arrays];
+    for(uint32_t i = 0; i < _num_arrays; i++) {
         _partitioned_queries[i] = (tpcc_query *) _mm_malloc(sizeof(tpcc_query) * _tmp_queries[i].size(), 64);
         uint32_t offset = 0;
         for(auto iter = _tmp_queries[i].begin(); iter != _tmp_queries[i].end(); iter++) {
@@ -200,6 +199,11 @@ void TPCCWorkloadPartitioner::partition() {
     shuffle_duration += DURATION(end_time, start_time);
 }
 
+void TPCCWorkloadPartitioner::write_workload_file(uint32_t thread_id, FILE *file) {
+    tpcc_query * thread_queries = _partitioned_queries[thread_id];
+    uint32_t size = _tmp_array_sizes[thread_id];
+    fwrite(thread_queries, sizeof(tpcc_query), size, file);
+}
 
 void TPCCExecutor::initialize(uint32_t num_threads) {
     BenchmarkExecutor::initialize(num_threads);
@@ -215,8 +219,7 @@ void TPCCExecutor::initialize(uint32_t num_threads) {
     _generator->generate();
 
     _partitioner = new TPCCWorkloadPartitioner();
-    uint32_t num_params_pgpt = MAX_NODES_FOR_CLUSTERING / _num_threads;
-    _partitioner->initialize(_num_threads, MAX_TXN_PER_PART, num_params_pgpt, _generator);
+    _partitioner->initialize(_generator->get_queries_matrix(), MAX_NODES_FOR_CLUSTERING, INIT_PARALLELISM);
     _partitioner->partition();
 
     //Initialize each thread

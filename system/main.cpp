@@ -28,11 +28,15 @@ int main(int argc, char* argv[]) {
     vll_man.init();
 #endif
 
-    auto executor = new YCSBExecutor();
-    executor->initialize(g_thread_cnt);
-    executor->execute();
-    executor->release();
+    auto generator = new YCSBWorkloadGenerator();
+    generator->initialize(g_thread_cnt, MAX_TXN_PER_PART, nullptr);
+    generator->generate();
 
+    auto partitioner = new YCSBWorkloadPartitioner();
+    partitioner->initialize(generator->get_queries_matrix(), MAX_NODES_FOR_CLUSTERING, INIT_PARALLELISM);
+    partitioner->partition();
+    partitioner->write_to_files("ycsb_test");
+	  partitioner->print_execution_summary();
 
     return 0;
 }

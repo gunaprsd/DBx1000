@@ -18,11 +18,15 @@
       <w>nparts</w>
       <w>nvtxs</w>
       <w>objval</w>
+      <w>parallelize</w>
+      <w>paritioning</w>
       <w>partitioner</w>
+      <w>rint</w>
       <w>tictoc</w>
       <w>tpwgts</w>
       <w>ubvec</w>
       <w>vsize</w>
+      <w>vtxs</w>
       <w>vwgt</w>
       <w>xadj</w>
       <w>zipf</w>

@@ -49,7 +49,7 @@ RC IndexHash::index_insert(idx_key_t key, itemid_t * item, int part_id) {
 	// 2. update the latch list
 	cur_bkt->insert_item(key, item, part_id);
 	
-	// 3. release the latch
+	// 3. print_execution_summary the latch
 	release_latch(cur_bkt);
 	return rc;
 }
@@ -62,7 +62,7 @@ RC IndexHash::index_read(idx_key_t key, itemid_t * &item, int part_id) {
 	// 1. get the sh latch
 //	get_latch(cur_bkt);
 	cur_bkt->read_item(key, item, table->get_table_name());
-	// 3. release the latch
+	// 3. print_execution_summary the latch
 //	release_latch(cur_bkt);
 	return rc;
 
@@ -77,7 +77,7 @@ RC IndexHash::index_read(idx_key_t key, itemid_t * &item,
 	// 1. get the sh latch
 //	get_latch(cur_bkt);
 	cur_bkt->read_item(key, item, table->get_table_name());
-	// 3. release the latch
+	// 3. print_execution_summary the latch
 //	release_latch(cur_bkt);
 	return rc;
 }

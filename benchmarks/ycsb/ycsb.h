@@ -61,7 +61,7 @@ public:
 protected:
 	void            per_thread_generate(uint32_t thread_id) override;
 	void            per_thread_write_to_file(uint32_t thread_id, FILE * file) override;
-	void 						gen_requests(uint64_t thd_id, ycsb_query * query);
+	void 						gen_requests(uint32_t thd_id, ycsb_query * query);
 
 	ycsb_query * * 		_queries;
 
@@ -77,7 +77,6 @@ protected:
 	friend class YCSBWorkloadPartitioner;
 };
 
-
 class YCSBWorkloadLoader : public ParallelWorkloadLoader {
 public:
 		void 							initialize(uint32_t num_threads, char * base_file_name) override;
@@ -88,20 +87,18 @@ protected:
 		uint32_t	*				_array_sizes;
 };
 
-class YCSBWorkloadPartitioner : public WorkloadPartitioner {
+class YCSBWorkloadPartitioner : public ParallelWorkloadPartitioner {
 public:
-	void  					initialize				(uint32_t num_threads,
-																		 uint64_t num_params_pt,
-																		 uint64_t num_params_pgpt,
-																		 ParallelWorkloadGenerator * generator) override;
+	void  					initialize				(BaseQueryMatrix * queries,
+																		 uint64_t max_cluster_graph_size,
+																		 uint32_t parallelism) override;
 	void 						partition					() override;
 	BaseQueryList * get_queries_list	(uint32_t thread_id) override;
 protected:
-	int 						compute_weight		(BaseQuery * q1, BaseQuery * q2) override;
-
+		int 					compute_weight				(BaseQuery * q1, BaseQuery * q2) override;
+		void 					write_workload_file		(uint32_t thread_id, FILE * file) override;
 	ycsb_query * *  _partitioned_queries;
 };
-
 
 class YCSBExecutor : public BenchmarkExecutor {
 public:
@@ -111,5 +108,6 @@ protected:
     YCSBWorkloadGenerator * 	_generator;
 		YCSBWorkloadPartitioner * _partitioner;
 };
+
 
 #endif

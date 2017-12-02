@@ -105,7 +105,7 @@ uint64_t myrand::next() {
 	return (seed / 65537) % RAND_MAX;
 }
 
-char * get_workload_file(char *base_file_name, uint32_t thread_id)
+char * get_workload_file(const char * base_file_name, uint32_t thread_id)
 {
 	char * file_name = new char[100];
 	strcpy(file_name, base_file_name);
@@ -115,7 +115,7 @@ char * get_workload_file(char *base_file_name, uint32_t thread_id)
 	return file_name;
 }
 
-char * get_graph_file_name(char * base_file_name, uint32_t iteration)
+char * get_graph_file_name(const char * base_file_name, uint32_t iteration)
 {
 	char * file_name = new char[100];
 	strcpy(file_name, base_file_name);

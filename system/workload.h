@@ -90,6 +90,7 @@ protected:
             void    	write_post_partition_file  ();
 						void 			parallel_compute_post_stats(METISGraphPartitioner * partitioner);
 						Graph * 	parallel_create_graph			 ();
+						Graph *   create_graph							 ();
 		static 	void * 		create_graph_helper				 (void * data);
 		static 	void * 		compute_statistics_helper	 (void * data);
 

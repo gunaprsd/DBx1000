@@ -138,10 +138,12 @@ void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
 
     _orig_queries           = queries;
     _parallelism            = parallelism;
-    _num_arrays            = _orig_queries->num_arrays;
+    _num_arrays            	= _orig_queries->num_arrays;
     _num_queries_per_array  = _orig_queries->num_queries_per_array;
+
     _max_cluster_graph_size = max_cluster_graph_size;
     _num_queries_per_iter_per_array = max_cluster_graph_size / _num_arrays;
+
     assert(_num_queries_per_array % _num_queries_per_iter_per_array == 0);
     assert(_num_queries_per_iter_per_array % _parallelism == 0);
 
@@ -149,11 +151,11 @@ void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
     _tmp_array_sizes    = new uint32_t[_num_arrays];
     for(uint32_t i = 0; i < _num_arrays; i++) {  _tmp_array_sizes[i] = 0; }
 
-    _current_iteration          = 0;
-    _total_num_edges            = 0;
-    _total_pre_cross_core_edges = 0;
-    _total_pre_cross_core_weight= 0;
-    _total_post_cross_core_edges= 0;
+    _current_iteration          	= 0;
+    _total_num_edges            	= 0;
+    _total_pre_cross_core_edges 	= 0;
+    _total_pre_cross_core_weight	= 0;
+    _total_post_cross_core_edges	= 0;
     _total_post_cross_core_weight = 0;
 
     data_statistics_duration    = 0.0;
@@ -162,7 +164,8 @@ void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
     shuffle_duration            = 0.0;
 }
 
-void ParallelWorkloadPartitioner::partition() {
+void ParallelWorkloadPartitioner::partition()
+{
     while(_array_iter_start_offset < _num_queries_per_array) {
         _total_num_edges                = 0;
         _total_pre_cross_core_edges     = 0;
@@ -180,11 +183,10 @@ void ParallelWorkloadPartitioner::partition() {
     }
 }
 
-void ParallelWorkloadPartitioner::partition_per_iteration() {
+void ParallelWorkloadPartitioner::partition_per_iteration()
+{
     uint64_t start_time, end_time;
-    if(WRITE_PARTITIONS_TO_FILE) {
-        write_pre_partition_file();
-    }
+    if(WRITE_PARTITIONS_TO_FILE) {	write_pre_partition_file(); }
 
     start_time = get_server_clock();
     compute_data_info();
@@ -192,10 +194,10 @@ void ParallelWorkloadPartitioner::partition_per_iteration() {
     data_statistics_duration += DURATION(end_time, start_time);
 
     start_time = get_server_clock();
-    auto graph = parallel_create_graph();
+    //auto graph = parallel_create_graph();
+    auto graph = create_graph();
     end_time = get_server_clock();
     graph_init_duration += DURATION(end_time, start_time);
-
 
     //Do clustering
     start_time = get_server_clock();
@@ -221,9 +223,7 @@ void ParallelWorkloadPartitioner::partition_per_iteration() {
     }
 
 
-    if(WRITE_PARTITIONS_TO_FILE) {
-        write_post_partition_file();
-    }
+    if(WRITE_PARTITIONS_TO_FILE) { write_post_partition_file(); }
 }
 
 
@@ -336,6 +336,7 @@ Graph * ParallelWorkloadPartitioner::parallel_create_graph() {
     graph->ncon      = 1;
     graph->nvtxs     = _max_cluster_graph_size;
     graph->adjncy_size = adjncy_size;
+
     graph->xadj      = (idx_t *) malloc(sizeof(idx_t) * (graph->nvtxs + 1));
     graph->vwgt      = (idx_t *) malloc(sizeof(idx_t) * graph->nvtxs);
     graph->adjncy    = (idx_t *) malloc(sizeof(idx_t) * graph->adjncy_size);
@@ -347,12 +348,12 @@ Graph * ParallelWorkloadPartitioner::parallel_create_graph() {
         Graph * pseudo_sub_graph = creators[i].get_graph();
 
         //Copy arrays that don't change
-        memcpy(graph->vwgt + vtx_array_offset, pseudo_sub_graph->vwgt, sizeof(idx_t) * pseudo_sub_graph->nvtxs);
-        memcpy(graph->adjncy + adj_array_offset, pseudo_sub_graph->adjncy, sizeof(idx_t) * pseudo_sub_graph->adjncy_size);
-        memcpy(graph->adjwgt + adj_array_offset, pseudo_sub_graph->adjwgt, sizeof(idx_t) * pseudo_sub_graph->adjncy_size);
+        memcpy(& graph->vwgt[vtx_array_offset], pseudo_sub_graph->vwgt, sizeof(idx_t) * pseudo_sub_graph->nvtxs);
+        memcpy(& graph->adjncy[adj_array_offset], pseudo_sub_graph->adjncy, sizeof(idx_t) * pseudo_sub_graph->adjncy_size);
+        memcpy(& graph->adjwgt[adj_array_offset], pseudo_sub_graph->adjwgt, sizeof(idx_t) * pseudo_sub_graph->adjncy_size);
 
         //Copy and adjust xadj array
-        memcpy(graph->xadj + vtx_array_offset, pseudo_sub_graph->xadj, sizeof(idx_t) * pseudo_sub_graph->nvtxs);
+        memcpy(& graph->xadj[vtx_array_offset], pseudo_sub_graph->xadj, sizeof(idx_t) * pseudo_sub_graph->nvtxs);
         for(uint32_t j = 0; j < pseudo_sub_graph->nvtxs; j++) {
             graph->xadj[j + vtx_array_offset] += adj_array_offset;
         }
@@ -361,7 +362,6 @@ Graph * ParallelWorkloadPartitioner::parallel_create_graph() {
         adj_array_offset += pseudo_sub_graph->adjncy_size;
     }
     graph->xadj[graph->nvtxs] = adj_array_offset;
-
 
     for(uint32_t i = 0; i < _parallelism; i++) { creators[i].get_graph()->release(); }
 
@@ -384,10 +384,10 @@ void * ParallelWorkloadPartitioner::create_graph_helper(void * data) {
     uint64_t cross_core_weight = 0;
     uint64_t cross_core_edges = 0;
 
-    creator->begin(static_cast<uint32_t>(num_local_nodes));
-
     BaseQuery *q1, *q2;
     uint32_t t1, t2;
+
+		creator->begin(static_cast<uint32_t>(num_local_nodes));
     for(uint64_t i = start; i < end; i++) {
         t1 = partitioner->get_array_idx(i);
         partitioner->get_query(i, q1);
@@ -416,6 +416,37 @@ void * ParallelWorkloadPartitioner::create_graph_helper(void * data) {
 
     return nullptr;
 }
+
+
+Graph *ParallelWorkloadPartitioner::create_graph() {
+    auto creator =  new CSRGraphCreator();
+    creator->begin(static_cast<uint32_t>(_max_cluster_graph_size));
+    BaseQuery * q1, * q2;
+    uint32_t t1, t2;
+    for(uint64_t i = 0; i < _max_cluster_graph_size; i++) {
+        t1 = get_array_idx(i);
+        get_query(i, q1);
+        creator->move_to_next_vertex();
+        for(uint64_t j = 0; j < _max_cluster_graph_size; j++) {
+            t2 = get_array_idx(j);
+            get_query(j, q2);
+            if(q1 != q2) {
+                int weight = compute_weight(q1, q2);
+                if(weight > 0) {
+                    _total_num_edges++;
+                    creator->add_edge(j, weight);
+                    if(t1 != t2) {
+                        _total_pre_cross_core_edges++;
+                        _total_pre_cross_core_weight += weight;
+                    }
+                }
+            }
+        }
+    }
+    creator->finish();
+    return creator->get_graph();
+}
+
 
 /*
  * We parallelize this computation using the same trick as in creating

@@ -27,7 +27,7 @@ void CSRGraphCreator::finish() {
     assert(cvtx == graph->nvtxs);
     graph->xadj[cvtx] = cpos;
     
-    graph->adjncy_size = adjncies.size();;
+    graph->adjncy_size = cpos;
     graph->adjncy   = (idx_t *) malloc(sizeof(idx_t) * graph->adjncy_size);
     graph->adjwgt   = (idx_t *) malloc(sizeof(idx_t) * graph->adjncy_size);
 

@@ -141,8 +141,8 @@ void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
     _num_arrays            = _orig_queries->num_arrays;
     _num_queries_per_array  = _orig_queries->num_queries_per_array;
     _max_cluster_graph_size = max_cluster_graph_size;
-    assert(_num_queries_per_array % _num_queries_per_iter_per_array == 0);
     _num_queries_per_iter_per_array = max_cluster_graph_size / _num_arrays;
+    assert(_num_queries_per_array % _num_queries_per_iter_per_array == 0);
     assert(_num_queries_per_iter_per_array % _parallelism == 0);
 
     _tmp_queries        = new std::vector<BaseQuery*> [_num_arrays];
@@ -360,6 +360,7 @@ Graph * ParallelWorkloadPartitioner::parallel_create_graph() {
         vtx_array_offset += pseudo_sub_graph->nvtxs;
         adj_array_offset += pseudo_sub_graph->adjncy_size;
     }
+    graph->xadj[graph->nvtxs] = adj_array_offset;
 
 
     for(uint32_t i = 0; i < _parallelism; i++) { creators[i].get_graph()->release(); }
@@ -373,14 +374,11 @@ void * ParallelWorkloadPartitioner::create_graph_helper(void * data) {
     auto thread_id       = (uint32_t) threadLocalData->fields[1];
     auto creator         = (CSRGraphCreator *) threadLocalData->fields[2];
 
-
-    uint64_t global_nodes_per_thread    =   partitioner->_num_queries_per_iter_per_array;
-    uint64_t local_nodes_per_thread     =   global_nodes_per_thread / partitioner->_parallelism;
-    uint64_t num_local_nodes            =   local_nodes_per_thread * partitioner->_num_arrays;
     uint64_t num_global_nodes           =   partitioner->_max_cluster_graph_size;
+    uint64_t num_local_nodes            =   num_global_nodes / partitioner->_parallelism;;
 
-    uint64_t start   = thread_id * global_nodes_per_thread;
-    uint64_t end     = (thread_id + 1) * global_nodes_per_thread;
+    uint64_t start   = thread_id * num_local_nodes;
+    uint64_t end     = (thread_id + 1) * num_local_nodes;
 
     uint64_t num_edges = 0;
     uint64_t cross_core_weight = 0;
@@ -445,11 +443,11 @@ void * ParallelWorkloadPartitioner::compute_statistics_helper(void * data) {
     auto thread_id       = (uint32_t) threadLocalData->fields[1];
     auto computed_partitions = (METISGraphPartitioner *) threadLocalData->fields[2];
 
-    uint64_t num_global_nodes_per_thread    =   partitioner->_num_queries_per_iter_per_array;
     uint64_t num_global_nodes           =   partitioner->_max_cluster_graph_size;
-
-    uint64_t start   = thread_id * num_global_nodes_per_thread;
-    uint64_t end     = (thread_id + 1) * num_global_nodes_per_thread;
+    uint64_t num_local_nodes            =   num_global_nodes / partitioner->_parallelism;
+    
+    uint64_t start   = thread_id * num_local_nodes;
+    uint64_t end     = (thread_id + 1) * num_local_nodes;
 
     uint64_t cross_core_weight = 0;
     uint64_t cross_core_edges = 0;

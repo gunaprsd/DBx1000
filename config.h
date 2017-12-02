@@ -110,12 +110,12 @@
 // max number of rows touched per transaction
 #define MAX_ROW_PER_TXN				64
 #define QUERY_INTVL 					1UL
-#define MAX_TXN_PER_PART 			(32 * 1024)
+#define MAX_TXN_PER_PART 			32 * 1024
 #define FIRST_PART_LOCAL 			true
 #define MAX_TUPLE_SIZE				1024 // in bytes
 
 // === [EXPERIMENT & YCSB]
-#define INIT_PARALLELISM			40
+#define INIT_PARALLELISM			32
 #define SYNTH_TABLE_SIZE 			(10 * 1024 * 1024)
 #define READ_PERC 						0.9
 #define WRITE_PERC 						0.1
@@ -127,7 +127,7 @@
 #define POS_IN_TXN						1
 
 // ==== [YCSB] ====
-#define ZIPF_THETA 						0.8
+#define ZIPF_THETA 						0.9
 #define PART_PER_TXN 					1
 #define PERC_MULTI_PART				1
 #define REQ_PER_QUERY					16
@@ -234,6 +234,6 @@ extern TestCases					g_test_case;
 
 
 
-#define MAX_NODES_FOR_CLUSTERING (32 * 1024)
+#define MAX_NODES_FOR_CLUSTERING (8 * 1024)
 
 #endif

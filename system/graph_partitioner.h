@@ -41,7 +41,7 @@ class CSRGraphCreator {
 public:
     void    begin(uint32_t num_vertices);
     void    finish();
-    void    move_to_next_vertex();
+    void    move_to_next_vertex(idx_t vwgt = 1);
     void    add_edge(uint64_t adj_vertex, int weight);
     Graph * get_graph() { return graph; }
 protected:

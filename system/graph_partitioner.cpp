@@ -11,7 +11,7 @@ void CSRGraphCreator::begin(uint32_t num_vertices) {
     cpos = 0;
 }
 
-void CSRGraphCreator::move_to_next_vertex() {
+void CSRGraphCreator::move_to_next_vertex(idx_t vwgt) {
     graph->xadj[cvtx] = cpos;
     graph->vwgt[cvtx] = 1;
     cvtx++;
@@ -26,13 +26,14 @@ void CSRGraphCreator::add_edge(uint64_t adj_vertex, int weight) {
 void CSRGraphCreator::finish() {
     assert(cvtx == graph->nvtxs);
     graph->xadj[cvtx] = cpos;
-    graph->adjncy_size = cpos;
-    graph->xadj     = (idx_t *) malloc(sizeof(idx_t) * graph->adjncy_size);
+    
+    graph->adjncy_size = adjncies.size();;
+    graph->adjncy   = (idx_t *) malloc(sizeof(idx_t) * graph->adjncy_size);
     graph->adjwgt   = (idx_t *) malloc(sizeof(idx_t) * graph->adjncy_size);
 
     int i = 0;
     for(auto iter = adjncies.begin(); iter != adjncies.end(); iter++) {
-        graph->xadj[i] = *iter;
+        graph->adjncy[i] = *iter;
         i++;
     }
 

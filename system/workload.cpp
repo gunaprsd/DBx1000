@@ -109,7 +109,7 @@ void * ParallelWorkloadLoader::run_helper(void* ptr) {
 
     //Obtain the filename
     char * file_name = get_workload_file(loader->_base_file_name, thread_id);
-
+    
     //open the file
     FILE* file = fopen(file_name, "r");
 

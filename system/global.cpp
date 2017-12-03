@@ -127,4 +127,4 @@ void print_query(FILE * file, BaseQuery * query) {
 
 char * g_benchmark = nullptr;
 char * g_benchmark_tag = nullptr;
-int		g_ufactor = -1;
+int    g_ufactor = -1;

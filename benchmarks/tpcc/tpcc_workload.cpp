@@ -157,7 +157,7 @@ void TPCCWorkloadLoader::per_thread_load(uint32_t thread_id, FILE *file) {
     _queries[thread_id] 		= (tpcc_query *) _mm_malloc(bytes_to_read, 64);
 
     size_t bytes_read = fread(_queries[thread_id], sizeof(tpcc_query), _array_sizes[thread_id], file);
-    assert(bytes_read == bytes_to_read);
+    assert(bytes_read == _array_sizes[thread_id]);
 }
 
 void TPCCWorkloadLoader::initialize(uint32_t num_threads, char *base_file_name) {

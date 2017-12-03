@@ -107,22 +107,60 @@ uint64_t myrand::next() {
 
 char * get_workload_file(const char * base_file_name, uint32_t thread_id)
 {
-	char * file_name = new char[100];
-	strcpy(file_name, base_file_name);
-	strcat(file_name, "_");
-	sprintf(file_name + strlen(file_name), "%d", (int)thread_id);
-	strcat(file_name, ".dat");
+	char * file_name = new char[200];
+	sprintf(file_name, "%s/core_%d.dat", base_file_name, (int)thread_id);
 	return file_name;
 }
 
-char * get_graph_file_name(const char * base_file_name, uint32_t iteration)
+char * get_benchmark_path(bool partitioned)
 {
-	char * file_name = new char[100];
-	strcpy(file_name, base_file_name);
-	strcat(file_name, "_");
-	strcat(file_name, "graph");
-	strcat(file_name, "_");
-	sprintf(file_name + strlen(file_name), "%d", (int)iteration);
-	strcat(file_name, ".dat");
-	return file_name;
+	auto path = new char[200];
+	sprintf(path, "data/%s/%s/c%d/u%d/%s", g_benchmark, g_benchmark_tag, (int)g_thread_cnt, (int)g_ufactor, partitioned ? "partitioned" : "raw");
+	return path;
+}
+
+void check_and_init_variables() {
+	assert(g_benchmark != nullptr);
+	assert(g_benchmark_tag != nullptr);
+	assert(g_ufactor != -1);
+	assert(g_thread_cnt == 2 ||
+					g_thread_cnt == 4 ||
+					g_thread_cnt == 8 ||
+					g_thread_cnt == 16 ||
+					g_thread_cnt == 32);
+
+	if(strcmp(g_benchmark, "ycsb") == 0) {
+		if(strcmp(g_benchmark_tag, "low") == 0) {
+			g_zipf_theta = 0;
+			g_read_perc = 0.9;
+			g_queries_per_thread = 512 * 1024;
+			g_max_nodes_for_clustering = 32 * 1024;
+		} else if(strcmp(g_benchmark_tag, "medium") == 0) {
+			g_zipf_theta = 0.8;
+			g_read_perc = 0.9;
+			g_queries_per_thread = 512 * 1024;
+			g_max_nodes_for_clustering = 32 * 1024;
+		} else if(strcmp(g_benchmark_tag, "high") == 0) {
+			g_zipf_theta = 0.9;
+			g_read_perc = 0.5;
+			g_queries_per_thread = 128 * 1024;
+			g_max_nodes_for_clustering = 16 * 1024;
+		} else {
+			assert(false);
+		}
+	} else if(strcmp(g_benchmark, "tpcc") == 0) {
+		if(strcmp(g_benchmark_tag, "wh4") == 0) {
+			g_num_wh = 4;
+			g_queries_per_thread = 128 * 1024;
+			g_max_nodes_for_clustering = 16 * 1024;
+		} else if(strcmp(g_benchmark_tag, "wh64") == 0) {
+			g_num_wh = 64;
+			g_queries_per_thread = 512 * 1024;
+			g_max_nodes_for_clustering = 32 * 1024;
+		} else {
+			assert(false);
+		}
+	} else {
+		assert(false);
+	}
 }

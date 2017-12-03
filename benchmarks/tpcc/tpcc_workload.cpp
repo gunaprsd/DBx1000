@@ -166,6 +166,16 @@ void TPCCWorkloadLoader::initialize(uint32_t num_threads, char *base_file_name) 
     _array_sizes = new uint32_t[_num_threads];
 }
 
+BaseQueryMatrix *TPCCWorkloadLoader::get_queries_matrix() {
+    uint32_t const_size = _array_sizes[0];
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        assert(_array_sizes[i] == const_size);
+    }
+
+    auto qm = new QueryMatrix<tpcc_params>();
+    qm->initialize(_queries, _num_threads, const_size);
+    return qm;
+}
 
 
 BaseQueryList *TPCCWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
@@ -215,7 +225,7 @@ void TPCCExecutor::initialize(uint32_t num_threads) {
 
     //Generate workload in parallel
     _generator = new TPCCWorkloadGenerator();
-    _generator->initialize(_num_threads, MAX_TXN_PER_PART, nullptr);
+    _generator->initialize(_num_threads, g_queries_per_thread, nullptr);
     _generator->generate();
 
     _partitioner = new TPCCWorkloadPartitioner();

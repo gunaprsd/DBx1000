@@ -54,6 +54,9 @@ UInt64 g_synth_table_size = SYNTH_TABLE_SIZE;
 UInt32 g_req_per_query = REQ_PER_QUERY;
 UInt32 g_field_per_tuple = FIELD_PER_TUPLE;
 UInt32 g_init_parallelism = INIT_PARALLELISM;
+uint64_t g_queries_per_thread = MAX_TXN_PER_PART;
+uint64_t g_max_nodes_for_clustering = MAX_NODES_FOR_CLUSTERING;
+bool g_do_partition = false;
 
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;
@@ -120,3 +123,8 @@ void print_query(FILE * file, BaseQuery * query) {
 			assert(false);
 	}
 }
+
+
+char * g_benchmark = nullptr;
+char * g_benchmark_tag = nullptr;
+int		g_ufactor = -1;

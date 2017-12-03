@@ -19,7 +19,7 @@ class ParallelWorkloadGenerator
 public:
     virtual void    initialize  (uint32_t num_threads,
                                  uint64_t num_params_per_thread,
-                                 const char * base_file_name = NULL);
+                                 const char * base_file_name = nullptr);
     virtual void    release     ();
             void    generate    ();
 protected:
@@ -62,6 +62,7 @@ protected:
 /* Need to be implemented by benchmark */
 public:
     virtual BaseQueryList *     get_queries_list(uint32_t thread_id) = 0;
+		virtual BaseQueryMatrix * 	get_queries_matrix() = 0;
 protected:
     virtual void            per_thread_load(uint32_t thread_id, FILE * file) = 0;
 };

@@ -81,6 +81,7 @@ class YCSBWorkloadLoader : public ParallelWorkloadLoader {
 public:
 		void 							initialize(uint32_t num_threads, char * base_file_name) override;
 		BaseQueryList *   get_queries_list(uint32_t thread_id) override;
+		BaseQueryMatrix * get_queries_matrix() override;
 protected:
 		void            	per_thread_load(uint32_t thread_id, FILE * file) override;
 		ycsb_query * * 		_queries;

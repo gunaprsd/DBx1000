@@ -270,9 +270,8 @@ void ParallelWorkloadPartitioner::write_post_partition_file() {
 
 void ParallelWorkloadPartitioner::write_to_files(const char * base_file_name) {
     for(uint32_t i = 0; i < _num_arrays; i++) {
-        char file_name[100];
-        strcpy(file_name, "partitioned_");
-        strcpy(file_name, get_workload_file(base_file_name, i));
+        char file_name[200];
+        sprintf(file_name, "%s/core_%d.dat", base_file_name, (int)i);
         FILE * file = fopen(file_name, "w");
         write_workload_file(i, file);
         fflush(file);

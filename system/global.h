@@ -85,6 +85,10 @@ extern ts_t g_dl_loop_detect;
 extern bool g_ts_batch_alloc;
 extern UInt32 g_ts_batch_num;
 
+extern uint64_t g_queries_per_thread;
+extern uint64_t g_max_nodes_for_clustering;
+extern bool g_do_partition;
+
 extern map<string, string> g_params;
 
 // YCSB
@@ -171,3 +175,9 @@ struct ThreadLocalData {
 
 class BaseQuery;
 void print_query(FILE * file, BaseQuery * query);
+
+
+/* PRE_PROCESSING */
+extern char * g_benchmark;
+extern char * g_benchmark_tag;
+extern int		g_ufactor;

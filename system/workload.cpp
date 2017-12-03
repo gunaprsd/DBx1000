@@ -175,7 +175,8 @@ void ParallelWorkloadPartitioner::partition()
 
         //create and write conflict graph
         partition_per_iteration();
-
+	print_execution_summary();
+	
         //move to next region
         _current_iteration++;
         _array_iter_start_offset = (_current_iteration * _num_queries_per_iter_per_array);
@@ -194,8 +195,8 @@ void ParallelWorkloadPartitioner::partition_per_iteration()
     data_statistics_duration += DURATION(end_time, start_time);
 
     start_time = get_server_clock();
-    //auto graph = parallel_create_graph();
-    auto graph = create_graph();
+    auto graph = parallel_create_graph();
+    //auto graph = create_graph();
     end_time = get_server_clock();
     graph_init_duration += DURATION(end_time, start_time);
 
@@ -208,7 +209,7 @@ void ParallelWorkloadPartitioner::partition_per_iteration()
 
 
     //Add query pointers into tmp_queries
-    BaseQuery * query;
+    BaseQuery * query = nullptr;
     int partition;
     for(uint64_t i = 0; i < _max_cluster_graph_size; i++) {
         partition = partitioner.get_partition(i);
@@ -515,7 +516,7 @@ void ParallelWorkloadPartitioner::print_partition_summary() {
     printf("%-30s: %lu\n", "Num Vertices", _max_cluster_graph_size);
     printf("%-30s: %lu\n", "Num Edges", _total_num_edges);
     printf("%-30s: %-10lu --> %lu\n", "Cross-Core Edges", _total_pre_cross_core_edges, _total_post_cross_core_edges);
-    printf("%-30s: %-10lu --> %lu\n", "Cross-Core Weights", _total_post_cross_core_weight, _total_post_cross_core_weight);
+    printf("%-30s: %-10lu --> %lu\n", "Cross-Core Weights", _total_pre_cross_core_weight, _total_post_cross_core_weight);
     printf("%-30s: [", "Partition Sizes");
     for(uint32_t i = 0; i < _num_arrays; i++) {
         if(i != _num_arrays - 1)

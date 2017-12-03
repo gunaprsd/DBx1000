@@ -66,8 +66,8 @@ void METISGraphPartitioner::partition(Graph * _graph, int num_partitions) {
     //Create options
     options  = (idx_t *) malloc(sizeof(idx_t) * METIS_NOPTIONS);
     METIS_SetDefaultOptions(options);
-    options[METIS_OPTION_UFACTOR] = 1;
-    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
+    options[METIS_OPTION_UFACTOR] = 1000;
+    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
 
     //Do the partition
     int result = METIS_PartGraphKway(& graph->nvtxs,

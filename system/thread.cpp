@@ -89,10 +89,7 @@ ts_t Thread::get_next_ts() {
     }
 }
 
-void BenchmarkExecutor::initialize(uint32_t num_threads) {
-    _num_threads = num_threads;
-    _threads = (Thread *) _mm_malloc(sizeof(Thread) * _num_threads, 64);
-}
+
 
 void BenchmarkExecutor::execute() {
     pthread_t threads[_num_threads];
@@ -128,5 +125,11 @@ void * BenchmarkExecutor::execute_helper(void * ptr) {
 
 void BenchmarkExecutor::release() {
 
+}
+
+void BenchmarkExecutor::initialize(uint32_t num_threads, const char *path) {
+    _num_threads = num_threads;
+    _threads = (Thread *) _mm_malloc(sizeof(Thread) * _num_threads, 64);
+    strcpy(_path, path);
 }
 

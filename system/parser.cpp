@@ -145,7 +145,11 @@ void parser(int argc, char * argv[]) {
 			} else if(argv[i][2] == 'u') {
 				g_ufactor = atoi(& argv[i][3]);
 			} else if(argv[i][2] == 'p') {
-				g_do_partition = true;
+				g_task_type = PARTITION;
+			} else if(argv[i][2] == 'g') {
+				g_task_type = GENERATE;
+			} else if(argv[i][2] == 'e') {
+				g_task_type = EXECUTE;
 			} else {
 				assert(false);
 			}

@@ -103,11 +103,10 @@ protected:
 
 class YCSBExecutor : public BenchmarkExecutor {
 public:
-    void initialize(uint32_t num_threads) override;
+    void initialize(uint32_t num_threads, const char * path) override;
 protected:
     YCSBDatabase * 						_db;
-    YCSBWorkloadGenerator * 	_generator;
-		YCSBWorkloadPartitioner * _partitioner;
+    YCSBWorkloadLoader * 			_loader;
 };
 
 

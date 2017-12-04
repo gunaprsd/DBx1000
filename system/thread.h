@@ -21,13 +21,14 @@ private:
 
 class BenchmarkExecutor {
 public:
-    virtual void    initialize		(uint32_t num_threads);
+    virtual void    initialize		(uint32_t num_threads, const char * path);
 		virtual	void 		execute				();
 		virtual	void 		release				();
 protected:
 		static 	void *  execute_helper(void * data);
     Thread *    		_threads;
     uint32_t    		_num_threads;
+		char 						_path[200];
 };
 
 #endif //DBX1000_THREAD_H

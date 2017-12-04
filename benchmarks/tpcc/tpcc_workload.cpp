@@ -215,25 +215,21 @@ void TPCCWorkloadPartitioner::write_workload_file(uint32_t thread_id, FILE *file
     fwrite(thread_queries, sizeof(tpcc_query), size, file);
 }
 
-void TPCCExecutor::initialize(uint32_t num_threads) {
-    BenchmarkExecutor::initialize(num_threads);
+void TPCCExecutor::initialize(uint32_t num_threads, const char * path) {
+    BenchmarkExecutor::initialize(num_threads, path);
 
     //Build database in parallel
     _db = new TPCCDatabase();
     _db->initialize(INIT_PARALLELISM);
     _db->load();
 
-    //Generate workload in parallel
-    _generator = new TPCCWorkloadGenerator();
-    _generator->initialize(_num_threads, g_queries_per_thread, nullptr);
-    _generator->generate();
-
-    _partitioner = new TPCCWorkloadPartitioner();
-    _partitioner->initialize(_generator->get_queries_matrix(), MAX_NODES_FOR_CLUSTERING, INIT_PARALLELISM);
-    _partitioner->partition();
+    //Load workload in parallel
+    _loader = new TPCCWorkloadLoader();
+    _loader->initialize(num_threads, _path);
+    _loader->load();
 
     //Initialize each thread
     for(uint32_t i = 0; i < _num_threads; i++) {
-        _threads[i].initialize(i, _db, _partitioner->get_queries_list(i), true);
+        _threads[i].initialize(i, _db, _loader->get_queries_list(i), true);
     }
 }

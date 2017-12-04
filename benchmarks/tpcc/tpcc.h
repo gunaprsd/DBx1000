@@ -204,11 +204,10 @@ private:
 
 class TPCCExecutor : public BenchmarkExecutor {
 public:
-    void initialize(uint32_t num_threads) override;
+    void initialize(uint32_t num_threads, const char * path) override;
 protected:
     TPCCDatabase * 						_db;
-    TPCCWorkloadGenerator * 	_generator;
-    TPCCWorkloadPartitioner * _partitioner;
+    TPCCWorkloadLoader  *     _loader;
 };
 #endif //DBX1000_TPCC_H
 

@@ -116,7 +116,8 @@ protected:
 
 class TPCCWorkloadLoader : public ParallelWorkloadLoader {
 public:
-    void 							initialize(uint32_t num_threads, char * base_file_name) override;
+    void 							initialize(uint32_t num_threads,
+                                 const char * base_file_name) override;
     BaseQueryList *   get_queries_list(uint32_t thread_id) override;
     BaseQueryMatrix * get_queries_matrix() override;
 protected:
@@ -129,12 +130,13 @@ class TPCCWorkloadPartitioner : public ParallelWorkloadPartitioner {
 public:
     void initialize(BaseQueryMatrix * queries,
                     uint64_t max_cluster_graph_size,
-                    uint32_t parallelism) override;
+                    uint32_t parallelism,
+                    const char * dest_folder_path) override;
 
     BaseQueryList * get_queries_list(uint32_t thread_id) override;
     void            partition() override;
  protected:
-    void 					write_workload_file		(uint32_t thread_id, FILE * file) override;
+    void 					per_thread_write_to_file(uint32_t thread_id, FILE * file) override;
     tpcc_query * * _partitioned_queries;
 private:
     int compute_weight(BaseQuery * bq1, BaseQuery * bq2) override {

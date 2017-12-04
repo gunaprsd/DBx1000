@@ -11,12 +11,12 @@ drand48_data * * YCSBWorkloadGenerator::buffers = NULL;
 
 void YCSBWorkloadGenerator::initialize(uint32_t num_threads,
 																			 uint64_t num_params_per_thread,
-																			 const char * base_file_name) {
-	ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
+																			 const char * folder_path) {
+	ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, folder_path);
 	YCSBWorkloadGenerator::initialize_zipf_distribution(_num_threads);
 	_queries = new ycsb_query * [_num_threads];
 	for(uint32_t i = 0; i < _num_threads; i++) {
-		_queries[i] = new ycsb_query[_num_params_per_thread];
+		_queries[i] = new ycsb_query[_num_queries_per_thread];
 	}
 }
 
@@ -124,27 +124,27 @@ void YCSBWorkloadGenerator::gen_requests(uint32_t thread_id, ycsb_query * query)
 
 BaseQueryList * YCSBWorkloadGenerator::get_queries_list(uint32_t thread_id) {
   auto queryList = new QueryList<ycsb_params>();
-  queryList->initialize(_queries[thread_id], _num_params_per_thread);
+  queryList->initialize(_queries[thread_id], _num_queries_per_thread);
   return queryList;
 }
 
 BaseQueryMatrix *YCSBWorkloadGenerator::get_queries_matrix() {
 	auto matrix = new QueryMatrix<ycsb_params>();
-	matrix->initialize(_queries, _num_threads, _num_params_per_thread);
+	matrix->initialize(_queries, _num_threads, _num_queries_per_thread);
 	return matrix;
 }
 
 void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
   buffers[thread_id] =(drand48_data *) _mm_malloc(sizeof(drand48_data), 64);
   srand48_r(thread_id + 1, buffers[thread_id]);
-	for(uint64_t i = 0; i < _num_params_per_thread; i++) {
+	for(uint64_t i = 0; i < _num_queries_per_thread; i++) {
 		gen_requests(thread_id, & (_queries[thread_id][i]));
 	}
 }
 
 void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *file) {
 	ycsb_query * thread_queries = _queries[thread_id];
-	fwrite(thread_queries, sizeof(ycsb_query), _num_params_per_thread, file);
+	fwrite(thread_queries, sizeof(ycsb_query), _num_queries_per_thread, file);
 }
 
 BaseQueryList *YCSBWorkloadLoader::get_queries_list(uint32_t thread_id) {
@@ -165,8 +165,8 @@ void YCSBWorkloadLoader::per_thread_load(uint32_t thread_id, FILE * file) {
 	assert(bytes_read == _array_sizes[thread_id]);
 }
 
-void YCSBWorkloadLoader::initialize(uint32_t num_threads, char *base_file_name) {
-	ParallelWorkloadLoader::initialize(num_threads, base_file_name);
+void YCSBWorkloadLoader::initialize(uint32_t num_threads, const char * folder_path) {
+	ParallelWorkloadLoader::initialize(num_threads, folder_path);
 	_queries = new ycsb_query * [_num_threads];
 	_array_sizes = new uint32_t[_num_threads];
 }
@@ -186,8 +186,9 @@ BaseQueryMatrix * YCSBWorkloadLoader::get_queries_matrix() {
 
 void YCSBWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
 																				 uint64_t max_cluster_graph_size,
-																				 uint32_t parallelism) {
-	ParallelWorkloadPartitioner::initialize(queries, max_cluster_graph_size, parallelism);
+																				 uint32_t parallelism,
+																				 const char * dest_folder_path) {
+	ParallelWorkloadPartitioner::initialize(queries, max_cluster_graph_size, parallelism, dest_folder_path);
 	_partitioned_queries = nullptr;
 }
 
@@ -234,7 +235,7 @@ void YCSBWorkloadPartitioner::partition() {
 	shuffle_duration += DURATION(end_time, start_time);
 }
 
-void YCSBWorkloadPartitioner::write_workload_file(uint32_t thread_id, FILE *file) {
+void YCSBWorkloadPartitioner::per_thread_write_to_file(uint32_t thread_id, FILE * file) {
 	ycsb_query * thread_queries = _partitioned_queries[thread_id];
 	uint32_t size = _tmp_array_sizes[thread_id];
 	fwrite(thread_queries, sizeof(ycsb_query), size, file);

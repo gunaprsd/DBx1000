@@ -4,18 +4,18 @@
 
 BaseQueryList * TPCCWorkloadGenerator::get_queries_list(uint32_t thread_id) {
     auto queryList = new QueryList<tpcc_params>();
-    queryList->initialize(_queries[thread_id], _num_params_per_thread);
+    queryList->initialize(_queries[thread_id], _num_queries_per_thread);
     return queryList;
 }
 
 BaseQueryMatrix *TPCCWorkloadGenerator::get_queries_matrix() {
     auto matrix = new QueryMatrix<tpcc_params>();
-    matrix->initialize(_queries, _num_threads, _num_params_per_thread);
+    matrix->initialize(_queries, _num_threads, _num_queries_per_thread);
     return matrix;
 }
 
 void TPCCWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
-    for(uint32_t i = 0; i < _num_params_per_thread; i++) {
+    for(uint32_t i = 0; i < _num_queries_per_thread; i++) {
         double x = (double) (rand() % 100) / 100.0;
         if(x < g_perc_payment) {
             _queries[thread_id][i].type = TPCC_PAYMENT_QUERY;
@@ -29,7 +29,7 @@ void TPCCWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
 
 void TPCCWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id, FILE *file) {
     tpcc_query * thread_queries = _queries[thread_id];
-    fwrite(thread_queries, sizeof(tpcc_query), _num_params_per_thread, file);
+    fwrite(thread_queries, sizeof(tpcc_query), _num_queries_per_thread, file);
 }
 
 void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id, tpcc_payment_params * params) {
@@ -128,7 +128,7 @@ void TPCCWorkloadGenerator::initialize(uint32_t num_threads,
     ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
     _queries = new tpcc_query * [_num_threads];
     for(uint32_t i = 0; i < _num_threads; i++) {
-        _queries[i] = new tpcc_query[_num_params_per_thread];
+        _queries[i] = new tpcc_query[_num_queries_per_thread];
     }
 
     if(tpcc_buffer == nullptr) {
@@ -160,7 +160,8 @@ void TPCCWorkloadLoader::per_thread_load(uint32_t thread_id, FILE *file) {
     assert(bytes_read == _array_sizes[thread_id]);
 }
 
-void TPCCWorkloadLoader::initialize(uint32_t num_threads, char *base_file_name) {
+void TPCCWorkloadLoader::initialize(uint32_t num_threads,
+                                    const char *base_file_name) {
     ParallelWorkloadLoader::initialize(num_threads, base_file_name);
     _queries = new tpcc_query * [_num_threads];
     _array_sizes = new uint32_t[_num_threads];
@@ -186,8 +187,9 @@ BaseQueryList *TPCCWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
 
 void TPCCWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
                                          uint64_t max_cluster_graph_size,
-                                         uint32_t parallelism) {
-    ParallelWorkloadPartitioner::initialize(queries, max_cluster_graph_size, parallelism);
+                                         uint32_t parallelism,
+                                         const char * dest_folder_path) {
+    ParallelWorkloadPartitioner::initialize(queries, max_cluster_graph_size, parallelism, dest_folder_path);
     _partitioned_queries = nullptr;
 }
 
@@ -209,7 +211,7 @@ void TPCCWorkloadPartitioner::partition() {
     shuffle_duration += DURATION(end_time, start_time);
 }
 
-void TPCCWorkloadPartitioner::write_workload_file(uint32_t thread_id, FILE *file) {
+void TPCCWorkloadPartitioner::per_thread_write_to_file(uint32_t thread_id, FILE *file) {
     tpcc_query * thread_queries = _partitioned_queries[thread_id];
     uint32_t size = _tmp_array_sizes[thread_id];
     fwrite(thread_queries, sizeof(tpcc_query), size, file);

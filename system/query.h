@@ -58,6 +58,7 @@ public:
 			this->num_arrays = num_arrays;
 			this->num_queries_per_array = num_queries_per_array;
 		}
+
 		uint32_t num_arrays;
 		uint64_t num_queries_per_array;
 		virtual void get(uint32_t i, uint32_t j, BaseQuery * & query) = 0;

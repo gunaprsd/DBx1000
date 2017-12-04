@@ -105,11 +105,9 @@ uint64_t myrand::next() {
 	return (seed / 65537) % RAND_MAX;
 }
 
-char * get_workload_file(const char * base_file_name, uint32_t thread_id)
+void get_workload_file_name(const char *base_file_name, uint32_t thread_id, char *destination)
 {
-	char * file_name = new char[200];
-	sprintf(file_name, "%s/core_%d.dat", base_file_name, (int)thread_id);
-	return file_name;
+	sprintf(destination, "%s/core_%d.dat", base_file_name, (int)thread_id);
 }
 
 char * get_benchmark_path(bool partitioned)
@@ -125,7 +123,7 @@ char * get_benchmark_path(bool partitioned)
 void check_and_init_variables() {
 	assert(g_benchmark != nullptr);
 	assert(g_benchmark_tag != nullptr);
-	assert(g_do_partition ? g_ufactor != -1 : true);
+	assert(g_task_type == PARTITION ? g_ufactor != -1 : true);
 	assert(g_thread_cnt == 2 ||
 					g_thread_cnt == 4 ||
 					g_thread_cnt == 8 ||

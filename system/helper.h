@@ -227,7 +227,7 @@ inline void set_affinity(uint64_t thd_id) {
 }
 
 
-char * get_workload_file(const char *base_file_name, uint32_t thread_id);
+void get_workload_file_name(const char *folder_path, uint32_t thread_id, char *destination);
 
 
 #define DURATION(e, s) ((double)e-(double)s)/1000.0/1000.0/1000.0

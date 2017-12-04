@@ -42,8 +42,8 @@ public :
 	void        initialize(uint32_t num_threads) override;
 	txn_man *   get_txn_man(uint32_t thread_id) override;
 	int         key_to_part(uint64_t key);
-	INDEX * the_index;
-	table_t * the_table;
+	INDEX * 		the_index;
+	table_t * 	the_table;
 
 protected:
 	void        load_tables(uint32_t thread_id) override;
@@ -53,8 +53,8 @@ protected:
 class YCSBWorkloadGenerator : public ParallelWorkloadGenerator {
 public:
 	void initialize(uint32_t num_threads,
-					uint64_t num_params_per_thread,
-					const char * base_file_name) override;
+									uint64_t num_params_per_thread,
+									const char * folder_path) override;
 
 	BaseQueryList * 		get_queries_list(uint32_t thread_id) override;
 	BaseQueryMatrix *   get_queries_matrix() override;
@@ -65,21 +65,21 @@ protected:
 
 	ycsb_query * * 		_queries;
 
-	static 	void 		initialize_zipf_distribution(uint32_t num_threads);
+	static 	void 			initialize_zipf_distribution(uint32_t num_threads);
 	static 	double 		zeta(uint64_t n, double theta);
 	static 	uint64_t 	zipf(uint32_t thread_id, uint64_t n, double theta);
 
-	static drand48_data * *		        buffers;
-	static 	double 				zeta_n_theta;
-	static 	double 				zeta_2_theta;
-	static 	uint64_t 			the_n;
+	static drand48_data * *		    buffers;
+	static 	double 								zeta_n_theta;
+	static 	double 								zeta_2_theta;
+	static 	uint64_t 							the_n;
 
 	friend class YCSBWorkloadPartitioner;
 };
 
 class YCSBWorkloadLoader : public ParallelWorkloadLoader {
 public:
-		void 							initialize(uint32_t num_threads, char * base_file_name) override;
+		void 							initialize(uint32_t num_threads, const char * folder_path) override;
 		BaseQueryList *   get_queries_list(uint32_t thread_id) override;
 		BaseQueryMatrix * get_queries_matrix() override;
 protected:
@@ -92,12 +92,13 @@ class YCSBWorkloadPartitioner : public ParallelWorkloadPartitioner {
 public:
 	void  					initialize				(BaseQueryMatrix * queries,
 																		 uint64_t max_cluster_graph_size,
-																		 uint32_t parallelism) override;
+																		 uint32_t parallelism,
+																		 const char * dest_folder_path) override;
 	void 						partition					() override;
 	BaseQueryList * get_queries_list	(uint32_t thread_id) override;
 protected:
-		int 					compute_weight				(BaseQuery * q1, BaseQuery * q2) override;
-		void 					write_workload_file		(uint32_t thread_id, FILE * file) override;
+		int 					compute_weight					 (BaseQuery * q1, BaseQuery * q2) override;
+		void 					per_thread_write_to_file (uint32_t thread_id, FILE *file) override;
 	ycsb_query * *  _partitioned_queries;
 };
 

@@ -10,18 +10,10 @@
 
 void ParallelWorkloadGenerator::initialize(uint32_t num_threads,
                                            uint64_t num_params_per_thread,
-                                           const char * base_file_name) {
-    if(base_file_name == nullptr) {
-        _write_to_file = false;
-        _base_file_name = nullptr;
-    } else {
-        _write_to_file = true;
-        _base_file_name = new char[100];
-        strcpy(_base_file_name, base_file_name);
-    }
+                                           const char * folder_path) {
     _num_threads = num_threads;
-    _num_params_per_thread = num_params_per_thread;
-    _num_params = _num_params_per_thread * _num_threads;
+    _num_queries_per_thread = num_params_per_thread;
+    strcpy(_folder_path, folder_path);
 }
 
 void ParallelWorkloadGenerator::generate() {
@@ -32,11 +24,11 @@ void ParallelWorkloadGenerator::generate() {
     for(uint32_t i = 0; i < _num_threads; i++) {
         data[i].fields[0] = (uint64_t)this;
         data[i].fields[1] = (uint64_t)i;
-        pthread_create(&threads[i], NULL, run_helper, (void *)& data[i]);
+        pthread_create(&threads[i], nullptr, generate_helper, (void *) &data[i]);
     }
 
     for(uint32_t i = 0; i < _num_threads; i++) {
-        pthread_join(threads[i], NULL);
+        pthread_join(threads[i], nullptr);
     }
 
     uint64_t end_time = get_server_clock();
@@ -44,41 +36,40 @@ void ParallelWorkloadGenerator::generate() {
     printf("Workload Generation Completed in %lf secs\n", duration);
 }
 
-void * ParallelWorkloadGenerator::run_helper(void *ptr) {
-    ThreadLocalData * data = (ThreadLocalData *)ptr;
-    ParallelWorkloadGenerator * generator = (ParallelWorkloadGenerator*)data->fields[0];
-    uint32_t thread_id = (uint32_t)((uint64_t)data->fields[1]);
+void * ParallelWorkloadGenerator::generate_helper(void *ptr) {
+    auto data = (ThreadLocalData *)ptr;
+    auto generator = (ParallelWorkloadGenerator*)data->fields[0];
+    auto thread_id = (uint32_t)((uint64_t)data->fields[1]);
 
     generator->per_thread_generate(thread_id);
-    if(generator->_write_to_file) {
-        //Obtain the filename
-        char * file_name = get_workload_file(generator->_base_file_name, thread_id);
 
-        //open the file
-        FILE* file = fopen(file_name, "w");
-
-        if(file == nullptr) {
-            printf("Error opening file: %s\n", file_name);
-            exit(0);
-        }
-
-        //Write to file: one-by-one
-        generator->per_thread_write_to_file(thread_id, file);
-
-        fflush(file);
-        fclose(file);
+    //Obtain the filename
+    char file_name[200];
+    get_workload_file_name(generator->_folder_path, thread_id, file_name);
+    FILE* file = fopen(file_name, "w");
+    if(file == nullptr) {
+        printf("Error opening file: %s\n", file_name);
+        exit(0);
     }
+
+    //Write to file: one-by-one
+    generator->per_thread_write_to_file(thread_id, file);
+
+    fflush(file);
+    fclose(file);
 
     return nullptr;
 }
 
-void ParallelWorkloadGenerator::release() {}
+void ParallelWorkloadGenerator::release() {
+    //Must be implemented in derived class
+}
 
 
 
 void ParallelWorkloadLoader::initialize(uint32_t num_threads,
-                                        char * base_file_name) {
-    _base_file_name = base_file_name;
+                                        const char * folder_path) {
+    strcpy(_folder_path, folder_path);
     _num_threads = num_threads;
 }
 
@@ -90,7 +81,7 @@ void ParallelWorkloadLoader::load() {
     for(uint32_t i = 0; i < _num_threads; i++) {
         data[i].fields[0] = (uint64_t)this;
         data[i].fields[1] = (uint64_t)i;
-        pthread_create(&threads[i], NULL, run_helper, (void *)&data[i]);
+        pthread_create(&threads[i], NULL, load_helper, (void *) &data[i]);
     }
 
     for(uint32_t i = 0; i < _num_threads; i++) {
@@ -102,13 +93,14 @@ void ParallelWorkloadLoader::load() {
     printf("Workload Loading Completed in %lf secs", duration);
 }
 
-void * ParallelWorkloadLoader::run_helper(void* ptr) {
-    ThreadLocalData * data = (ThreadLocalData *)ptr;
-    ParallelWorkloadLoader * loader = (ParallelWorkloadLoader*)data->fields[0];
-    uint32_t thread_id = (uint32_t)((uint64_t)data->fields[1]);
+void * ParallelWorkloadLoader::load_helper(void *ptr) {
+    auto data = (ThreadLocalData *)ptr;
+    auto loader = (ParallelWorkloadLoader*)data->fields[0];
+    auto thread_id = (uint32_t)((uint64_t)data->fields[1]);
 
     //Obtain the filename
-    char * file_name = get_workload_file(loader->_base_file_name, thread_id);
+    char file_name[200];
+    get_workload_file_name(loader->_folder_path, thread_id, file_name);
     
     //open the file
     FILE* file = fopen(file_name, "r");
@@ -122,20 +114,23 @@ void * ParallelWorkloadLoader::run_helper(void* ptr) {
     loader->per_thread_load(thread_id, file);
 
     fclose(file);
-
-    return NULL;
+    return nullptr;
 }
 
-void ParallelWorkloadLoader::release() {}
+void ParallelWorkloadLoader::release() {
+    //Need to release all resources held by loader
+    //implemented in derived class
+}
 
 
 
 
 void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
                                              uint64_t max_cluster_graph_size,
-                                             uint32_t parallelism)
+                                             uint32_t parallelism,
+                                             const char * dest_folder_path)
 {
-
+    strcpy(_folder_path, dest_folder_path);
     _orig_queries           = queries;
     _parallelism            = parallelism;
     _num_arrays            	= _orig_queries->num_arrays;
@@ -175,7 +170,7 @@ void ParallelWorkloadPartitioner::partition()
 
         //create and write conflict graph
         partition_per_iteration();
-	print_execution_summary();
+	      print_execution_summary();
 	
         //move to next region
         _current_iteration++;
@@ -183,6 +178,19 @@ void ParallelWorkloadPartitioner::partition()
         for(uint32_t i = 0; i < _num_arrays; i++) { _tmp_array_sizes[i] = (uint32_t)_tmp_queries[i].size(); }
     }
 }
+
+void ParallelWorkloadPartitioner::write_to_files() {
+    for(uint32_t i = 0; i < _num_arrays; i++) {
+        char file_name[200];
+        get_workload_file_name(_folder_path, i, file_name);
+        FILE * file = fopen(file_name, "w");
+        per_thread_write_to_file(i, file);
+        fflush(file);
+        fclose(file);
+    }
+}
+
+
 
 void ParallelWorkloadPartitioner::partition_per_iteration()
 {
@@ -195,8 +203,12 @@ void ParallelWorkloadPartitioner::partition_per_iteration()
     data_statistics_duration += DURATION(end_time, start_time);
 
     start_time = get_server_clock();
-    auto graph = parallel_create_graph();
-    //auto graph = create_graph();
+    Graph * graph = nullptr;
+    if(_parallelism > 1) {
+        graph = parallel_create_graph();
+    } else {
+        graph = create_graph();
+    }
     end_time = get_server_clock();
     graph_init_duration += DURATION(end_time, start_time);
 
@@ -225,58 +237,6 @@ void ParallelWorkloadPartitioner::partition_per_iteration()
 
 
     if(WRITE_PARTITIONS_TO_FILE) { write_post_partition_file(); }
-}
-
-
-void ParallelWorkloadPartitioner::compute_data_info() {
-    //do nothing right now
-}
-
-void ParallelWorkloadPartitioner::write_pre_partition_file() {
-    char file_name[100];
-    sprintf(file_name, "pre_partition_%d.txt", _current_iteration);
-    FILE * pre_partition_file = fopen(file_name, "w");
-    for(uint32_t i = 0; i < _num_arrays; i++) {
-        fprintf(pre_partition_file, "Core\t:%d\tNum Queries\t:%ld\n", (int)i, (long int)_num_queries_per_iter_per_array);
-        for(auto j = static_cast<uint32_t>(_current_iteration * _num_queries_per_iter_per_array); j < (_current_iteration + 1) * _num_queries_per_iter_per_array; j++) {
-            BaseQuery * query;
-            _orig_queries->get(i, j, query);
-            fprintf(pre_partition_file, "Transaction Id: (%d, %d)\n", (int)i, (int)j);
-            print_query(pre_partition_file, query);
-        }
-        fprintf(pre_partition_file, "\n");
-    }
-    fflush(pre_partition_file);
-    fclose(pre_partition_file);
-}
-
-void ParallelWorkloadPartitioner::write_post_partition_file() {
-    char file_name[100];
-    sprintf(file_name, "post_partition_%d.txt", _current_iteration);
-    FILE * post_partition_file = fopen(file_name, "w");
-    for(uint32_t i = 0; i < _num_arrays; i++) {
-        uint32_t num_queries = static_cast<uint32_t>(_tmp_queries[i].size() - _tmp_array_sizes[i]);
-        fprintf(post_partition_file, "Core\t:%d\tNum Queries\t:%ld\n", (int)i, static_cast<long>(num_queries));
-        for(uint32_t j = _tmp_array_sizes[i]; j < (uint32_t)_tmp_queries[i].size(); j++) {
-            BaseQuery * query = (BaseQuery *)_tmp_queries[i][j];
-            fprintf(post_partition_file, "Transaction Id: (%d, %d)\n", (int)i, (int)j);
-            print_query(post_partition_file, query);
-        }
-        fprintf(post_partition_file, "\n");
-    }
-    fflush(post_partition_file);
-    fclose(post_partition_file);
-}
-
-void ParallelWorkloadPartitioner::write_to_files(const char * base_file_name) {
-    for(uint32_t i = 0; i < _num_arrays; i++) {
-        char file_name[200];
-        sprintf(file_name, "%s/core_%d.dat", base_file_name, (int)i);
-        FILE * file = fopen(file_name, "w");
-        write_workload_file(i, file);
-        fflush(file);
-        fclose(file);
-    }
 }
 
 
@@ -508,6 +468,48 @@ void * ParallelWorkloadPartitioner::compute_statistics_helper(void * data) {
 
     return nullptr;
 }
+
+
+void ParallelWorkloadPartitioner::compute_data_info() {
+    //do nothing right now
+}
+
+void ParallelWorkloadPartitioner::write_pre_partition_file() {
+    char file_name[100];
+    sprintf(file_name, "pre_partition_%d.txt", _current_iteration);
+    FILE * pre_partition_file = fopen(file_name, "w");
+    for(uint32_t i = 0; i < _num_arrays; i++) {
+        fprintf(pre_partition_file, "Core\t:%d\tNum Queries\t:%ld\n", (int)i, (long int)_num_queries_per_iter_per_array);
+        for(auto j = static_cast<uint32_t>(_current_iteration * _num_queries_per_iter_per_array); j < (_current_iteration + 1) * _num_queries_per_iter_per_array; j++) {
+            BaseQuery * query;
+            _orig_queries->get(i, j, query);
+            fprintf(pre_partition_file, "Transaction Id: (%d, %d)\n", (int)i, (int)j);
+            print_query(pre_partition_file, query);
+        }
+        fprintf(pre_partition_file, "\n");
+    }
+    fflush(pre_partition_file);
+    fclose(pre_partition_file);
+}
+
+void ParallelWorkloadPartitioner::write_post_partition_file() {
+    char file_name[100];
+    sprintf(file_name, "post_partition_%d.txt", _current_iteration);
+    FILE * post_partition_file = fopen(file_name, "w");
+    for(uint32_t i = 0; i < _num_arrays; i++) {
+        uint32_t num_queries = static_cast<uint32_t>(_tmp_queries[i].size() - _tmp_array_sizes[i]);
+        fprintf(post_partition_file, "Core\t:%d\tNum Queries\t:%ld\n", (int)i, static_cast<long>(num_queries));
+        for(uint32_t j = _tmp_array_sizes[i]; j < (uint32_t)_tmp_queries[i].size(); j++) {
+            BaseQuery * query = (BaseQuery *)_tmp_queries[i][j];
+            fprintf(post_partition_file, "Transaction Id: (%d, %d)\n", (int)i, (int)j);
+            print_query(post_partition_file, query);
+        }
+        fprintf(post_partition_file, "\n");
+    }
+    fflush(post_partition_file);
+    fclose(post_partition_file);
+}
+
 
 
 void ParallelWorkloadPartitioner::print_partition_summary() {

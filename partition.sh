@@ -2,9 +2,9 @@ base="data"
 benchmark="ycsb"
 for tag in "low" "medium"
 do
-    for core in 2 4
+    for core in 2 4 8 16 32
     do
-	for ufactor in 30
+	for ufactor in 30 500
 	do
 	    echo "Partitioning $benchmark $tag cores=$core ufactor=$ufactor"
 	    folder="$base/$benchmark/$tag/c$core/partitioned/u$ufactor";

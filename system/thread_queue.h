@@ -57,9 +57,7 @@ public:
         //main array is done
         finish = finish && _query_list->done();
         //abort buffer must be empty if enabled
-        finish = finish && (_abort_buffer_enable ? (_abort_buffer_empty_slots == _abort_buffer_size) : true);
-        //previous query status must be RCOK, if no abort buffer
-        finish = finish && (_abort_buffer_enable ? true : _previous_query_status == RCOK);
+        finish = finish && (_abort_buffer_enable ? (_abort_buffer_empty_slots == _abort_buffer_size) : (_previous_query_status == RCOK));
         return finish;
     }
 
@@ -95,6 +93,10 @@ public:
             if(_current_query == NULL) {
                 _current_query = _query_list->next();
             }
+
+	    if(_current_query == NULL) {
+	      return next_query();
+	    }
 
         } else {
             //Take from main list only when previous txn status is OK

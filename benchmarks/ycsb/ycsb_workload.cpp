@@ -159,10 +159,10 @@ void YCSBWorkloadLoader::per_thread_load(uint32_t thread_id, FILE * file) {
 	fseek(file, 0, SEEK_SET);
 
 	_array_sizes[thread_id] = bytes_to_read / sizeof(ycsb_query);
-	_queries[thread_id] 		= (ycsb_query *) _mm_malloc(bytes_to_read, 64);
+	_queries[thread_id] 	= (ycsb_query *) _mm_malloc(bytes_to_read, 64);
 
-	size_t bytes_read = fread(_queries[thread_id], sizeof(ycsb_query), _array_sizes[thread_id], file);
-	assert(bytes_read == _array_sizes[thread_id]);
+	size_t records_read = fread(_queries[thread_id], sizeof(ycsb_query), _array_sizes[thread_id], file);
+	assert(records_read == _array_sizes[thread_id]);
 }
 
 void YCSBWorkloadLoader::initialize(uint32_t num_threads, const char * folder_path) {
@@ -185,9 +185,9 @@ BaseQueryMatrix * YCSBWorkloadLoader::get_queries_matrix() {
 
 
 void YCSBWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
-																				 uint64_t max_cluster_graph_size,
-																				 uint32_t parallelism,
-																				 const char * dest_folder_path) {
+					 uint64_t max_cluster_graph_size,
+					 uint32_t parallelism,
+					 const char * dest_folder_path) {
 	ParallelWorkloadPartitioner::initialize(queries, max_cluster_graph_size, parallelism, dest_folder_path);
 	_partitioned_queries = nullptr;
 }

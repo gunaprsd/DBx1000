@@ -66,14 +66,10 @@ int main(int argc, char* argv[]) {
 		generator->release();
 	} else if(g_task_type == EXECUTE) {
 
-		loader->initialize(g_thread_cnt, get_benchmark_path(true));
-		loader->load();
-
 		executor->initialize(g_thread_cnt, get_benchmark_path(true));
 		executor->execute();
 
 		executor->release();
-		loader->release();
 	}
 
 	return 0;

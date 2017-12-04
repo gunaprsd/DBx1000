@@ -39,7 +39,7 @@
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL, TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
-#define CC_ALG 						WAIT_DIE
+#define CC_ALG 				        OCC
 #define ISOLATION_LEVEL 			SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.
@@ -117,8 +117,8 @@
 // === [EXPERIMENT & YCSB]
 #define INIT_PARALLELISM			64
 #define SYNTH_TABLE_SIZE 			(10 * 1024 * 1024)
-#define READ_PERC 						0.5
-#define WRITE_PERC 						0.5
+#define READ_PERC 						0.9
+#define WRITE_PERC 						0.1
 #define SCAN_PERC 						0
 #define SCAN_LEN							20
 
@@ -127,7 +127,7 @@
 #define POS_IN_TXN						1
 
 // ==== [YCSB] ====
-#define ZIPF_THETA 						0.9
+#define ZIPF_THETA 						0
 #define PART_PER_TXN 					1
 #define PERC_MULTI_PART				1
 #define REQ_PER_QUERY					16

@@ -90,7 +90,7 @@ void ParallelWorkloadLoader::load() {
 
     uint64_t end_time = get_server_clock();
     double duration = ((double)(end_time - start_time)) / 1000.0 / 1000.0 / 1000.0;
-    printf("Workload Loading Completed in %lf secs", duration);
+    printf("Workload Loading Completed in %lf secs\n", duration);
 }
 
 void * ParallelWorkloadLoader::load_helper(void *ptr) {

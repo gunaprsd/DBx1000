@@ -153,7 +153,7 @@ BaseQueryList *YCSBWorkloadLoader::get_queries_list(uint32_t thread_id) {
 	return queryList;
 }
 
-void YCSBWorkloadLoader::per_thread_load(uint32_t thread_id, FILE *file) {
+void YCSBWorkloadLoader::per_thread_load(uint32_t thread_id, FILE * file) {
 	fseek(file, 0, SEEK_END);
 	size_t bytes_to_read = ftell(file);
 	fseek(file, 0, SEEK_SET);
@@ -162,7 +162,7 @@ void YCSBWorkloadLoader::per_thread_load(uint32_t thread_id, FILE *file) {
 	_queries[thread_id] 		= (ycsb_query *) _mm_malloc(bytes_to_read, 64);
 
 	size_t bytes_read = fread(_queries[thread_id], sizeof(ycsb_query), _array_sizes[thread_id], file);
-	assert(bytes_read == bytes_to_read);
+	assert(bytes_read == _array_sizes[thread_id]);
 }
 
 void YCSBWorkloadLoader::initialize(uint32_t num_threads, char *base_file_name) {

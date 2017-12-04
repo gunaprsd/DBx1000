@@ -56,8 +56,6 @@ void pre_processing() {
 
 int main(int argc, char* argv[]) {
     parser(argc, argv);
-
     pre_processing();
-
     return 0;
 }

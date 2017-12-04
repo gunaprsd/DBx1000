@@ -129,4 +129,4 @@ uint64_t g_max_nodes_for_clustering = MAX_NODES_FOR_CLUSTERING;
 TaskType g_task_type = GENERATE;
 char * g_benchmark = nullptr;
 char * g_benchmark_tag = nullptr;
-int		g_ufactor = -1;
+int    g_ufactor = -1;

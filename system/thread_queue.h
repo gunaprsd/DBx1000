@@ -90,25 +90,25 @@ public:
             }
 
             //Obtain a query from the main array
-            if(_current_query == NULL) {
+            if(_current_query == nullptr) {
                 _current_query = _query_list->next();
             }
 
-	    if(_current_query == NULL) {
+	    if(_current_query == nullptr) {
 	      return next_query();
 	    }
 
+    } else {
+        //Take from main list only when previous txn status is OK
+        if(_previous_query_status == RCOK) {
+            _current_query = _query_list->next();
         } else {
-            //Take from main list only when previous txn status is OK
-            if(_previous_query_status == RCOK) {
-                _current_query = _query_list->next();
-            } else {
-                _current_query  = _previous_query;
-            }
+            _current_query  = _previous_query;
         }
+    }
 
         _query_not_returned = true;
-        assert(_current_query != NULL);
+        assert(_current_query != nullptr);
         return _current_query;
     }
 

@@ -30,7 +30,7 @@ RC Thread::run() {
     txn_man * m_txn = db->get_txn_man(thread_id);
     glob_manager->set_txn_man(m_txn);
 
-    BaseQuery * m_query = NULL;
+    BaseQuery * m_query = nullptr;
     uint64_t thd_txn_id = 0;
 
     while (!query_queue->done()) {
@@ -45,11 +45,30 @@ RC Thread::run() {
         thd_txn_id++;
         m_txn->reset(global_txn_id);
 
-
         //Step 3: Execute the transaction
         rc = RCOK;
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
         rc = m_txn->run_txn(m_query);
+#elif CC_ALG == OCC
+				m_txn->start_ts = get_next_ts();
+        rc = m_txn->run_txn(m_query);
+#elif CC_ALG == MVCC || CC_ALG == HEKATON
+				m_txn->set_ts(get_next_ts());
+				glob_manager->add_ts(thread_id, m_txn->get_ts());
+				rc = m_txn->run_txn(m_query);
+#elif CC_ALG == HSTORE
+			if(!HSTORE_LOCAL_TS) {
+				m_txn->set_ts(get_next_ts());
+			}
+			//rc = part_lock_man.lock(m_txn, m_query->part_to_access, m_query->part_num);
+			if(rc == RCOK) {
+				m_txn->run_txn(m_query);
+			}
+			//part_lock_man.unlock(m_txn, m_query->part_to_access, m_query->part_num);
+#elif CC_ALG == VLL
+			vll_man.vllMainLoop(m_txn, m_query);
+#elif CC_ALG == SILO
+			rc = m_txn->run_txn(m_query);
 #endif
 
         //Step 4: Return status to query queue
@@ -99,11 +118,11 @@ void BenchmarkExecutor::execute() {
     for(uint32_t i = 0; i < _num_threads; i++) {
         data[i].fields[0] = (uint64_t)this;
         data[i].fields[1] = (uint64_t)i;
-        pthread_create(&threads[i], NULL, execute_helper, (void *)&data[i]);
+        pthread_create(&threads[i], nullptr, execute_helper, (void *)&data[i]);
     }
 
     for(uint32_t i = 0; i < _num_threads; i++) {
-        pthread_join(threads[i], NULL);
+        pthread_join(threads[i], nullptr);
     }
 
     uint64_t end_time = get_server_clock();
@@ -116,11 +135,12 @@ void BenchmarkExecutor::execute() {
 
 void * BenchmarkExecutor::execute_helper(void * ptr) {
     //Threads must be initialize before
-    ThreadLocalData * data = (ThreadLocalData *) ptr;
-    BenchmarkExecutor * executor = (BenchmarkExecutor *) data->fields[0];
-    uint32_t thread_id = (uint32_t) data->fields[1];
+    auto data = (ThreadLocalData *) ptr;
+    auto executor = (BenchmarkExecutor *) data->fields[0];
+    auto thread_id = (uint32_t) data->fields[1];
+
     executor->_threads[thread_id].run();
-    return NULL;
+    return nullptr;
 }
 
 void BenchmarkExecutor::release() {

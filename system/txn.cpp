@@ -120,10 +120,10 @@ void txn_man::cleanup(RC rc) {
 row_t * txn_man::get_row(row_t * row, access_t type) {
 	if (CC_ALG == HSTORE)
 		return row;
-	uint64_t starttime = get_sys_clock();
+	uint64_t start_time = get_sys_clock();
 	RC rc = RCOK;
 	if (accesses[row_cnt] == NULL) {
-		Access * access = (Access *) _mm_malloc(sizeof(Access), 64);
+		auto access = (Access *) _mm_malloc(sizeof(Access), 64);
 		accesses[row_cnt] = access;
 #if (CC_ALG == SILO || CC_ALG == TICTOC)
 		access->data = (row_t *) _mm_malloc(sizeof(row_t), 64);
@@ -170,7 +170,7 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 	if (type == WR)
 		wr_cnt ++;
 
-	uint64_t timespan = get_sys_clock() - starttime;
+	uint64_t timespan = get_sys_clock() - start_time;
 	INC_TMP_STATS(get_thd_id(), time_man, timespan);
 	return accesses[row_cnt - 1]->data;
 }

@@ -7,7 +7,7 @@
 #define THREAD_CNT					        4
 #define PART_CNT							1
 // each transaction only accesses 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
-#define VIRTUAL_PART_CNT			1
+#define VIRTUAL_PART_CNT			                        1
 #define PAGE_SIZE							4096
 #define CL_SIZE								64
 // CPU_FREQ is used to get accurate timing info 
@@ -39,7 +39,7 @@
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL, TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
-#define CC_ALG 				        SILO
+#define CC_ALG 				        MVCC
 #define ISOLATION_LEVEL 			SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.
@@ -115,7 +115,7 @@
 #define MAX_TUPLE_SIZE				1024 // in bytes
 
 // === [EXPERIMENT & YCSB]
-#define INIT_PARALLELISM			64
+#define INIT_PARALLELISM			32
 #define SYNTH_TABLE_SIZE 			(10 * 1024 * 1024)
 #define READ_PERC 						0.9
 #define WRITE_PERC 						0.1

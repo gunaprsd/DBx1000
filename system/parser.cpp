@@ -149,7 +149,12 @@ void parser(int argc, char * argv[]) {
 			} else if(argv[i][2] == 'g') {
 				g_task_type = GENERATE;
 			} else if(argv[i][2] == 'e') {
-				g_task_type = EXECUTE;
+			  if(argv[i][3] == 'r')
+			    g_task_type = EXECUTE_RAW;
+			  else if(argv[i][3] == 'p')
+			    g_task_type = EXECUTE_PARTITIONED;
+			  else
+			    assert(false);
 			} else {
 				assert(false);
 			}

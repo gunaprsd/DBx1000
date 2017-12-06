@@ -64,12 +64,19 @@ int main(int argc, char* argv[]) {
 		generator->initialize(g_thread_cnt, g_queries_per_thread, get_benchmark_path(false));
 		generator->generate();
 		generator->release();
-	} else if(g_task_type == EXECUTE) {
+	} else if(g_task_type == EXECUTE_RAW) {
 
-		executor->initialize(g_thread_cnt, get_benchmark_path(true));
+		executor->initialize(g_thread_cnt, get_benchmark_path(false));
 		executor->execute();
 
 		executor->release();
+		
+	} else if(g_task_type == EXECUTE_PARTITIONED) {
+
+	        executor->initialize(g_thread_cnt, get_benchmark_path(true));
+       	        executor->execute();
+
+          	executor->release();
 	}
 
 	return 0;

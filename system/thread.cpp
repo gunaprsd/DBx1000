@@ -127,7 +127,7 @@ void BenchmarkExecutor::execute() {
 
     uint64_t end_time = get_server_clock();
     double duration = ((double)(end_time - start_time)) / 1000.0 / 1000.0 / 1000.0;
-    printf("Total Runtime : %lf secs", duration);
+    printf("Total Runtime : %lf secs\n", duration);
     if (STATS_ENABLE) {
         stats.print();
     }

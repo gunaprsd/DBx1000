@@ -176,11 +176,11 @@ void print_query(FILE * file, BaseQuery * query);
 
 
 /* PRE_PROCESSING */
-enum TaskType {GENERATE, PARTITION, EXECUTE};
+enum TaskType {GENERATE, PARTITION, EXECUTE_RAW, EXECUTE_PARTITIONED};
 extern uint64_t g_queries_per_thread;
 extern uint64_t g_max_nodes_for_clustering;
 extern TaskType g_task_type;
 
 extern char * g_benchmark;
 extern char * g_benchmark_tag;
-extern int		g_ufactor;
+extern int    g_ufactor;

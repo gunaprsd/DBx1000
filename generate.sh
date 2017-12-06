@@ -15,8 +15,8 @@ do
     for core in 2 4 8 16 32
     do
 	echo "Generating $benchmark $tag $core"
-	mkdir -p "$base/$benchmark/$tag/c$core/raw";
-	./rundb -t$core -Pb$benchmark -Pt$tag
+#	mkdir -p "$base/$benchmark/$tag/c$core/raw";
+#	./rundb -t$core -Pb$benchmark -Pt$tag
     done
 done
 

@@ -76,14 +76,14 @@ protected:
 class ParallelWorkloadPartitioner
 {
 public:
-    virtual void   		initialize                (BaseQueryMatrix * queries,
-                                                 uint64_t max_cluster_graph_size,
-																								 uint32_t parallelism,
-																								 const char * dest_folder_path);
-    virtual void    	partition                 ();
-						void 			write_to_files						();
-						void    	print_execution_summary		();
-						void 		 	print_partition_summary		();
+    virtual void   		initialize                 (BaseQueryMatrix * queries,
+                                                  uint64_t max_cluster_graph_size,
+																								 	uint32_t parallelism,
+																								  const char * dest_folder_path);
+    virtual void    	partition                  ();
+						void 			write_to_files						 ();
+						void    	print_execution_summary		 ();
+						void 		 	print_partition_summary		 ();
 protected:
     virtual void    	compute_data_info          ();
             void    	partition_per_iteration		 ();

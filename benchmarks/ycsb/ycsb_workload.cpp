@@ -155,10 +155,10 @@ BaseQueryList *YCSBWorkloadLoader::get_queries_list(uint32_t thread_id) {
 
 void YCSBWorkloadLoader::per_thread_load(uint32_t thread_id, FILE * file) {
 	fseek(file, 0, SEEK_END);
-	size_t bytes_to_read = ftell(file);
+	size_t bytes_to_read = static_cast<size_t>(ftell(file));
 	fseek(file, 0, SEEK_SET);
 
-	_array_sizes[thread_id] = bytes_to_read / sizeof(ycsb_query);
+	_array_sizes[thread_id] = static_cast<uint32_t>(bytes_to_read / sizeof(ycsb_query));
 	_queries[thread_id] 	= (ycsb_query *) _mm_malloc(bytes_to_read, 64);
 
 	size_t records_read = fread(_queries[thread_id], sizeof(ycsb_query), _array_sizes[thread_id], file);
@@ -190,6 +190,13 @@ void YCSBWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
 					 const char * dest_folder_path) {
 	ParallelWorkloadPartitioner::initialize(queries, max_cluster_graph_size, parallelism, dest_folder_path);
 	_partitioned_queries = nullptr;
+	_data_info_size = static_cast<uint32_t>(g_synth_table_size);
+	_data_info = new DataInfo[_data_info_size];
+	for(uint32_t i = 0; i < _data_info_size; i++) {
+		_data_info[i].epoch = 0;
+		_data_info[i].num_reads = 1;
+		_data_info[i].num_writes = 1;
+	}
 }
 
 BaseQueryList *YCSBWorkloadPartitioner::get_queries_list(uint32_t thread_id) {
@@ -208,7 +215,20 @@ int YCSBWorkloadPartitioner::compute_weight(BaseQuery * q1, BaseQuery * q2) {
 	for(uint32_t i = 0; i < p1->request_cnt; i++) {
 		for(uint32_t j = 0; j < p2->request_cnt; j++) {
 		  if((p1->requests[i].key == p2->requests[j].key) && (p1->requests[i].rtype == WR || p2->requests[i].rtype == WR)) {
-				weight += 1;
+				int inc = 1;
+				if(_data_info != nullptr) {
+					DataInfo * info = & _data_info[get_hash(p1->requests[i].key)];
+					if(info->epoch == _current_iteration) {
+						double num_edges = info->num_reads * info->num_writes + info->num_writes * info->num_writes;
+						double total_num_edges = _max_cluster_graph_size * _max_cluster_graph_size;
+						double contention = num_edges / total_num_edges;
+						inc = static_cast<int>(contention * 100.0);
+					} else {
+						//it should have been updated!
+						assert(false);
+					}
+				}
+				weight += inc;
 				conflict = true;
 				break;
 			}
@@ -241,6 +261,58 @@ void YCSBWorkloadPartitioner::per_thread_write_to_file(uint32_t thread_id, FILE 
 	fwrite(thread_queries, sizeof(ycsb_query), size, file);
 }
 
+void YCSBWorkloadPartitioner::compute_data_info() {
+	ParallelWorkloadPartitioner::compute_data_info();
+
+	pthread_t       threads [_parallelism];
+	ThreadLocalData data    [_parallelism];
+	for(uint32_t i = 0; i < _parallelism; i++) {
+		data[i].fields[0] = (uint64_t) this;
+		data[i].fields[1] = (uint64_t) i;
+		pthread_create(& threads[i], nullptr, compute_data_info_helper, (void *) & data[i]);
+	}
+	for(uint32_t i = 0; i < _parallelism; i++) {
+		pthread_join(threads[i], nullptr);
+	}
+}
+
+void *YCSBWorkloadPartitioner::compute_data_info_helper(void *data) {
+	auto thread_data = (ThreadLocalData *) data;
+	auto partitioner = (YCSBWorkloadPartitioner *) thread_data->fields[0];
+	auto thread_id = (uint32_t) thread_data->fields[1];
+
+	uint64_t num_global_nodes           =   partitioner->_max_cluster_graph_size;
+	uint64_t num_local_nodes            =   num_global_nodes / partitioner->_parallelism;
+
+	uint64_t start   = thread_id * num_local_nodes;
+	uint64_t end     = (thread_id + 1) * num_local_nodes;
+
+	BaseQuery * baseQuery;
+	ycsb_params * params;
+	for(uint64_t i = start; i < end; i++) {
+		partitioner->get_query(i, baseQuery);
+		params = & ((ycsb_query *) baseQuery)->params;
+
+		for(uint64_t j = 0; j < params->request_cnt; i++) {
+			uint64_t key = params->requests[j].key;
+			uint32_t hash = partitioner->get_hash(key);
+			DataInfo * info = & partitioner->_data_info[hash];
+
+			if(info->epoch != partitioner->_current_iteration) {
+				uint64_t current_val = info->epoch;
+				ATOM_CAS(info->epoch, current_val, partitioner->_current_iteration);
+			}
+
+			if(params->requests[j].rtype == RD) {
+				ATOM_FETCH_ADD(info->num_reads, 1);
+			} else {
+				ATOM_FETCH_ADD(info->num_writes, 1);
+			}
+		}
+	}
+
+	return nullptr;
+}
 
 void YCSBExecutor::initialize(uint32_t num_threads, const char * path) {
 	BenchmarkExecutor::initialize(num_threads, path);

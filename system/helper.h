@@ -232,12 +232,6 @@ void get_workload_file_name(const char *folder_path, uint32_t thread_id, char *d
 
 #define DURATION(e, s) ((double)e-(double)s)/1000.0/1000.0/1000.0
 
-struct DataInfo {
-	uint64_t num_reads;
-	uint64_t num_writes;
-};
-
-
 char * get_benchmark_path(bool partitioned);
 
 void check_and_init_variables();

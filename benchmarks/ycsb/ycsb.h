@@ -88,6 +88,12 @@ protected:
 		uint32_t	*				_array_sizes;
 };
 
+struct DataInfo {
+		uint64_t	epoch;
+		uint64_t 	num_writes;
+		uint64_t 	num_reads;
+};
+
 class YCSBWorkloadPartitioner : public ParallelWorkloadPartitioner {
 public:
 	void  					initialize				(BaseQueryMatrix * queries,
@@ -97,9 +103,19 @@ public:
 	void 						partition					() override;
 	BaseQueryList * get_queries_list	(uint32_t thread_id) override;
 protected:
-		int 					compute_weight					 (BaseQuery * q1, BaseQuery * q2) override;
-		void 					per_thread_write_to_file (uint32_t thread_id, FILE *file) override;
-	ycsb_query * *  _partitioned_queries;
+						int 					compute_weight					 (BaseQuery * q1, BaseQuery * q2) override;
+						void 					per_thread_write_to_file (uint32_t thread_id, FILE *file) override;
+						void 					compute_data_info				 () override;
+		static 	void *				compute_data_info_helper (void * data);
+
+		uint32_t				get_hash(uint64_t primary_key)
+		{
+			return static_cast<uint32_t>(primary_key % _data_info_size);
+		}
+
+		ycsb_query * *  _partitioned_queries;
+		DataInfo * 			_data_info;
+		uint32_t				_data_info_size;
 };
 
 class YCSBExecutor : public BenchmarkExecutor {

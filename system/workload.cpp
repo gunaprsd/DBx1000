@@ -190,8 +190,6 @@ void ParallelWorkloadPartitioner::write_to_files() {
     }
 }
 
-
-
 void ParallelWorkloadPartitioner::partition_per_iteration()
 {
     uint64_t start_time, end_time;

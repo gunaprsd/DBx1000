@@ -86,15 +86,16 @@ RC Database::initialize_schema(string schema_file) {
             if (tname == "ITEM") {
                 part_cnt = 1;
             }
+
+            uint64_t size;
+            if(tname == "MAIN") {
+                size = g_synth_table_size * 2;
+            } else {
+                size = static_cast<uint64_t>(stoi(items[1] ) * part_cnt);
+            }
+
 #if INDEX_STRUCT == IDX_HASH
-#if WORKLOAD == YCSB
-            index->init(part_cnt, tables[tname], g_synth_table_size * 2);
-#elif WORKLOAD == EXPERIMENT
-            index->init(part_cnt, tables[tname], g_synth_table_size * 2);
-	#elif WORKLOAD == TPCC
-			assert(tables[tname] != NULL);
-			index->init(part_cnt, tables[tname], stoi( items[1] ) * part_cnt);
-#endif
+            index->init(part_cnt, tables[tname], size);
 #else
             index->init(part_cnt, tables[tname]);
 #endif

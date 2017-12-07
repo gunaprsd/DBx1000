@@ -2,6 +2,7 @@
 #include "row.h"
 #include "txn.h"
 #include "pthread.h"
+#include "occ.h"
 
 void Manager::init() {
 	timestamp = (uint64_t *) _mm_malloc(sizeof(uint64_t), 64);
@@ -12,6 +13,18 @@ void Manager::init() {
 	_last_epoch_update_time = (ts_t *) _mm_malloc(sizeof(uint64_t), 64);
 	_epoch = 0;
 	_last_epoch_update_time = 0;
+
+#if CC_ALG == HSTORE
+	part_lock_man.init();
+#elif CC_ALG == OCC
+	occ_man.init();
+#elif CC_ALG == VLL
+	vll_man.init();
+#elif CC_ALG == DL_DETECT
+	dl_detector.init();
+#endif
+
+
 	all_ts = (ts_t volatile **) _mm_malloc(sizeof(ts_t *) * g_thread_cnt, 64);
 	for (uint32_t i = 0; i < g_thread_cnt; i++) 
 		all_ts[i] = (ts_t *) _mm_malloc(sizeof(ts_t), 64);

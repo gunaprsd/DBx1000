@@ -210,20 +210,18 @@ private:
 };
 
 inline void set_affinity(uint64_t thd_id) {
-	return;
-	/*
-	// TOOD. the following mapping only works for swarm
-	// which has 4-socket, 10 physical core per socket, 
-	// 80 threads in total with hyper-threading
-	uint64_t a = thd_id % 40;
-	uint64_t processor_id = a / 10 + (a % 10) * 4;
-	processor_id += (thd_id / 40) * 40;
+	// The following configuration works only for dragon
+	// which has 4-socket, 15 physical core per socket, 
+	// 120 threads in total with hyper-threading
+	uint64_t a = thd_id % 60;
+	uint64_t processor_id = a / 10 + (a % 10) * 6;
+	processor_id += (thd_id / 60) * 60;
 	
 	cpu_set_t  mask;
 	CPU_ZERO(&mask);
 	CPU_SET(processor_id, &mask);
 	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
-	*/
+	return;
 }
 
 

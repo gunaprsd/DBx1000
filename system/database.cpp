@@ -88,7 +88,7 @@ RC Database::initialize_schema(string schema_file) {
             }
 
             uint64_t size;
-            if(tname == "MAIN") {
+            if(tname == "MAIN_TABLE") {
                 size = g_synth_table_size * 2;
             } else {
                 size = static_cast<uint64_t>(stoi(items[1] ) * part_cnt);
@@ -123,7 +123,7 @@ void Database::load() {
 
     uint64_t end_time = get_server_clock();
     double duration = ((double)(end_time - start_time)) / 1000.0 / 1000.0 / 1000.0;
-    printf("Database Loading Completed in %lf secs\n", duration);
+    printf("Database Loading Completed in %lf secs using %d threads\n", duration, _num_threads);
 }
 
 void Database::index_insert(string index_name, uint64_t key, row_t * row) {
@@ -150,6 +150,7 @@ void * Database::run_helper(void *ptr) {
     ThreadLocalData * data = (ThreadLocalData *)ptr;
     Database * database = (Database*)data->fields[0];
     uint32_t thread_id = (uint32_t)((uint64_t)data->fields[1]);
+    //set_affinity(thread_id);
     database->load_tables(thread_id);
     return NULL;
 }

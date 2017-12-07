@@ -277,9 +277,10 @@ void YCSBWorkloadPartitioner::compute_data_info() {
 }
 
 void *YCSBWorkloadPartitioner::compute_data_info_helper(void *data) {
-	auto thread_data = (ThreadLocalData *) data;
+        auto thread_data = (ThreadLocalData *) data;
 	auto partitioner = (YCSBWorkloadPartitioner *) thread_data->fields[0];
 	auto thread_id = (uint32_t) thread_data->fields[1];
+	//printf("Started compute thread info %d\n",thread_id);
 
 	uint64_t num_global_nodes           =   partitioner->_max_cluster_graph_size;
 	uint64_t num_local_nodes            =   num_global_nodes / partitioner->_parallelism;
@@ -293,7 +294,7 @@ void *YCSBWorkloadPartitioner::compute_data_info_helper(void *data) {
 		partitioner->get_query(i, baseQuery);
 		params = & ((ycsb_query *) baseQuery)->params;
 
-		for(uint64_t j = 0; j < params->request_cnt; i++) {
+		for(uint64_t j = 0; j < params->request_cnt; j++) {
 			uint64_t key = params->requests[j].key;
 			uint32_t hash = partitioner->get_hash(key);
 			DataInfo * info = & partitioner->_data_info[hash];

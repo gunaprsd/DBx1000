@@ -3,7 +3,7 @@
 
 #include "global.h"
 #include "helper.h"
-#include "workload.h"
+#include "workload/generator.h"
 #include "database.h"
 #include "txn.h"
 #include "query.h"

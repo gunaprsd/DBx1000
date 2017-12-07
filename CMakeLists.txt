@@ -53,8 +53,8 @@ set(SOURCE_FILES
         storage/row.h
         storage/table.cpp
         storage/table.h
-        system/graph_partitioner.h
-        system/graph_partitioner.cpp
+        workload/graph_partitioner.h
+        workload/graph_partitioner.cpp
         system/global.cpp
         system/global.h
         system/helper.cpp
@@ -75,8 +75,10 @@ set(SOURCE_FILES
         system/query.h
         system/database.h
         system/database.cpp
-        system/workload.h
-        system/workload.cpp
+        workload/generator.h
+        workload/generator.cpp
+        workload/partitioner.h
+        workload/partitioner.cpp
         config-std.h
         config.cpp
         config.h)

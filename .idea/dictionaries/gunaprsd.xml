@@ -16,6 +16,7 @@
       <w>mvcc</w>
       <w>ncon</w>
       <w>nedges</w>
+      <w>ngraphs</w>
       <w>nparts</w>
       <w>nvtxs</w>
       <w>objval</w>
@@ -26,6 +27,7 @@
       <w>tictoc</w>
       <w>tpwgts</w>
       <w>ubvec</w>
+      <w>vals</w>
       <w>vsize</w>
       <w>vtxs</w>
       <w>vwgt</w>

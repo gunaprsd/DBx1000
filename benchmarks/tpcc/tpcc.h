@@ -8,7 +8,7 @@
 #include "txn.h"
 #include "thread.h"
 #include "query.h"
-#include "workload.h"
+#include "workload/generator.h"
 #include "tpcc_helper.h"
 #include "tpcc_const.h"
 

@@ -134,8 +134,8 @@ void check_and_init_variables() {
 		if(strcmp(g_benchmark_tag, "low") == 0) {
 			g_zipf_theta = 0;
 			g_read_perc = 0.9;
-			g_queries_per_thread = 512 * 1024;
-			g_max_nodes_for_clustering = 32 * 1024;
+			g_queries_per_thread = 128 * 1024 / g_thread_cnt;
+			g_max_nodes_for_clustering = 128 * 1024;
 		} else if(strcmp(g_benchmark_tag, "medium") == 0) {
 			g_zipf_theta = 0.8;
 			g_read_perc = 0.9;

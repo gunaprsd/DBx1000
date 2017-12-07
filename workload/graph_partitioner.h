@@ -8,6 +8,9 @@
 #ifndef DBX1000_GRAPH_CREATOR_H
 #define DBX1000_GRAPH_CREATOR_H
 
+class METISGraphPartitioner;
+class ParMETISGraphPartitioner;
+
 struct CSRGraph {
     //Inputs to the partitioner
     idx_t nvtxs;
@@ -138,6 +141,9 @@ protected:
     uint32_t            parallelism;
     uint64_t            current_nvtxs;
     uint32_t            current_ngraphs;
+
+    friend class METISGraphPartitioner;
+    friend class ParMETISGraphPartitioner;
 };
 
 class METISGraphPartitioner {
@@ -170,13 +176,13 @@ public:
     void partition (ParCSRGraph * parGraph, int num_partitions);
 
     uint32_t get_partition (uint64_t vtx) {
-        int index = static_cast<int>(vtx / num_vertices_per_processor);
-        int offset = static_cast<int>(vtx % num_vertices_per_processor);
+        auto index = static_cast<int>(vtx / num_vertices_per_processor);
+        auto offset = static_cast<int>(vtx % num_vertices_per_processor);
         return static_cast<uint32_t>(parts[index][offset]);
     }
 
 protected:
-    void * partition_helper(void * data);
+    static void * partition_helper(void * data);
 };
 
 #endif //DBX1000_GRAPH_CREATOR_H

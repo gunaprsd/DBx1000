@@ -96,9 +96,30 @@ void METISGraphPartitioner::partition(ParCSRGraph * parGraph, int num_partitions
 }
 
 void ParMETISGraphPartitioner::partition(ParCSRGraph *parGraph, int num_partitions) {
-
+    uint32_t num_threads = parGraph->graphs.size();
+    pthread_t       threads [num_threads];
+    ThreadLocalData data    [num_threads];
+    for(uint32_t i = 0; i < num_threads; i++) {
+        data[i].fields[0] = (uint64_t) this;
+        data[i].fields[1] = (uint64_t) i;
+        data[i].fields[2] = (uint64_t) parGraph;
+        pthread_create(& threads[i], nullptr, partition_helper, (void *) & data[i]);
+    }
+    for(uint32_t i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], nullptr);
+    }
 }
 
 void *ParMETISGraphPartitioner::partition_helper(void *data) {
+    auto threadLocalData = (ThreadLocalData *)data;
+    auto partitioner = (ParMETISGraphPartitioner *)threadLocalData->fields[0];
+    auto thread_id = (uint32_t)threadLocalData->fields[1];
+    auto parGraph = (ParCSRGraph *)threadLocalData->fields[2];
+
+    auto graph = parGraph->graphs[thread_id];
+    idx_t * parts = partitioner->parts[thread_id];
+    idx_t * vtxdist = graph->vtx_dist;
+
+
     return nullptr;
 }

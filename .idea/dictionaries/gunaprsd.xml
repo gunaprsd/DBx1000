@@ -29,6 +29,7 @@
       <w>ubvec</w>
       <w>vals</w>
       <w>vsize</w>
+      <w>vtxdist</w>
       <w>vtxs</w>
       <w>vwgt</w>
       <w>xadj</w>

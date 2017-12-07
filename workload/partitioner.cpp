@@ -184,13 +184,9 @@ ParCSRGraph* ParallelWorkloadPartitioner::parallel_create_graph() {
 
 	//Initialize the graph
 	auto graph = new ParCSRGraph();
-
-
-	for(uint32_t i = 0; i < _parallelism; i++) {
-		auto sub_graph = creators->get_graph();
-		graph->graphs.push_back(sub_graph);
-		graph->vtx_dist[i] = sub_graph->nvtxs;
-	}
+	graph->begin(_parallelism);
+	for(uint32_t i = 0; i < _parallelism; i++) { graph->add_graph(creators[i].get_graph()); }
+	graph->finish();
 
 	return graph;
 }
@@ -243,7 +239,6 @@ void * ParallelWorkloadPartitioner::create_graph_helper(void * data) {
 
 	return nullptr;
 }
-
 
 CSRGraph *ParallelWorkloadPartitioner::create_graph() {
 	auto creator =  new CSRGraphCreator();

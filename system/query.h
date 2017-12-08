@@ -61,7 +61,7 @@ public:
 
 		uint32_t num_arrays;
 		uint64_t num_queries_per_array;
-		virtual void get(uint32_t i, uint32_t j, BaseQuery * & query) = 0;
+		virtual void get(uint32_t i, uint32_t j, BaseQuery * * query) = 0;
 };
 
 template<typename T>
@@ -72,7 +72,7 @@ public:
 			BaseQueryMatrix::initialize(num_arrays, num_queries_per_array);
 			this->queries = queries;
 		}
-		void get(uint32_t i, uint32_t j, BaseQuery * & query) override {  query = & queries[i][j]; }
+		void get(uint32_t i, uint32_t j, BaseQuery * * query) override {  *query = & queries[i][j]; }
 protected:
 		Query<T> * * queries;
 };

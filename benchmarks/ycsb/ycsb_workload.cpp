@@ -1,3 +1,4 @@
+
 #include "mem_alloc.h"
 #include "ycsb.h"
 #include "query.h"
@@ -49,7 +50,7 @@ uint64_t YCSBWorkloadGenerator::zipf(uint32_t thread_id, uint64_t n, double thet
 	double alpha = 1 / (1 - theta);
 	double zetan = zeta_n_theta;
 	double eta = (1 - pow(2.0 / n, 1 - theta)) / (1 - zeta_2_theta / zetan);
-	double u; 
+	double u;
 	drand48_r(buffers[thread_id], &u);
 	double uz = u * zetan;
 	if (uz < 1) return 1;
@@ -220,7 +221,7 @@ int YCSBWorkloadPartitioner::compute_weight(BaseQuery * q1, BaseQuery * q2) {
 					DataInfo * info = & _data_info[get_hash(p1->requests[i].key)];
 					if(info->epoch == _current_iteration) {
 						double num_edges = info->num_reads * info->num_writes + info->num_writes * info->num_writes;
-						double total_num_edges = _max_cluster_graph_size * _max_cluster_graph_size;
+						double total_num_edges = _max_size * _max_size;
 						double contention = num_edges / total_num_edges;
 						inc = static_cast<int>(contention * 100.0);
 					} else {
@@ -282,7 +283,7 @@ void *YCSBWorkloadPartitioner::compute_data_info_helper(void *data) {
 	auto thread_id = (uint32_t) thread_data->fields[1];
 	//printf("Started compute thread info %d\n",thread_id);
 
-	uint64_t num_global_nodes           =   partitioner->_max_cluster_graph_size;
+	uint64_t num_global_nodes           =   partitioner->_max_size;
 	uint64_t num_local_nodes            =   num_global_nodes / partitioner->_parallelism;
 
 	uint64_t start   = thread_id * num_local_nodes;
@@ -291,7 +292,7 @@ void *YCSBWorkloadPartitioner::compute_data_info_helper(void *data) {
 	BaseQuery * baseQuery;
 	ycsb_params * params;
 	for(uint64_t i = start; i < end; i++) {
-		partitioner->get_query(i, baseQuery);
+		partitioner->get_query(i, & baseQuery);
 		params = & ((ycsb_query *) baseQuery)->params;
 
 		for(uint64_t j = 0; j < params->request_cnt; j++) {

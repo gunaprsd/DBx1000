@@ -9,6 +9,7 @@
       <w>cpos</w>
       <w>cvtx</w>
       <w>dest</w>
+      <w>edgecut</w>
       <w>hekaton</w>
       <w>hstore</w>
       <w>initia</w>
@@ -18,6 +19,7 @@
       <w>nedges</w>
       <w>ngraphs</w>
       <w>nparts</w>
+      <w>numflag</w>
       <w>nvtxs</w>
       <w>objval</w>
       <w>parallelize</w>
@@ -32,6 +34,7 @@
       <w>vtxdist</w>
       <w>vtxs</w>
       <w>vwgt</w>
+      <w>wgtflag</w>
       <w>xadj</w>
       <w>zipf</w>
     </words>

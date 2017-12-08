@@ -5,7 +5,7 @@
 #include "txn.h"
 
 /************************************************/
-// per-partition Manager
+// per-compute_partitions Manager
 /************************************************/
 void PartMan::init() {
 	uint64_t part_id = get_part_id(this);

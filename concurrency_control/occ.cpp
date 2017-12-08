@@ -37,7 +37,7 @@ OptCC::per_row_validate(txn_man * txn) {
 	RC rc = RCOK;
 #if CC_ALG == OCC
 	// sort all rows accessed in primary key order.
-	// TODO for migration, should first sort by partition id
+	// TODO for migration, should first sort by compute_partitions id
 	for (int i = txn->row_cnt - 1; i > 0; i--) {
 		for (int j = 0; j < i; j ++) {
 			int tabcmp = strcmp(txn->accesses[j]->orig_row->get_table_name(), 
@@ -91,7 +91,7 @@ RC OptCC::central_validate(txn_man * txn) {
 	set_ent ** finish_active;
 	uint64_t f_active_len;
 	bool valid = true;
-	// OptCC is centralized. No need to do per partition malloc.
+	// OptCC is centralized. No need to do per compute_partitions malloc.
 	set_ent * wset;
 	set_ent * rset;
 	get_rw_set(txn, rset, wset);

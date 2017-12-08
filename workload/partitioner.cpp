@@ -10,9 +10,9 @@
 
 
 void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
-																						 uint64_t max_cluster_graph_size,
-																						 uint32_t parallelism,
-																						 const char * dest_folder_path)
+					     uint64_t max_cluster_graph_size,
+					     uint32_t parallelism,
+							 const char * dest_folder_path)
 {
 	strcpy(_folder_path, dest_folder_path);
 	_orig_queries           = queries;
@@ -41,7 +41,12 @@ void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
 	graph_init_duration         = 0.0;
 	partition_duration          = 0.0;
 	shuffle_duration            = 0.0;
+
+	_current_parts = (idx_t *) malloc(sizeof(idx_t) * _max_cluster_graph_size);
+	for(uint64_t i = 0; i < _max_cluster_graph_size; i++) { _current_parts[i] = -1; }
+
 }
+
 
 void ParallelWorkloadPartitioner::partition()
 {
@@ -77,53 +82,67 @@ void ParallelWorkloadPartitioner::write_to_files() {
 void ParallelWorkloadPartitioner::partition_per_iteration()
 {
 	uint64_t start_time, end_time;
+	double duration;
 	if(WRITE_PARTITIONS_TO_FILE) {	write_pre_partition_file(); }
-	printf("Started iteration %u\n", _current_iteration);
 
 	start_time = get_server_clock();
 	compute_data_info();
 	end_time = get_server_clock();
-	data_statistics_duration += DURATION(end_time, start_time);
-	printf("Compute Statistics Completed in %lf secs\n", data_statistics_duration);
+	duration = DURATION(end_time, start_time);
+	data_statistics_duration += duration;
+	printf("Compute Statistics Completed in %lf secs\n", duration);
 
-	start_time = get_server_clock();
-	CSRGraph * graph = nullptr;
-	ParCSRGraph * parGraph = nullptr;
+
+	for(uint64_t i = 0; i < _max_cluster_graph_size; i++) { _current_parts[i] = -1; }
+
 	if(_parallelism > 1) {
-		parGraph = parallel_create_graph();
+		start_time = get_server_clock();
+		auto graph = create_graph();
+		end_time = get_server_clock();
+		duration = DURATION(end_time, start_time);
+		graph_init_duration += duration;
+		printf("METIS_CSRGraph Init Completed in %lf secs\n", duration);
+
+		start_time = get_server_clock();
+		METISGraphPartitioner::compute_partitions(graph, _num_arrays, _current_parts);
+		end_time = get_server_clock();
+		duration = DURATION(end_time, start_time);
+		partition_duration += duration;
+		printf("METIS Partitioning Completed in %lf secs\n", duration);
 	} else {
-		graph = create_graph();
+
+		start_time = get_server_clock();
+		auto graph = parallel_create_graph();
+		end_time = get_server_clock();
+		duration = DURATION(end_time, start_time);
+		graph_init_duration += duration;
+		printf("ParMETIS_CSRGraph Init with %d threads Completed in %lf secs\n", _parallelism, duration);
+
+		start_time = get_server_clock();
+		ParMETISGraphPartitioner::compute_partitions(graph, _num_arrays, _current_parts);
+		end_time = get_server_clock();
+		duration = DURATION(end_time, start_time);
+		partition_duration += duration;
+		printf("ParMETIS Partitioning with %d threads Completed in %lf secs\n", _parallelism, duration);
 	}
-	end_time = get_server_clock();
-	graph_init_duration += DURATION(end_time, start_time);
-	printf("CSRGraph Init Completed in %lf secs\n", graph_init_duration);
-
-	//Do clustering
-	start_time = get_server_clock();
-	METISGraphPartitioner partitioner;
-	if(_parallelism > 1) {
-		partitioner.partition(parGraph, _num_arrays);
-	} else {
-		partitioner.partition(graph, _num_arrays);
-	}
-
-	end_time = get_server_clock();
-	partition_duration += DURATION(end_time, start_time);
-	printf("Partitioning Completed in %lf secs\n", partition_duration);
-
 
 	//Add query pointers into tmp_queries
 	BaseQuery * query = nullptr;
 	int partition;
 	for(uint64_t i = 0; i < _max_cluster_graph_size; i++) {
-		partition = partitioner.get_partition(i);
+		partition = static_cast<int>(_current_parts[i]);
+		assert(partition != -1);
 		get_query(i, query);
 		_tmp_queries[partition].push_back(query);
 	}
 
 
 	if(PRINT_PARTITION_SUMMARY) {
-		parallel_compute_post_stats(& partitioner);
+		if(_parallelism > 1) {
+			parallel_compute_post_stats();
+		} else {
+			compute_post_stats();
+		}
 		print_partition_summary();
 	}
 
@@ -164,38 +183,35 @@ void ParallelWorkloadPartitioner::partition_per_iteration()
  * The only array that needs to be modified is xadj, everything is just a concatenation.
  * @return
  */
-ParCSRGraph* ParallelWorkloadPartitioner::parallel_create_graph() {
+ParMETIS_CSRGraph* ParallelWorkloadPartitioner::parallel_create_graph() {
 
 	pthread_t       threads [_parallelism];
 	ThreadLocalData data    [_parallelism];
-	CSRGraphCreator creators[_parallelism];
+	METIS_CSRGraphCreator creators[_parallelism];
 	for(uint32_t i = 0; i < _parallelism; i++) {
 		data[i].fields[0] = (uint64_t) this;
 		data[i].fields[1] = (uint64_t) i;
 		data[i].fields[2] = (uint64_t) & creators[i];
-		pthread_create(& threads[i], nullptr, create_graph_helper, (void *) & data[i]);
+		pthread_create(&threads[i], nullptr, parallel_create_graph_helper, (void *) &data[i]);
 	}
 	for(uint32_t i = 0; i < _parallelism; i++) {
 		pthread_join(threads[i], nullptr);
 	}
 
-	//Compute adjacency list size
-
-
 	//Initialize the graph
-	auto graph = new ParCSRGraph();
+	auto graph = new ParMETIS_CSRGraphCreator();
 	graph->begin(_parallelism);
 	for(uint32_t i = 0; i < _parallelism; i++) { graph->add_graph(creators[i].get_graph()); }
 	graph->finish();
 
-	return graph;
+	return graph->get_graph();
 }
 
-void * ParallelWorkloadPartitioner::create_graph_helper(void * data) {
+void * ParallelWorkloadPartitioner::parallel_create_graph_helper(void *data) {
 	auto threadLocalData = (ThreadLocalData *) data;
 	auto partitioner     = (ParallelWorkloadPartitioner *) threadLocalData->fields[0];
 	auto thread_id       = (uint32_t) threadLocalData->fields[1];
-	auto creator         = (CSRGraphCreator *) threadLocalData->fields[2];
+	auto creator         = (METIS_CSRGraphCreator *) threadLocalData->fields[2];
 
 	uint64_t num_global_nodes           =   partitioner->_max_cluster_graph_size;
 	uint64_t num_local_nodes            =   num_global_nodes / partitioner->_parallelism;;
@@ -240,8 +256,8 @@ void * ParallelWorkloadPartitioner::create_graph_helper(void * data) {
 	return nullptr;
 }
 
-CSRGraph *ParallelWorkloadPartitioner::create_graph() {
-	auto creator =  new CSRGraphCreator();
+METIS_CSRGraph *ParallelWorkloadPartitioner::create_graph() {
+	auto creator =  new METIS_CSRGraphCreator();
 	creator->begin(static_cast<uint32_t>(_max_cluster_graph_size));
 	BaseQuery * q1, * q2;
 	uint32_t t1, t2;
@@ -275,13 +291,12 @@ CSRGraph *ParallelWorkloadPartitioner::create_graph() {
  * the graph.
  * @param partitioner
  */
-void ParallelWorkloadPartitioner::parallel_compute_post_stats(METISGraphPartitioner * partitioner) {
+void ParallelWorkloadPartitioner::parallel_compute_post_stats() {
 	pthread_t       threads [_parallelism];
 	ThreadLocalData data    [_parallelism];
 	for(uint32_t i = 0; i < _parallelism; i++) {
 		data[i].fields[0] = (uint64_t) this;
 		data[i].fields[1] = (uint64_t) i;
-		data[i].fields[2] = (uint64_t) partitioner;
 		pthread_create(& threads[i], nullptr, compute_statistics_helper, (void *) & data[i]);
 	}
 	for(uint32_t i = 0; i < _parallelism; i++) {
@@ -294,7 +309,6 @@ void * ParallelWorkloadPartitioner::compute_statistics_helper(void * data) {
 	auto threadLocalData = (ThreadLocalData *) data;
 	auto partitioner     = (ParallelWorkloadPartitioner *) threadLocalData->fields[0];
 	auto thread_id       = (uint32_t) threadLocalData->fields[1];
-	auto computed_partitions = (METISGraphPartitioner *) threadLocalData->fields[2];
 
 	uint64_t num_global_nodes           =   partitioner->_max_cluster_graph_size;
 	uint64_t num_local_nodes            =   num_global_nodes / partitioner->_parallelism;
@@ -306,12 +320,12 @@ void * ParallelWorkloadPartitioner::compute_statistics_helper(void * data) {
 	uint64_t cross_core_edges = 0;
 
 	BaseQuery *q1, *q2;
-	uint32_t t1, t2;
+	idx_t t1, t2;
 	for(uint64_t i = start; i < end; i++) {
 		partitioner->get_query(i, q1);
-		t1 = computed_partitions->get_partition(i);
+		t1 = partitioner->_current_parts[i];
 		for(uint64_t j = 0; j < num_global_nodes; j++) {
-			t2 = computed_partitions->get_partition(j);
+			t2 = partitioner->_current_parts[j];
 			partitioner->get_query(j, q2);
 			if(q1 != q2) {
 				int weight = partitioner->compute_weight(q1, q2);
@@ -329,6 +343,28 @@ void * ParallelWorkloadPartitioner::compute_statistics_helper(void * data) {
 	ATOM_ADD_FETCH(partitioner->_total_post_cross_core_weight, cross_core_weight);
 
 	return nullptr;
+}
+
+void ParallelWorkloadPartitioner::compute_post_stats() {
+	BaseQuery *q1, *q2;
+	idx_t t1, t2;
+	for(uint64_t i = 0; i < _max_cluster_graph_size; i++) {
+		get_query(i, q1);
+		t1 = _current_parts[i];
+		for(uint64_t j = 0; j < _max_cluster_graph_size; j++) {
+			t2 = _current_parts[j];
+			get_query(j, q2);
+			if(q1 != q2) {
+				int weight = compute_weight(q1, q2);
+				if(weight > 0) {
+					if(t1 != t2) {
+						_total_post_cross_core_edges++;
+						_total_post_cross_core_weight += weight;
+					}
+				}
+			}
+		}
+	}
 }
 
 
@@ -395,8 +431,8 @@ void ParallelWorkloadPartitioner::print_execution_summary() {
 	uint64_t num_iterations = _current_iteration + 1;
 	printf("************** EXECUTION SUMMARY **************** \n");
 	printf("%-25s :: total: %10lf, avg: %10lf\n", "Obtain Data Statistics", data_statistics_duration, data_statistics_duration / num_iterations);
-	printf("%-25s :: total: %10lf, avg: %10lf\n", "CSRGraph Structures Init", graph_init_duration, graph_init_duration / num_iterations);
-	printf("%-25s :: total: %10lf, avg: %10lf\n", "CSRGraph Clustering", partition_duration, partition_duration / num_iterations);
+	printf("%-25s :: total: %10lf, avg: %10lf\n", "METIS_CSRGraph Structures Init", graph_init_duration, graph_init_duration / num_iterations);
+	printf("%-25s :: total: %10lf, avg: %10lf\n", "METIS_CSRGraph Clustering", partition_duration, partition_duration / num_iterations);
 	printf("%-25s :: total: %10lf, avg: %10lf\n", "Shuffle Duration", shuffle_duration, shuffle_duration / num_iterations);
 	printf("************************************************* \n");
 }

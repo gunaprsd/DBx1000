@@ -7,7 +7,7 @@
 #define NOGRAPHITE						1
 #define THREAD_CNT					        4
 #define PART_CNT							1
-// each transaction only accesses 1 virtual partition. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
+// each transaction only accesses 1 virtual compute_partitions. But the lock/ts manager and index are not aware of such partitioning. VIRTUAL_PART_CNT describes the request distribution and is only used to generate queries. For HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
 #define VIRTUAL_PART_CNT			                        1
 #define PAGE_SIZE							4096
 #define CL_SIZE								64
@@ -93,7 +93,7 @@
 #define ATOMIC_WORD							true
 // [HSTORE]
 // when set to true, hstore will not access the global timestamp.
-// This is fine for single partition transactions. 
+// This is fine for single compute_partitions transactions.
 #define HSTORE_LOCAL_TS					false
 // [VLL] 
 #define TXN_QUEUE_SIZE_LIMIT		THREAD_CNT

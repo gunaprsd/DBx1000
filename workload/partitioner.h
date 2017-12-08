@@ -5,6 +5,7 @@
 #ifndef DBX1000_PARALLEL_WORKLOAD_PARTITIONER_H
 #define DBX1000_PARALLEL_WORKLOAD_PARTITIONER_H
 
+#include "query.h"
 #include "graph_partitioner.h"
 
 /*
@@ -22,19 +23,27 @@ public:
 																									uint32_t parallelism,
 																									const char * dest_folder_path);
 		virtual void    	partition                  ();
-		void 			write_to_files						 ();
-		void    	print_execution_summary		 ();
-		void 		 	print_partition_summary		 ();
+		void 							write_to_files						 ();
+		void    					print_execution_summary		 ();
+		void 							print_partition_summary		 ();
+
 protected:
 		virtual void    	compute_data_info          ();
-		void    	partition_per_iteration		 ();
-		void    	write_pre_partition_file   ();
-		void    	write_post_partition_file  ();
-		void 			parallel_compute_post_stats(METISGraphPartitioner * partitioner);
-		ParCSRGraph * parallel_create_graph			 ();
-		CSRGraph *   	create_graph							 ();
-		static 	void * 		create_graph_helper				 (void * data);
+						void    	partition_per_iteration		 ();
+
+						//Functions helpful for debugging
+						void    	write_pre_partition_file   ();
+						void    	write_post_partition_file  ();
+
+						//Compute post statistics
+						void 			compute_post_stats				 ();
+						void 			parallel_compute_post_stats();
 		static 	void * 		compute_statistics_helper	 (void * data);
+
+						//Creating graphs for clustering
+						ParMETIS_CSRGraph * parallel_create_graph			 	();
+						METIS_CSRGraph *   	create_graph							 	();
+		static 	void * 							parallel_create_graph_helper(void *data);
 
 		//Iteration sensitive -> depends on value of _current_iteration
 		void 			get_query						(uint64_t qid, BaseQuery * & query);
@@ -51,6 +60,7 @@ protected:
 
 		//Fields valid for each iteration
 		uint32_t		_current_iteration;
+		idx_t *			_current_parts;
 		uint64_t		_array_iter_start_offset;
 		uint64_t		_total_num_edges;
 		uint64_t		_total_pre_cross_core_edges;

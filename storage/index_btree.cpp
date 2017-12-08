@@ -10,7 +10,7 @@ RC index_btree::init(uint64_t part_cnt) {
 	// "cur_xxx_per_thd" is only for SCAN queries.
 	ARR_PTR(bt_node *, cur_leaf_per_thd, g_thread_cnt);
 	ARR_PTR(UInt32, cur_idx_per_thd, g_thread_cnt);
-	// the index tree of each partition musted be mapped to corresponding l2 slices
+	// the index tree of each compute_partitions musted be mapped to corresponding l2 slices
 	for (UInt32 part_id = 0; part_id < part_cnt; part_id ++) {
 		RC rc;
 		rc = make_lf(part_id, roots[part_id]);

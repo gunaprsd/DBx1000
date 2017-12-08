@@ -32,7 +32,7 @@ public:
 	bool 			locked;
 };
 
-// TODO Hash index does not support partition yet.
+// TODO Hash index does not support compute_partitions yet.
 class IndexHash  : public index_base
 {
 public:

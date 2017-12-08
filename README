@@ -74,7 +74,7 @@ dbms benchmark has the following parameters in the config file. Parameters with 
   PART_PER_TXN	: number of logical partitions to touch per transaction
   PERC_MULTI_PART	: percentage of multi-partition transactions
   REQ_PER_QUERY	: number of queries per transaction
-  FIRST_PART_LOCAL	: with this being true, the first touched partition is always the local partition.
+  FIRST_PART_LOCAL	: with this being true, the first touched compute_partitions is always the local compute_partitions.
   
   // for TPCC Benchmark
   NUM_HW		: number of warehouses being modeled.

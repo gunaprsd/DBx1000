@@ -8,10 +8,10 @@ IF(NOT CMAKE_BUILD_TYPE)
     SET (CMAKE_BUILD_TYPE  "Release")
 ENDIF()
 
-SET (SOURCES_LIST benchmarks/tpcc/tpcc_helper.h
-        benchmarks/tpcc/tpcc.h
-        benchmarks/tpcc/tpcc_const.h
-        benchmarks/ycsb/ycsb.h
+SET (SOURCES_LIST tpcc/tpcc_helper.h
+        tpcc/tpcc.h
+        tpcc/tpcc_const.h
+        ycsb/ycsb.h
         cc/occ.h
         cc/plock.h
         cc/vll.h

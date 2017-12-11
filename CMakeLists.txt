@@ -12,18 +12,18 @@ SET (SOURCES_LIST benchmarks/tpcc/tpcc_helper.h
         benchmarks/tpcc/tpcc.h
         benchmarks/tpcc/tpcc_const.h
         benchmarks/ycsb/ycsb.h
-        concurrency_control/occ.h
-        concurrency_control/plock.h
-        concurrency_control/vll.h
-        concurrency_control/row_tictoc.h
-        concurrency_control/row_mvcc.h
-        concurrency_control/row_vll.h
-        concurrency_control/row_hekaton.h
-        concurrency_control/row_silo.h
-        concurrency_control/row_occ.h
-        concurrency_control/row_lock.h
-        concurrency_control/dl_detect.h
-        concurrency_control/row_ts.h
+        cc/occ.h
+        cc/plock.h
+        cc/vll.h
+        cc/row_tictoc.h
+        cc/row_mvcc.h
+        cc/row_vll.h
+        cc/row_hekaton.h
+        cc/row_silo.h
+        cc/row_occ.h
+        cc/row_lock.h
+        cc/dl_detect.h
+        cc/row_ts.h
         config.h
         lib/include/metis.h
         storage/index_hash.h
@@ -45,21 +45,21 @@ SET (SOURCES_LIST benchmarks/tpcc/tpcc_helper.h
         workload/graph_partitioner.h
         workload/partitioner.h
         workload/generator.h
-        concurrency_control/row_ts.cpp
-        concurrency_control/vll.cpp
-        concurrency_control/row_hekaton.cpp
-        concurrency_control/occ.cpp
-        concurrency_control/row_mvcc.cpp
-        concurrency_control/dl_detect.cpp
-        concurrency_control/row_vll.cpp
-        concurrency_control/row_tictoc.cpp
-        concurrency_control/row_occ.cpp
-        concurrency_control/plock.cpp
-        concurrency_control/row_lock.cpp
-        concurrency_control/silo.cpp
-        concurrency_control/hekaton.cpp
-        concurrency_control/tictoc.cpp
-        concurrency_control/row_silo.cpp
+        cc/row_ts.cpp
+        cc/vll.cpp
+        cc/row_hekaton.cpp
+        cc/occ.cpp
+        cc/row_mvcc.cpp
+        cc/dl_detect.cpp
+        cc/row_vll.cpp
+        cc/row_tictoc.cpp
+        cc/row_occ.cpp
+        cc/plock.cpp
+        cc/row_lock.cpp
+        cc/silo.cpp
+        cc/hekaton.cpp
+        cc/tictoc.cpp
+        cc/row_silo.cpp
         config.cpp
         storage/index_hash.cpp
         storage/table.cpp
@@ -84,7 +84,7 @@ LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/benchmarks/ycsb)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/benchmarks/tpcc)
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/concurrency_control)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/cc)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/storage)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/workload)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/system)

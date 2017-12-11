@@ -3,8 +3,8 @@ CFLAGS=-Wall -g -std=c++0x
 
 .SUFFIXES: .o .cpp .h
 
-SRC_DIRS = ./ ./benchmarks/ycsb/ ./benchmarks/tpcc/ ./concurrency_control/ ./storage/ ./system/ ./workload/
-INCLUDE = -I. -I./benchmarks/ycsb -I./benchmarks/tpcc -I./concurrency_control -I./storage -I./system -I./lib/include -I./workload
+SRC_DIRS = ./ ./benchmarks/ycsb/ ./benchmarks/tpcc/ ./cc/ ./storage/ ./system/ ./workload/
+INCLUDE = -I. -I./benchmarks/ycsb -I./benchmarks/tpcc -I./cc -I./storage -I./system -I./lib/include -I./workload
 
 CFLAGS += $(INCLUDE) -D NOGRAPHITE=1 -Werror -O3 -D CC_ALG=NO_WAIT
 LDFLAGS = -Wall -L. -L./lib -pthread -g -lrt -std=c++0x -O3 -ljemalloc -lmetis -lparmetis

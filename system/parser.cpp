@@ -17,10 +17,10 @@ void print_usage() {
 	printf("\t-GnINT      ; NO_DL\n");
 	printf("\t-GoINT      ; TIMEOUT\n");
 	printf("\t-GlINT      ; DL_LOOP_DETECT\n");
-	
+
 	printf("\t-GbINT      ; TS_BATCH_ALLOC\n");
 	printf("\t-GuINT      ; TS_BATCH_NUM\n");
-	
+
 	printf("\t-o STRING   ; output file\n\n");
 	printf("  [YCSB]:\n");
 	printf("\t-cINT       ; PART_PER_TXN\n");
@@ -44,7 +44,7 @@ void print_usage() {
 	printf("\t-ElINT	  ; TXN_LENGTH\n");
 }
 
-void parser(int argc, char * argv[]) {
+void parser(int argc, char * * argv) {
 	g_params["abort_buffer_enable"] = ABORT_BUFFER_ENABLE? "true" : "false";
 	g_params["write_copy_form"] = WRITE_COPY_FORM;
 	g_params["validation_lock"] = VALIDATION_LOCK;

@@ -114,7 +114,7 @@ void * ParallelWorkloadLoader::load_helper(void *ptr) {
   // Obtain filename
   char file_name[200];
   get_workload_file_name(loader->_folder_path, thread_id, file_name);
-  FILE* file = fopen(file_name, "w");
+  FILE* file = fopen(file_name, "r");
   if (file == nullptr) {
     printf("Error opening file: %s\n", file_name);
     exit(0);

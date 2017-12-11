@@ -1,3 +1,5 @@
+// Copyright [2017] <Guna Prasaad>
+
 #include "global.h"
 #include "config.h"
 #include "thread.h"
@@ -5,58 +7,70 @@
 #include "mem_alloc.h"
 #include "tpcc.h"
 #include "ycsb.h"
+#include <mpi.h>
 
-void parser(int argc, char * argv[]);
+void parser(int argc, char * *argv);
 
-int main(int argc, char* argv[]) {
-	parser(argc, argv);
+int main(int argc, char* * argv) {
+  parser(argc, argv);
 
-	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt);
-	stats.init();
+  int size, rank;
+  MPI_Init(& argc, & argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	glob_manager = (Manager *) _mm_malloc(sizeof(Manager), 64);
-	glob_manager->init();
+  mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt);
+  stats.init();
 
-	check_and_init_variables();
+  glob_manager = reinterpret_cast<Manager *>(_mm_malloc(sizeof(Manager), 64));
+  glob_manager->init();
 
-	ParallelWorkloadGenerator * generator = nullptr;
-	ParallelWorkloadLoader * loader = nullptr;
-	ParallelWorkloadPartitioner * partitioner = nullptr;
-	BenchmarkExecutor * executor = nullptr;
+  check_and_init_variables();
 
-	if(strcmp(g_benchmark, "ycsb") == 0) {
-		generator = new YCSBWorkloadGenerator();
-		loader = new YCSBWorkloadLoader();
-		partitioner = new YCSBWorkloadPartitioner();
-		executor = new YCSBExecutor();
-	} else if(strcmp(g_benchmark, "tpcc") == 0) {
-		generator = new TPCCWorkloadGenerator();
-		loader = new TPCCWorkloadLoader();
-		partitioner = new TPCCWorkloadPartitioner();
-		executor = new TPCCExecutor();
-	}
+  ParallelWorkloadGenerator * generator = nullptr;
+  ParallelWorkloadLoader * loader = nullptr;
+  ParallelWorkloadPartitioner * partitioner = nullptr;
+  BenchmarkExecutor * executor = nullptr;
 
-	if(g_task_type == PARTITION) {
-		loader->initialize(g_thread_cnt, get_benchmark_path(false));
-		loader->load();
-		partitioner->initialize(loader->get_queries_matrix(), g_max_nodes_for_clustering, INIT_PARALLELISM, get_benchmark_path(true));
-		partitioner->partition();
-		partitioner->write_to_files();
-		partitioner->print_execution_summary();
-		loader->release();
-	} else if(g_task_type == GENERATE){
-		generator->initialize(g_thread_cnt, g_queries_per_thread, get_benchmark_path(false));
-		generator->generate();
-		generator->release();
-	} else if(g_task_type == EXECUTE_RAW) {
-		executor->initialize(g_thread_cnt, get_benchmark_path(false));
-		executor->execute();
-		executor->release();
-	} else if(g_task_type == EXECUTE_PARTITIONED) {
-	        executor->initialize(g_thread_cnt, get_benchmark_path(true));
-       	        executor->execute();
-          	executor->release();
-	}
+  if (strcmp(g_benchmark, "ycsb") == 0) {
+    generator = new YCSBWorkloadGenerator();
+    loader = new YCSBWorkloadLoader();
+    partitioner = new YCSBWorkloadPartitioner();
+    executor = new YCSBExecutor();
+  } else if (strcmp(g_benchmark, "tpcc") == 0) {
+    generator = new TPCCWorkloadGenerator();
+    loader = new TPCCWorkloadLoader();
+    partitioner = new TPCCWorkloadPartitioner();
+    executor = new TPCCExecutor();
+  }
 
-	return 0;
+  if (g_task_type == PARTITION) {
+    loader->initialize(g_thread_cnt, get_benchmark_path(false));
+    loader->load();
+    partitioner->initialize(
+                   loader->get_queries_matrix(),
+                   g_max_nodes_for_clustering,
+                   INIT_PARALLELISM,
+                   get_benchmark_path(true));
+    partitioner->partition();
+    partitioner->write_to_files();
+    partitioner->print_execution_summary();
+    loader->release();
+  } else if (g_task_type == GENERATE) {
+    generator->initialize(g_thread_cnt,
+                          g_queries_per_thread,
+                          get_benchmark_path(false));
+    generator->generate();
+    generator->release();
+  } else if (g_task_type == EXECUTE_RAW) {
+    executor->initialize(g_thread_cnt, get_benchmark_path(false));
+    executor->execute();
+    executor->release();
+  } else if (g_task_type == EXECUTE_PARTITIONED) {
+    executor->initialize(g_thread_cnt, get_benchmark_path(true));
+    executor->execute();
+    executor->release();
+  }
+
+  return 0;
 }

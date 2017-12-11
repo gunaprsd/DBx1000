@@ -36,6 +36,7 @@ ParallelWorkloadPartitioner::initialize(BaseQueryMatrix * queries,
   _total_pre_cross_core_weight = 0;
   _total_post_cross_core_edges = 0;
   _total_post_cross_core_weight = 0;
+  _array_iter_start_offset = 0;
 
   data_statistics_duration = 0.0;
   graph_init_duration = 0.0;
@@ -103,23 +104,6 @@ void ParallelWorkloadPartitioner::partition_per_iteration() {
 
   if (_parallelism > 1) {
     start_time = get_server_clock();
-    auto graph = create_graph();
-    end_time = get_server_clock();
-    duration = DURATION(end_time, start_time);
-    graph_init_duration += duration;
-    printf("METIS init Completed in %lf secs\n", duration);
-
-    start_time = get_server_clock();
-    METISGraphPartitioner::compute_partitions(
-                             graph,
-                             _num_arrays,
-                             _current_parts);
-    end_time = get_server_clock();
-    duration = DURATION(end_time, start_time);
-    partition_duration += duration;
-    printf("METIS partitioning Completed in %lf secs\n", duration);
-  } else {
-    start_time = get_server_clock();
     auto graph = parallel_create_graph();
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
@@ -135,8 +119,24 @@ void ParallelWorkloadPartitioner::partition_per_iteration() {
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
     partition_duration += duration;
-    printf("ParMETIS partitioning with %d threads completed in %lf secs\n",
-              _parallelism, duration);
+    printf("METIS partitioning completed in %lf secs\n", duration);
+  } else {
+    start_time = get_server_clock();
+    auto graph = create_graph();
+    end_time = get_server_clock();
+    duration = DURATION(end_time, start_time);
+    graph_init_duration += duration;
+    printf("METIS init Completed in %lf secs\n", duration);
+
+    start_time = get_server_clock();
+    METISGraphPartitioner::compute_partitions(
+                             graph,
+                             _num_arrays,
+                             _current_parts);
+    end_time = get_server_clock();
+    duration = DURATION(end_time, start_time);
+    partition_duration += duration;
+    printf("METIS partitioning Completed in %lf secs\n", duration);
   }
 
   // Add query pointers into tmp_queries

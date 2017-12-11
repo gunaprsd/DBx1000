@@ -11,7 +11,7 @@
 #define VIRTUAL_PART_CNT			                        1
 #define PAGE_SIZE							4096
 #define CL_SIZE								64
-// CPU_FREQ is used to get accurate timing info 
+// CPU_FREQ is used to get accurate timing info
 #define CPU_FREQ 					2 	// in GHz/s
 
 // # of transactions to run for warmup
@@ -21,18 +21,18 @@
 // print the transaction latency distribution
 #define PRT_LAT_DISTR				false
 #define STATS_ENABLE				true
-#define TIME_ENABLE					true 
+#define TIME_ENABLE					true
 
-#define MEM_ALLIGN					8 
+#define MEM_ALLIGN					8
 
 // [THREAD_ALLOC]
 #define THREAD_ALLOC				false
-#define THREAD_ARENA_SIZE			(1UL << 22) 
+#define THREAD_ARENA_SIZE			(1UL << 22)
 #define MEM_PAD 					true
 
-// [PART_ALLOC] 
+// [PART_ALLOC]
 #define PART_ALLOC 					false
-#define MEM_SIZE					(1UL << 30) 
+#define MEM_SIZE					(1UL << 30)
 #define NO_FREE						false
 
 /***********************************************/
@@ -60,7 +60,7 @@
 #define INDEX_STRUCT				IDX_HASH
 #define BTREE_ORDER 				16
 
-// [DL_DETECT] 
+// [DL_DETECT]
 #define DL_LOOP_DETECT			1000 	// 100 us
 #define DL_LOOP_TRIAL				100	// 1 us
 #define NO_DL								KEY_ORDER
@@ -95,7 +95,7 @@
 // when set to true, hstore will not access the global timestamp.
 // This is fine for single compute_partitions transactions.
 #define HSTORE_LOCAL_TS					false
-// [VLL] 
+// [VLL]
 #define TXN_QUEUE_SIZE_LIMIT		THREAD_CNT
 
 /***********************************************/
@@ -116,7 +116,7 @@
 #define MAX_TUPLE_SIZE				1024 // in bytes
 
 // === [EXPERIMENT & YCSB]
-#define INIT_PARALLELISM			32
+#define INIT_PARALLELISM			64
 #define SYNTH_TABLE_SIZE 			(10 * 1024 * 1024)
 #define READ_PERC 						0.9
 #define WRITE_PERC 						0.1
@@ -139,15 +139,15 @@
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
 #define TPCC_SMALL					false
-// Some of the transactions read the data but never use them. 
+// Some of the transactions read the data but never use them.
 // If TPCC_ACCESS_ALL == fales, then these parts of the transactions
 // are not modeled.
-#define TPCC_ACCESS_ALL 			        false 
+#define TPCC_ACCESS_ALL 			        false
 #define WH_UPDATE											true
 #define NUM_WH 												4
 #define MAX_NUM_ORDER_LINE			      16
 
-enum TPCCTxnType {TPCC_ALL, 
+enum TPCCTxnType {TPCC_ALL,
 									TPCC_PAYMENT,
 									TPCC_NEW_ORDER,
 									TPCC_ORDER_STATUS,
@@ -165,7 +165,7 @@ extern TPCCTxnType 					g_tpcc_txn_type;
 #define DIST_PER_WARE				10
 
 /***********************************************/
-// TODO centralized CC management. 
+// TODO centralized CC management.
 /***********************************************/
 #define MAX_LOCK_CNT			(20 * THREAD_CNT)
 #define TSTAB_SIZE        (50 * THREAD_CNT)

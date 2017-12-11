@@ -7,8 +7,8 @@ void METISGraphPartitioner::compute_partitions(
                               idx_t nparts,
                               idx_t * parts) {
     assert(graph != nullptr);
-    assert(graph->nvtxs != 0);
-    assert(graph->adjncy_size != 0);
+    assert(graph->nvtxs != -1);
+    assert(graph->adjncy_size != -1);
     assert(graph->xadj != nullptr);
     assert(graph->adjncy != nullptr);
     assert(graph->vwgt != nullptr);
@@ -56,26 +56,35 @@ void ParMETISGraphPartitioner::compute_partitions(
                                      ParMETIS_CSRGraph * parGraph,
                                      idx_t nparts,
                                      idx_t * parts) {
-    auto num_threads = static_cast<uint32_t>(parGraph->ngraphs);
-    auto threads = new pthread_t[num_threads];
-    auto data = new ThreadLocalData[num_threads];
-    for (uint32_t i = 0; i < num_threads; i++) {
-      data[i].fields[0] = (uint64_t) i;
-      data[i].fields[1] = (uint64_t) parGraph;
-      data[i].fields[2] = (uint64_t) nparts;
-      data[i].fields[3] = (uint64_t) (parts + parGraph->nvtxs_per_graph);
-      pthread_create(&threads[i],
-                     nullptr,
-                     partition_helper,
-                     reinterpret_cast<void *>(& data[i]));
-    }
+  // Convert to a serial format and use METIS
+  auto graph = METIS_CSRGraphCreator::convert_METIS_CSRGraph(parGraph);
+  METISGraphPartitioner::compute_partitions(graph, nparts, parts);
+  return;
 
-    for (uint32_t i = 0; i < num_threads; i++) {
-      pthread_join(threads[i], nullptr);
-    }
+  // Cannot create a multi-threaded ParMETIS! :(
+  assert(false);
+  auto num_threads = static_cast<uint32_t>(parGraph->ngraphs);
+  auto threads = new pthread_t[num_threads];
+  auto data = new ThreadLocalData[num_threads];
+  auto current_ptr = parts;
+  for (uint32_t i = 0; i < num_threads; i++) {
+    data[i].fields[0] = (uint64_t) i;
+    data[i].fields[1] = (uint64_t) parGraph;
+    data[i].fields[2] = (uint64_t) nparts;
+    data[i].fields[3] = (uint64_t) current_ptr;
+    pthread_create(& threads[i],
+                   nullptr,
+                   partition_helper,
+                   reinterpret_cast<void *>(& data[i]));
+    current_ptr += parGraph->nvtxs_per_graph;
+  }
 
-    delete[] threads;
-    delete[] data;
+  for (uint32_t i = 0; i < num_threads; i++) {
+    pthread_join(threads[i], nullptr);
+  }
+
+  delete[] threads;
+  delete[] data;
 }
 
 void *ParMETISGraphPartitioner::partition_helper(void *data) {
@@ -86,15 +95,24 @@ void *ParMETISGraphPartitioner::partition_helper(void *data) {
   auto nparts = (idx_t) threadLocalData->fields[2];
   auto parts = reinterpret_cast<idx_t *>(threadLocalData->fields[3]);
 
-    auto graph = parGraph->graphs[thread_id];
-    idx_t wgtflag = 3;
-    idx_t numflag = 0;
-    auto options = new idx_t[3];
-    options[0] = 0;  // default config
-    options[1] = 0;
-    options[2] = 123;
-    idx_t edgecut = 0;
-    int result = ParMETIS_V3_PartKway(parGraph->vtxdist,
+  auto graph = parGraph->graphs[thread_id];
+  idx_t wgtflag = 3;
+  idx_t numflag = 0;
+  auto tpwgts = new real_t[nparts];
+  for (auto i = 0; i < nparts; ++i) {
+    tpwgts[i] = 1.0;
+  }
+
+  auto ubvec = new real_t[1];
+  ubvec[0] = 1.0 + ((real_t)g_ufactor/1000.0);
+  auto options = new idx_t[3];
+  options[0] = 0;  // default config
+  options[1] = 0;
+  options[2] = 123;
+
+  idx_t edgecut = 0;
+
+  int result = ParMETIS_V3_PartKway(parGraph->vtxdist,
                               graph->xadj,
                               graph->adjncy,
                               graph->vwgt,
@@ -103,14 +121,14 @@ void *ParMETISGraphPartitioner::partition_helper(void *data) {
                               & numflag,
                               & graph->ncon,
                               & nparts,
-                              NULL,
-                              NULL,
+                              tpwgts,
+                              ubvec,
                               options,
                               & edgecut,
                               parts,
-                              nullptr);
+			      (MPI_Comm *)MPI_COMM_NULL);
 
-    switch (result) {
+  switch (result) {
     case METIS_ERROR_INPUT  :   printf("Error in input!\n");
       exit(0);
     case METIS_ERROR_MEMORY :   printf("Could not allocate required memory!\n");
@@ -118,11 +136,14 @@ void *ParMETISGraphPartitioner::partition_helper(void *data) {
     case METIS_ERROR        :   printf("Unknown error\n");
       exit(0);
     default                 :   break;
-    }
+  }
 
-    delete options;
+  for (auto i = 0u; i < parGraph->nvtxs_per_graph; ++i) {
+    assert(parts[i] != -1);
+  }
 
-    return nullptr;
+  delete options;
+  return nullptr;
 }
 
 METIS_CSRGraph *

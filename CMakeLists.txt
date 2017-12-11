@@ -42,6 +42,7 @@ SET (SOURCES_LIST tpcc/tpcc_helper.h
         system/database.h
         system/stats.h
         system/mem_alloc.h
+        workload/data_partitioner.h
         workload/graph_partitioner.h
         workload/partitioner.h
         workload/generator.h
@@ -76,6 +77,7 @@ SET (SOURCES_LIST tpcc/tpcc_helper.h
         system/global.cpp
         system/parser.cpp
         system/main.cpp
+        workload/data_partitioner.cpp
         workload/generator.cpp
         workload/graph_partitioner.cpp
         workload/partitioner.cpp)

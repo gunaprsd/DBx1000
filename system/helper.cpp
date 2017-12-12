@@ -1,18 +1,17 @@
-#include "global.h"
 #include "helper.h"
+#include "global.h"
 #include "mem_alloc.h"
 #include "time.h"
 
-bool itemid_t::operator==(const itemid_t & other) const {
-  return (type == other.type &&
-          location == other.location);
+bool itemid_t::operator==(const itemid_t &other) const {
+  return (type == other.type && location == other.location);
 }
 
-bool itemid_t::operator!=(const itemid_t & other) const {
+bool itemid_t::operator!=(const itemid_t &other) const {
   return !(*this == other);
 }
 
-void itemid_t::operator=(const itemid_t & other) {
+void itemid_t::operator=(const itemid_t &other) {
   this->valid = other.valid;
   this->type = other.type;
   this->location = other.location;
@@ -26,11 +25,9 @@ void itemid_t::init() {
   next = NULL;
 }
 
-int get_thdid_from_txnid(uint64_t txnid) {
-  return txnid % g_thread_cnt;
-}
+int get_thdid_from_txnid(uint64_t txnid) { return txnid % g_thread_cnt; }
 
-uint64_t get_part_id(void * addr) {
+uint64_t get_part_id(void *addr) {
   return ((uint64_t)addr / PAGE_SIZE) % g_part_cnt;
 }
 
@@ -41,7 +38,7 @@ uint64_t key_to_part(uint64_t key) {
     return 0;
 }
 
-uint64_t merge_idx_key(UInt64 key_cnt, UInt64 * keys) {
+uint64_t merge_idx_key(UInt64 key_cnt, UInt64 *keys) {
   uint64_t len = 64 / key_cnt;
   uint64_t key = 0;
   for (uint32_t i = 0; i < len; i++) {
@@ -52,17 +49,12 @@ uint64_t merge_idx_key(UInt64 key_cnt, UInt64 * keys) {
 }
 
 uint64_t merge_idx_key(uint64_t key1, uint64_t key2) {
-  assert(key1 < (1UL << 32) &&
-         key2 < (1UL << 32));
+  assert(key1 < (1UL << 32) && key2 < (1UL << 32));
   return key1 << 32 | key2;
 }
 
-uint64_t merge_idx_key(uint64_t key1,
-                       uint64_t key2,
-                       uint64_t key3) {
-  assert(key1 < (1 << 21) &&
-         key2 < (1 << 21) &&
-         key3 < (1 << 21));
+uint64_t merge_idx_key(uint64_t key1, uint64_t key2, uint64_t key3) {
+  assert(key1 < (1 << 21) && key2 < (1 << 21) && key3 < (1 << 21));
   return key1 << 42 | key2 << 21 | key3;
 }
 
@@ -78,9 +70,9 @@ inline uint64_t get_server_clock() {
     unsigned hi, lo;
     __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
     uint64_t ret = ( (uint64_t)lo)|( ((uint64_t)hi)<<32 );
-	ret = (uint64_t) ((double)ret / CPU_FREQ);
+        ret = (uint64_t) ((double)ret / CPU_FREQ);
 #else
-	timespec * tp = new timespec;
+        timespec * tp = new timespec;
     clock_gettime(CLOCK_REALTIME, tp);
     uint64_t ret = tp->tv_sec * 1000000000 + tp->tv_nsec;
 #endif
@@ -89,52 +81,40 @@ inline uint64_t get_server_clock() {
 
 inline uint64_t get_sys_clock() {
 #ifndef NOGRAPHITE
-	static volatile uint64_t fake_clock = 0;
-	if (warmup_finish)
-		return CarbonGetTime();   // in ns
-	else {
-		return ATOM_ADD_FETCH(fake_clock, 100);
-	}
+        static volatile uint64_t fake_clock = 0;
+        if (warmup_finish)
+                return CarbonGetTime();   // in ns
+        else {
+                return ATOM_ADD_FETCH(fake_clock, 100);
+        }
 #else
-	if (TIME_ENABLE)
-		return get_server_clock();
-	return 0;
+        if (TIME_ENABLE)
+                return get_server_clock();
+        return 0;
 #endif
 }
 */
-void myrand::init(uint64_t seed) {
-  this->seed = seed;
-}
+void myrand::init(uint64_t seed) { this->seed = seed; }
 
 uint64_t myrand::next() {
-  seed = (seed * 1103515247UL + 12345UL) % (1UL<<63);
+  seed = (seed * 1103515247UL + 12345UL) % (1UL << 63);
   return (seed / 65537) % RAND_MAX;
 }
 
-void get_workload_file_name(const char * base_file_name,
-                            uint32_t thread_id,
-                            char * destination) {
-  snprintf(destination,
-           200,
-           "%s/core_%d.dat",
-           base_file_name,
+void get_workload_file_name(const char *base_file_name, uint32_t thread_id,
+                            char *destination) {
+  snprintf(destination, 200, "%s/core_%d.dat", base_file_name,
            static_cast<int>(thread_id));
 }
 
-char * get_benchmark_path(bool partitioned) {
+char *get_benchmark_path(bool partitioned) {
   auto path = new char[200];
   if (partitioned)
-    snprintf(path, 200,
-             "data/%s/%s/c%d/partitioned/u%d",
-             g_benchmark,
-             g_benchmark_tag,
-             static_cast<int>(g_thread_cnt),
+    snprintf(path, 200, "data/%s/%s/c%d/partitioned/u%d", g_benchmark,
+             g_benchmark_tag, static_cast<int>(g_thread_cnt),
              static_cast<int>(g_ufactor));
   else
-    snprintf(path, 200,
-             "data/%s/%s/c%d/raw",
-             g_benchmark,
-             g_benchmark_tag,
+    snprintf(path, 200, "data/%s/%s/c%d/raw", g_benchmark, g_benchmark_tag,
              static_cast<int>(g_thread_cnt));
   return path;
 }
@@ -142,21 +122,19 @@ char * get_benchmark_path(bool partitioned) {
 void check_and_init_variables() {
   assert(g_benchmark != nullptr);
   assert(g_benchmark_tag != nullptr);
-  assert((g_task_type == PARTITION
-            || g_task_type == EXECUTE_PARTITIONED)
-              ? g_ufactor != -1 : true);
-  assert(g_thread_cnt == 2 ||
-         g_thread_cnt == 4 ||
-         g_thread_cnt == 8 ||
-         g_thread_cnt == 16 ||
-         g_thread_cnt == 32);
+  assert((g_task_type == PARTITION_DATA || g_task_type == PARTITION_CONFLICT ||
+          g_task_type == EXECUTE_PARTITIONED)
+             ? g_ufactor != -1
+             : true);
+  assert(g_thread_cnt == 2 || g_thread_cnt == 4 || g_thread_cnt == 8 ||
+         g_thread_cnt == 16 || g_thread_cnt == 32);
 
   if (strcmp(g_benchmark, "ycsb") == 0) {
     if (strcmp(g_benchmark_tag, "low") == 0) {
-       g_zipf_theta = 0;
-       g_read_perc = 0.9;
-       g_max_nodes_for_clustering = 128 * 1024;
-       g_queries_per_thread = g_max_nodes_for_clustering / g_thread_cnt;
+      g_zipf_theta = 0;
+      g_read_perc = 0.9;
+      g_max_nodes_for_clustering = 128 * 1024;
+      g_queries_per_thread = g_max_nodes_for_clustering / g_thread_cnt;
     } else if (strcmp(g_benchmark_tag, "medium") == 0) {
       g_zipf_theta = 0.8;
       g_read_perc = 0.9;

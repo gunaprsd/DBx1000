@@ -11,7 +11,14 @@ ENDIF()
 SET (SOURCES_LIST tpcc/tpcc_helper.h
         tpcc/tpcc.h
         tpcc/tpcc_const.h
+        tpcc/tpcc_helper.h
+        tpcc/tpcc_workload.h
+        tpcc/tpcc_database.h
+        tpcc/tpcc_partitioner.h
         ycsb/ycsb.h
+        ycsb/ycsb_workload.h
+        ycsb/ycsb_database.h
+        ycsb/ycsb_partitioner.h
         cc/occ.h
         cc/plock.h
         cc/vll.h
@@ -42,6 +49,7 @@ SET (SOURCES_LIST tpcc/tpcc_helper.h
         system/database.h
         system/stats.h
         system/mem_alloc.h
+        workload/distributions.h
         workload/access_graph_partitioner.h
         workload/graph_partitioner.h
         workload/conflict_graph_partitioner.h
@@ -77,13 +85,13 @@ SET (SOURCES_LIST tpcc/tpcc_helper.h
         system/global.cpp
         system/parser.cpp
         system/main.cpp
+        workload/distributions.h
         workload/access_graph_partitioner.cpp
         workload/generator.cpp
         workload/graph_partitioner.cpp
         workload/conflict_graph_partitioner.cpp
         ycsb/ycsb_workload.cpp
         ycsb/ycsb_database.cpp
-        ycsb/ycsb_txn.cpp
         ycsb/ycsb_partitioner.cpp
         tpcc/tpcc_database.cpp
         tpcc/tpcc_helper.cpp

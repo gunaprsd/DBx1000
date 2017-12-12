@@ -138,25 +138,46 @@ void parser(int argc, char * * argv) {
 			else
 				assert(false);
 		} else if(argv[i][1] == 'P') {
-			if(argv[i][2] == 't') {
-				g_benchmark_tag = & argv[i][3];
-			} else if(argv[i][2] == 'b') {
-				g_benchmark = & argv[i][3];
-			} else if(argv[i][2] == 'u') {
-				g_ufactor = atoi(& argv[i][3]);
-			} else if(argv[i][2] == 'p') {
-				g_task_type = PARTITION;
-			} else if(argv[i][2] == 'g') {
-				g_task_type = GENERATE;
-			} else if(argv[i][2] == 'e') {
-			  if(argv[i][3] == 'r')
-			    g_task_type = EXECUTE_RAW;
-			  else if(argv[i][3] == 'p')
-			    g_task_type = EXECUTE_PARTITIONED;
-			  else
-			    assert(false);
-			} else {
-				assert(false);
+
+			switch (argv[i][2]) {
+				case 'b':
+					g_benchmark = & argv[i][3];
+					break;
+				case 't':
+					g_benchmark_tag = & argv[i][3];
+					break;
+				case 'u':
+					g_ufactor = atoi(& argv[i][3]);
+					break;
+				case 'g':
+					g_task_type = GENERATE;
+					break;
+				case 'p':
+					switch (argv[i][3]) {
+						case 'a':
+							g_task_type = PARTITION_DATA;
+							break;
+						case 'c':
+							g_task_type = PARTITION_CONFLICT;
+							break;
+						default:
+							assert(false);
+					}
+					break;
+				case 'e':
+					switch (argv[i][3]) {
+						case 'r':
+							g_task_type = EXECUTE_RAW;
+							break;
+						case 'p':
+							g_task_type = EXECUTE_PARTITIONED;
+							break;
+						default:
+							assert(false);
+					}
+					break;
+				default:
+					assert(false);
 			}
 		} else {
 				assert(false);

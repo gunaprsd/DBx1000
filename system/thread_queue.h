@@ -7,7 +7,7 @@
 /*
  * Each thread has a ThreadQueue that is responsible for picking up the next query to process.
  * Whenever a thread gets a query using the next_query function, it must return the status before obtaining
- * the next query. The logic of obtaining the next query depends on whether the abort buffer is enabled or not.
+ * the next query. The logic of obtaining the nextInt64 query depends on whether the abort buffer is enabled or not.
  *
  * Abort Buffer Enabled:
  * ---------------------

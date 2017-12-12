@@ -57,7 +57,7 @@ void AccessGraphPartitioner::partition() {
     // Partition a graph of max_size
     partition_per_iteration();
 
-    // Move to next iteration
+    // Move to nextInt64 iteration
     _current_iteration++;
     _current_array_start_offset = (_current_iteration * _max_size_per_array);
     for (auto i = 0u; i < _num_arrays; i++) {

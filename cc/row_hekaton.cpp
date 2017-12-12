@@ -60,7 +60,7 @@ RC Row_hekaton::access(txn_man * txn, TsType type, row_t * row) {
 		} else if (ts < _write_history[_his_oldest].begin) { 
 			rc = Abort;
 		} else if (ts > _write_history[_his_latest].begin) {
-			// TODO. should check the next history entry. If that entry is locked by a preparing txn,
+			// TODO. should check the nextInt64 history entry. If that entry is locked by a preparing txn,
 			// may create a commit dependency. For now, I always return non-speculative entries.
 			rc = RCOK;
 			txn->cur_row = _write_history[_his_latest].row;

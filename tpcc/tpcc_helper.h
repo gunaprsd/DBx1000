@@ -1,5 +1,5 @@
-#ifndef DBX1000_TPCC_HELPER_H_
-#define DBX1000_TPCC_HELPER_H_
+#ifndef TPCC_TPCC_HELPER_H_
+#define TPCC_TPCC_HELPER_H_
 
 #include "global.h"
 #include "helper.h"

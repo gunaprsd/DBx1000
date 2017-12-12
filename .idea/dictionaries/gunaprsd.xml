@@ -5,6 +5,7 @@
       <w>adjncy</w>
       <w>adjwgt</w>
       <w>adjwgts</w>
+      <w>allign</w>
       <w>byname</w>
       <w>cpos</w>
       <w>cvtx</w>
@@ -26,6 +27,8 @@
       <w>paritioning</w>
       <w>partitioner</w>
       <w>rint</w>
+      <w>ruint</w>
+      <w>sigmod</w>
       <w>tictoc</w>
       <w>tpwgts</w>
       <w>ubvec</w>

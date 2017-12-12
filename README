@@ -29,7 +29,7 @@ DBMS BENCHMARK
 
 == Config File ==
 
-dbms benchmark has the following parameters in the config file. Parameters with a * sign should not be changed.
+dbms benchmark has the following parameters in the _config file. Parameters with a * sign should not be changed.
 
   CORE_CNT		: number of cores modeled in the system.
   PART_CNT		: number of logical partitions in the system

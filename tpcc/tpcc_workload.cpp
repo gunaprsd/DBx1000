@@ -1,5 +1,4 @@
-#include "graph_partitioner.h"
-#include "tpcc.h"
+#include "tpcc_workload.h"
 
 
 BaseQueryList * TPCCWorkloadGenerator::get_queries_list(uint32_t thread_id) {
@@ -122,10 +121,10 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thd_id, tpcc_new_orde
     }
 }
 
-void TPCCWorkloadGenerator::initialize(uint32_t num_threads,
-                                       uint64_t num_params_per_thread,
-                                       const char *base_file_name) {
-    ParallelWorkloadGenerator::initialize(num_threads, num_params_per_thread, base_file_name);
+TPCCWorkloadGenerator::TPCCWorkloadGenerator(uint32_t num_threads, uint64_t num_params_per_thread,
+																						 const string &base_file_name) : ParallelWorkloadGenerator(num_threads,
+																																																			 num_params_per_thread,
+																																																			 base_file_name) {
     _queries = new tpcc_query * [_num_threads];
     for(uint32_t i = 0; i < _num_threads; i++) {
         _queries[i] = new tpcc_query[_num_queries_per_thread];
@@ -177,4 +176,27 @@ BaseQueryMatrix *TPCCWorkloadLoader::get_queries_matrix() {
     qm->initialize(_queries, _num_threads, const_size);
     return qm;
 }
+
+
+
+void TPCCExecutor::initialize(uint32_t num_threads, const char * path) {
+	BenchmarkExecutor::initialize(num_threads, path);
+
+	//Build database in parallel
+	_db = new TPCCDatabase();
+	_db->initialize(INIT_PARALLELISM);
+	_db->load();
+
+	//Load workload in parallel
+	_loader = new TPCCWorkloadLoader();
+	_loader->initialize(num_threads, _path);
+	_loader->load();
+
+	//Initialize each thread
+	for(uint32_t i = 0; i < _num_threads; i++) {
+		_threads[i].initialize(i, _db, _loader->get_queries_list(i), true);
+	}
+}
+
+
 

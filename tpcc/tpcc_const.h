@@ -1,4 +1,9 @@
-#if TPCC_SMALL 
+// Copyright [2017] <Guna Prasaad>
+
+#ifndef TPCC_TPCC_CONST_H_
+#define TPCC_TPCC_CONST_H_
+
+#if TPCC_SMALL
 enum {
 	W_ID,
 	W_NAME,
@@ -191,4 +196,6 @@ enum {
 	S_REMOTE_CNT,
 	S_DATA
 };
+#endif
+
 #endif

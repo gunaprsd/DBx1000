@@ -1,11 +1,12 @@
 // Copyright[2017] <Guna Prasaad>
 
+#include <vector>
 #include "graph_partitioner.h"
 #include "query.h"
-#include <vector>
 
-#ifndef WORKLOAD_PARTITIONER_H_
-#define WORKLOAD_PARTITIONER_H_
+
+#ifndef WORKLOAD_CONFLICT_GRAPH_PARTITIONER_H_
+#define WORKLOAD_CONFLICT_GRAPH_PARTITIONER_H_
 
 /*
  * ConflictGraphPartitioner:
@@ -95,4 +96,4 @@ inline uint32_t ConflictGraphPartitioner::get_array_idx(uint64_t qid) {
   return static_cast<uint32_t>(qid % _num_arrays);
 }
 
-#endif // WORKLOAD_PARTITIONER_H_
+#endif // WORKLOAD_CONFLICT_GRAPH_PARTITIONER_H_

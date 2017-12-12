@@ -186,9 +186,14 @@ struct TxnDataInfo {
 		vector<idx_t> txns;
 };
 
+struct DataInfo {
+		uint64_t epoch;
+		uint64_t num_writes;
+		uint64_t num_reads;
+};
 
 /* PRE_PROCESSING */
-enum TaskType {GENERATE, PARTITION, EXECUTE_RAW, EXECUTE_PARTITIONED};
+enum TaskType {GENERATE, PARTITION_DATA, PARTITION_CONFLICT, EXECUTE_RAW, EXECUTE_PARTITIONED};
 extern uint64_t g_queries_per_thread;
 extern uint64_t g_max_nodes_for_clustering;
 extern TaskType g_task_type;

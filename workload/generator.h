@@ -13,23 +13,24 @@
 /*
  * ParallelWorkloadGenerator:
  * --------------------------
- * Generates a workload (in parallel) based on config and command line arguments
- * If a _folder_path is specified, the queries are written onto k binary files
- * with the format <_folder_path>/core_<i>.dat
+ * Generates a workload (in parallel) based on _config and command line
+ * arguments If a _folder_path is specified, the queries are written onto k
+ * binary files with the format <_folder_path>/core_<i>.dat
  */
 class ParallelWorkloadGenerator {
 public:
-  virtual void initialize(uint32_t num_threads, uint64_t num_params_per_thread,
-                          const char *folder_path);
+  ParallelWorkloadGenerator(uint32_t num_threads,
+                            uint64_t num_queries_per_thread,
+                            const string &folder_path);
   virtual void release();
-  void generate();
+  virtual void generate();
 
 protected:
   static void *generate_helper(void *ptr);
 
+  string _folder_path;
   uint32_t _num_threads;
   uint64_t _num_queries_per_thread;
-  char _folder_path[200];
 
   /* Need to be implemented by benchmark */
 public:

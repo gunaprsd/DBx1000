@@ -24,32 +24,34 @@ int main(int argc, char* * argv) {
 
   ParallelWorkloadGenerator * generator = nullptr;
   ParallelWorkloadLoader * loader = nullptr;
-  ParallelWorkloadPartitioner * partitioner = nullptr;
+  //ParallelWorkloadPartitioner * partitioner = nullptr;
+  DataPartitioner * data_partitioner = nullptr;
   BenchmarkExecutor * executor = nullptr;
 
   if (strcmp(g_benchmark, "ycsb") == 0) {
     generator = new YCSBWorkloadGenerator();
     loader = new YCSBWorkloadLoader();
     //partitioner = new YCSBWorkloadPartitioner();
+    data_partitioner = new YCSBDataPartitioner();
     executor = new YCSBExecutor();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     generator = new TPCCWorkloadGenerator();
     loader = new TPCCWorkloadLoader();
-    partitioner = new TPCCWorkloadPartitioner();
+    //partitioner = new TPCCWorkloadPartitioner();
     executor = new TPCCExecutor();
   }
 
   if (g_task_type == PARTITION) {
     loader->initialize(g_thread_cnt, get_benchmark_path(false));
     loader->load();
-    partitioner->initialize(
+    data_partitioner->initialize(
                    loader->get_queries_matrix(),
                    g_max_nodes_for_clustering,
-                   INIT_PARALLELISM,
+                   1,
                    get_benchmark_path(true));
-    partitioner->partition();
-    partitioner->write_to_files();
-    partitioner->print_execution_summary();
+    data_partitioner->partition();
+    data_partitioner->write_to_files();
+    data_partitioner->print_execution_summary();
     loader->release();
   } else if (g_task_type == GENERATE) {
     generator->initialize(g_thread_cnt,

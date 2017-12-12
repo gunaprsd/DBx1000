@@ -13,7 +13,8 @@ public:
                           uint32_t parallelism, const char *dest_folder_path);
   void write_to_files();
   virtual void partition();
-
+  void print_execution_summary();
+  void print_partition_summary();
 protected:
 	void write_pre_partition_file();
 	void write_post_partition_file();
@@ -38,6 +39,11 @@ protected:
 	double second_pass_duration;
 	double third_pass_duration;
 	double partition_duration;
+	uint32_t total_cross_core_access;
+	uint32_t min_data_degree;
+	uint32_t max_data_degree;
+	uint32_t min_cross_data_degree;
+	uint32_t max_cross_data_degree;
 
   BaseQueryMatrix *_original_queries;
   vector<BaseQuery *> *_tmp_queries;

@@ -33,6 +33,11 @@ void DataPartitioner::initialize(BaseQueryMatrix *queries, uint64_t max_size,
   second_pass_duration = 0.0;
   third_pass_duration = 0.0;
   partition_duration = 0.0;
+  total_cross_core_access = 0.0;
+  min_data_degree = 0;
+  max_data_degree = 0;
+  min_cross_data_degree = 0;
+  max_cross_data_degree = 0;
 }
 
 void DataPartitioner::write_to_files() {
@@ -106,4 +111,41 @@ void DataPartitioner::write_pre_partition_file() {
   }
   fflush(pre_partition_file);
   fclose(pre_partition_file);
+}
+
+
+void DataPartitioner::print_execution_summary() {
+  auto num_iterations = _current_iteration;
+  printf("************** EXECUTION SUMMARY **************** \n");
+  printf("%-25s :: total: %10lf, avg: %10lf\n", "First Pass",
+	 first_pass_duration, first_pass_duration / num_iterations);
+  printf("%-25s :: total: %10lf, avg: %10lf\n", "Second Pass",
+	 second_pass_duration, second_pass_duration / num_iterations);
+  printf("%-25s :: total: %10lf, avg: %10lf\n", "Third Pass",
+	 third_pass_duration, third_pass_duration / num_iterations);
+  printf("%-25s :: total: %10lf, avg: %10lf\n", "Partition",
+	 partition_duration, partition_duration / num_iterations);
+  printf("************************************************* \n");
+}
+
+void DataPartitioner::print_partition_summary() {
+ printf("******** PARTITION SUMMARY AT ITERATION %d ***********\n",
+         _current_iteration);
+  printf("%-30s: %lu\n", "Num Vertices", _current_total_num_vertices);
+  printf("%-30s: %lu\n", "Num Edges", _current_total_num_edges);
+  printf("%-30s: %-10u, Avg: %-10lf\n", "Cross-Core Accesses",
+         total_cross_core_access, (double)total_cross_core_access / (double)_max_size);
+  printf("%-30s: %u\n", "Min Data Degree", min_data_degree);
+  printf("%-30s: %u\n", "Max Data Degree", max_data_degree);
+  printf("%-30s: %u\n", "Min Cross Data Degree", min_cross_data_degree);
+  printf("%-30s: %u\n", "Max Cross Data Degree", max_cross_data_degree);
+  printf("%-30s: [", "Partition Sizes");
+  for (auto i = 0u; i < _num_arrays; i++) {
+    auto diff = _tmp_queries[i].size() - _tmp_array_sizes[i];
+    if (i + 1 < _num_arrays)
+      printf("%d, ", static_cast<int32>(diff));
+    else
+      printf("%d", static_cast<int32>(diff));
+  }
+  printf("]\n");
 }

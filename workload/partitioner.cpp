@@ -235,7 +235,6 @@ void *ParallelWorkloadPartitioner::parallel_create_graph_helper(void *data) {
 
   auto num_global_nodes = partitioner->_max_size;
   auto num_local_nodes = num_global_nodes / partitioner->_parallelism;
-  ;
 
   auto start = thread_id * num_local_nodes;
   auto end = (thread_id + 1) * num_local_nodes;

@@ -29,12 +29,11 @@ void DataPartitioner::initialize(BaseQueryMatrix *queries, uint64_t max_size,
   _current_total_num_edges = 0;
   _current_total_num_vertices = 0;
 
-  _current_parts = reinterpret_cast<idx_t *>(malloc(sizeof(idx_t) * _max_size));
-  for (auto i = 0u; i < _max_size; i++) {
-    _current_parts[i] = -1;
-  }
+  first_pass_duration = 0.0;
+  second_pass_duration = 0.0;
+  third_pass_duration = 0.0;
+  partition_duration = 0.0;
 }
-
 
 void DataPartitioner::write_to_files() {
   for (auto i = 0u; i < _num_arrays; i++) {
@@ -46,7 +45,6 @@ void DataPartitioner::write_to_files() {
     fclose(file);
   }
 }
-
 
 void DataPartitioner::partition() {
   while (_current_array_start_offset < _array_size) {
@@ -60,4 +58,52 @@ void DataPartitioner::partition() {
       _tmp_array_sizes[i] = (uint32_t)_tmp_queries[i].size();
     }
   }
+}
+
+void DataPartitioner::write_post_partition_file() {
+  char file_name[100];
+  snprintf(file_name, sizeof(file_name), "post_partition_%d.txt",
+           _current_iteration);
+
+  FILE *post_partition_file = fopen(file_name, "w");
+  for (auto i = 0u; i < _num_arrays; i++) {
+    auto num_queries = _tmp_queries[i].size() - _tmp_array_sizes[i];
+    fprintf(post_partition_file, "Core\t:%d\tNum Queries\t:%ld\n",
+            static_cast<int32>(i), static_cast<int64>(num_queries));
+
+    for (auto j = _tmp_array_sizes[i]; j < (uint32_t)_tmp_queries[i].size();
+         j++) {
+      auto query = reinterpret_cast<BaseQuery *>(_tmp_queries[i][j]);
+      fprintf(post_partition_file, "Transaction Id: (%d, %d)\n",
+              static_cast<int32>(i), static_cast<int32>(j));
+      print_query(post_partition_file, query);
+    }
+    fprintf(post_partition_file, "\n");
+  }
+
+  fflush(post_partition_file);
+  fclose(post_partition_file);
+}
+
+void DataPartitioner::write_pre_partition_file() {
+  char file_name[100];
+  snprintf(file_name, sizeof(file_name), "pre_partition_%d.txt",
+           _current_iteration);
+
+  FILE *pre_partition_file = fopen(file_name, "w");
+  for (auto i = 0u; i < _num_arrays; i++) {
+    fprintf(pre_partition_file, "Core\t:%d\tNum Queries\t:%ld\n",
+            static_cast<int32>(i), static_cast<int64>(_max_size_per_array));
+    for (auto j = _current_iteration * _max_size_per_array;
+         j < (_current_iteration + 1) * _max_size_per_array; j++) {
+      BaseQuery *query;
+      _original_queries->get(i, j, &query);
+      fprintf(pre_partition_file, "Transaction Id: (%d, %d)\n",
+              static_cast<int32>(i), static_cast<int32>(j));
+      print_query(pre_partition_file, query);
+    }
+    fprintf(pre_partition_file, "\n");
+  }
+  fflush(pre_partition_file);
+  fclose(pre_partition_file);
 }

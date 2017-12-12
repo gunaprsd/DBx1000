@@ -68,6 +68,7 @@ public:
   friend class METISGraphPartitioner;
 };
 
+
 class METIS_CSRGraphCreator {
 public:
   void begin(uint32_t num_vertices) {

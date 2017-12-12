@@ -9,6 +9,7 @@
 #include "txn.h"
 #include "query.h"
 #include "thread.h"
+#include "data_partitioner.h"
 
 #ifndef BENCHMARKS_YCSB_YCSB_H_
 #define BENCHMARKS_YCSB_YCSB_H_
@@ -118,6 +119,47 @@ class YCSBWorkloadPartitioner : public ParallelWorkloadPartitioner {
   ycsb_query * * _partitioned_queries;
   DataInfo * _data_info;
   uint32_t _data_info_size;
+};
+
+struct TxnDataInfo
+{
+		uint64_t epoch;
+		idx_t id;
+		uint64_t num_reads;
+		uint64_t num_writes;
+		vector<idx_t> txns;
+
+		idx_t compute_edge_weight() {
+			assert(false);
+			return 0;
+		}
+};
+
+class YCSBDataPartitioner : public DataPartitioner {
+public:
+    void initialize(BaseQueryMatrix * queries,
+                    uint64_t max_cluster_graph_size,
+                    uint32_t parallelism,
+                    const char * dest_folder_path) override;
+    void partition () override;
+protected:
+		void first_pass();
+		void second_pass();
+		void third_pass();
+		inline uint32_t get_hash(uint64_t key) {
+			assert(false);
+			return 0;
+		}
+		void partition_per_iteration() override;
+		void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
+		ycsb_query * * _partitioned_queries;
+
+		TxnDataInfo * _info_array;
+
+		vector<idx_t> vwgt;
+		vector<idx_t> adjwgt;
+		vector<idx_t> xadj;
+		vector<idx_t> adjncy;
 };
 
 class YCSBExecutor : public BenchmarkExecutor {

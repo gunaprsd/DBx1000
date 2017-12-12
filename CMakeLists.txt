@@ -80,7 +80,15 @@ SET (SOURCES_LIST tpcc/tpcc_helper.h
         workload/data_partitioner.cpp
         workload/generator.cpp
         workload/graph_partitioner.cpp
-        workload/partitioner.cpp)
+        workload/partitioner.cpp
+        ycsb/ycsb_workload.cpp
+        ycsb/ycsb_database.cpp
+        ycsb/ycsb_txn.cpp
+        ycsb/ycsb_data_partitioner.cpp
+        tpcc/tpcc_database.cpp
+        tpcc/tpcc_helper.cpp
+        tpcc/tpcc_txn.cpp
+        tpcc/tpcc_workload.cpp)
 
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/)

@@ -1,5 +1,4 @@
 // Copyright[2017] <Guna Prasaad>
-#include "parmetis.h"
 #include "graph_partitioner.h"
 
 void METISGraphPartitioner::compute_partitions(
@@ -41,6 +40,7 @@ void METISGraphPartitioner::compute_partitions(
                                      & objval,
                                      parts);
 
+		printf("Partitioning objective value: %ld\n", objval);
     switch (result) {
         case METIS_ERROR_INPUT  :   printf("Error in input!\n");
         exit(0);
@@ -87,64 +87,64 @@ void ParMETISGraphPartitioner::compute_partitions(
   delete[] data;
 }
 
-void *ParMETISGraphPartitioner::partition_helper(void *data) {
-  auto threadLocalData = reinterpret_cast<ThreadLocalData *>(data);
-  auto thread_id = (uint32_t)threadLocalData->fields[0];
-  auto parGraph = reinterpret_cast<ParMETIS_CSRGraph *>(
-                                         threadLocalData->fields[1]);
-  auto nparts = (idx_t) threadLocalData->fields[2];
-  auto parts = reinterpret_cast<idx_t *>(threadLocalData->fields[3]);
-
-  auto graph = parGraph->graphs[thread_id];
-  idx_t wgtflag = 3;
-  idx_t numflag = 0;
-  auto tpwgts = new real_t[nparts];
-  for (auto i = 0; i < nparts; ++i) {
-    tpwgts[i] = 1.0;
-  }
-
-  auto ubvec = new real_t[1];
-  ubvec[0] = 1.0 + ((real_t)g_ufactor/1000.0);
-  auto options = new idx_t[3];
-  options[0] = 0;  // default config
-  options[1] = 0;
-  options[2] = 123;
-
-  idx_t edgecut = 0;
-
-  int result = ParMETIS_V3_PartKway(parGraph->vtxdist,
-                              graph->xadj,
-                              graph->adjncy,
-                              graph->vwgt,
-                              graph->adjwgt,
-                              & wgtflag,
-                              & numflag,
-                              & graph->ncon,
-                              & nparts,
-                              tpwgts,
-                              ubvec,
-                              options,
-                              & edgecut,
-                              parts,
-			      (MPI_Comm *)MPI_COMM_NULL);
-
-  switch (result) {
-    case METIS_ERROR_INPUT  :   printf("Error in input!\n");
-      exit(0);
-    case METIS_ERROR_MEMORY :   printf("Could not allocate required memory!\n");
-      exit(0);
-    case METIS_ERROR        :   printf("Unknown error\n");
-      exit(0);
-    default                 :   break;
-  }
-
-  for (auto i = 0u; i < parGraph->nvtxs_per_graph; ++i) {
-    assert(parts[i] != -1);
-  }
-
-  delete options;
-  return nullptr;
-}
+//void *ParMETISGraphPartitioner::partition_helper(void *data) {
+//  auto threadLocalData = reinterpret_cast<ThreadLocalData *>(data);
+//  auto thread_id = (uint32_t)threadLocalData->fields[0];
+//  auto parGraph = reinterpret_cast<ParMETIS_CSRGraph *>(
+//                                         threadLocalData->fields[1]);
+//  auto nparts = (idx_t) threadLocalData->fields[2];
+//  auto parts = reinterpret_cast<idx_t *>(threadLocalData->fields[3]);
+//
+//  auto graph = parGraph->graphs[thread_id];
+//  idx_t wgtflag = 3;
+//  idx_t numflag = 0;
+//  auto tpwgts = new real_t[nparts];
+//  for (auto i = 0; i < nparts; ++i) {
+//    tpwgts[i] = 1.0;
+//  }
+//
+//  auto ubvec = new real_t[1];
+//  ubvec[0] = 1.0 + ((real_t)g_ufactor/1000.0);
+//  auto options = new idx_t[3];
+//  options[0] = 0;  // default config
+//  options[1] = 0;
+//  options[2] = 123;
+//
+//  idx_t edgecut = 0;
+//
+//  int result = ParMETIS_V3_PartKway(parGraph->vtxdist,
+//                              graph->xadj,
+//                              graph->adjncy,
+//                              graph->vwgt,
+//                              graph->adjwgt,
+//                              & wgtflag,
+//                              & numflag,
+//                              & graph->ncon,
+//                              & nparts,
+//                              tpwgts,
+//                              ubvec,
+//                              options,
+//                              & edgecut,
+//                              parts,
+//                              nullptr);
+//
+//  switch (result) {
+//    case METIS_ERROR_INPUT  :   printf("Error in input!\n");
+//      exit(0);
+//    case METIS_ERROR_MEMORY :   printf("Could not allocate required memory!\n");
+//      exit(0);
+//    case METIS_ERROR        :   printf("Unknown error\n");
+//      exit(0);
+//    default                 :   break;
+//  }
+//
+//  for (auto i = 0u; i < parGraph->nvtxs_per_graph; ++i) {
+//    assert(parts[i] != -1);
+//  }
+//
+//  delete options;
+//  return nullptr;
+//}
 
 METIS_CSRGraph *
 METIS_CSRGraphCreator::convert_METIS_CSRGraph(

@@ -1,5 +1,6 @@
 // Copyright [2017] <Guna Prasaad>
 
+
 #include "global.h"
 #include "config.h"
 #include "thread.h"
@@ -7,17 +8,11 @@
 #include "mem_alloc.h"
 #include "tpcc.h"
 #include "ycsb.h"
-#include <mpi.h>
 
 void parser(int argc, char * *argv);
 
 int main(int argc, char* * argv) {
   parser(argc, argv);
-
-  int size, rank;
-  MPI_Init(& argc, & argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt);
   stats.init();
@@ -35,7 +30,7 @@ int main(int argc, char* * argv) {
   if (strcmp(g_benchmark, "ycsb") == 0) {
     generator = new YCSBWorkloadGenerator();
     loader = new YCSBWorkloadLoader();
-    partitioner = new YCSBWorkloadPartitioner();
+    //partitioner = new YCSBWorkloadPartitioner();
     executor = new YCSBExecutor();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     generator = new TPCCWorkloadGenerator();

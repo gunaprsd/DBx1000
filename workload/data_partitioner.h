@@ -12,11 +12,13 @@ public:
   virtual void initialize(BaseQueryMatrix *queries, uint64_t max_size,
                           uint32_t parallelism, const char *dest_folder_path);
   void write_to_files();
-  void partition();
+  virtual void partition();
 
 protected:
-  // Iteration sensitive -> depends on value of _current_iteration
-  void get_query(uint64_t qid, BaseQuery **query);
+	void write_pre_partition_file();
+	void write_post_partition_file();
+
+	void get_query(uint64_t qid, BaseQuery **query);
   uint32_t get_array_idx(uint64_t qid);
 
   uint32_t _parallelism;
@@ -30,7 +32,12 @@ protected:
   uint64_t _current_array_start_offset;
   uint64_t _current_total_num_edges;
   uint64_t _current_total_num_vertices;
-  idx_t *_current_parts;
+
+
+	double first_pass_duration;
+	double second_pass_duration;
+	double third_pass_duration;
+	double partition_duration;
 
   BaseQueryMatrix *_original_queries;
   vector<BaseQuery *> *_tmp_queries;

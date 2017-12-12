@@ -24,20 +24,20 @@ int main(int argc, char* * argv) {
 
   ParallelWorkloadGenerator * generator = nullptr;
   ParallelWorkloadLoader * loader = nullptr;
-  //ParallelWorkloadPartitioner * partitioner = nullptr;
-  DataPartitioner * data_partitioner = nullptr;
+  //ConflictGraphPartitioner * partitioner = nullptr;
+  AccessGraphPartitioner * data_partitioner = nullptr;
   BenchmarkExecutor * executor = nullptr;
 
   if (strcmp(g_benchmark, "ycsb") == 0) {
     generator = new YCSBWorkloadGenerator();
     loader = new YCSBWorkloadLoader();
-    //partitioner = new YCSBWorkloadPartitioner();
-    data_partitioner = new YCSBDataPartitioner();
+    //partitioner = new YCSBConflictGraphPartitioner();
+    data_partitioner = new YCSBAccessGraphPartitioner();
     executor = new YCSBExecutor();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     generator = new TPCCWorkloadGenerator();
     loader = new TPCCWorkloadLoader();
-    //partitioner = new TPCCWorkloadPartitioner();
+    //partitioner = new TPCCConflictGraphPartitioner();
     executor = new TPCCExecutor();
   }
 

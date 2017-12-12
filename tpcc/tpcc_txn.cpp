@@ -398,3 +398,26 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params * query) {
     assert( rc == RCOK );
     return finish(rc);
 }
+
+
+
+void TPCCExecutor::initialize(uint32_t num_threads, const char * path) {
+    BenchmarkExecutor::initialize(num_threads, path);
+
+    //Build database in parallel
+    _db = new TPCCDatabase();
+    _db->initialize(INIT_PARALLELISM);
+    _db->load();
+
+    //Load workload in parallel
+    _loader = new TPCCWorkloadLoader();
+    _loader->initialize(num_threads, _path);
+    _loader->load();
+
+    //Initialize each thread
+    for(uint32_t i = 0; i < _num_threads; i++) {
+        _threads[i].initialize(i, _db, _loader->get_queries_list(i), true);
+    }
+}
+
+

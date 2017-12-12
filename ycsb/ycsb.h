@@ -1,11 +1,11 @@
 // Copyright[2017] <Guna Prasaad>
 
-#include "data_partitioner.h"
+#include "access_graph_partitioner.h"
 #include "database.h"
 #include "generator.h"
 #include "global.h"
 #include "helper.h"
-#include "partitioner.h"
+#include "conflict_graph_partitioner.h"
 #include "query.h"
 #include "thread.h"
 #include "txn.h"
@@ -76,7 +76,7 @@ protected:
   static double zeta_2_theta;
   static uint64_t the_n;
 
-  friend class YCSBWorkloadPartitioner;
+  friend class YCSBConflictGraphPartitioner;
 };
 
 class YCSBWorkloadLoader : public ParallelWorkloadLoader {
@@ -97,7 +97,7 @@ struct DataInfo {
   uint64_t num_reads;
 };
 
-class YCSBWorkloadPartitioner : public ParallelWorkloadPartitioner {
+class YCSBConflictGraphPartitioner : public ConflictGraphPartitioner {
 public:
   void initialize(BaseQueryMatrix *queries, uint64_t max_cluster_graph_size,
                   uint32_t parallelism, const char *dest_folder_path) override;
@@ -118,15 +118,7 @@ protected:
   uint32_t _data_info_size;
 };
 
-struct TxnDataInfo {
-  uint64_t epoch = UINT64_MAX;
-  idx_t id = -1;
-  uint64_t num_reads = 0;
-  uint64_t num_writes = 0;
-  vector<idx_t> txns;
-};
-
-class YCSBDataPartitioner : public DataPartitioner {
+class YCSBAccessGraphPartitioner : public AccessGraphPartitioner {
 public:
   void initialize(BaseQueryMatrix *queries, uint64_t max_cluster_graph_size,
                   uint32_t parallelism, const char *dest_folder_path) override;
@@ -139,9 +131,10 @@ protected:
   inline uint32_t get_hash(uint64_t key) { return static_cast<uint32_t>(key); }
   void partition_per_iteration() override;
   void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
+
   ycsb_query **_partitioned_queries;
 
-  TxnDataInfo *_info_array;
+  TxnDataInfo * _info_array;
 
   vector<idx_t> vwgt;
   vector<idx_t> adjwgt;

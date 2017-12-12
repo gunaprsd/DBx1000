@@ -1,12 +1,12 @@
 // Copyright[2017] <Guna Prasaad>
 
-#include "partitioner.h"
+#include "conflict_graph_partitioner.h"
 #include "global.h"
 #include "helper.h"
 #include "query.h"
 #include <stdint.h>
 
-void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix *queries,
+void ConflictGraphPartitioner::initialize(BaseQueryMatrix *queries,
                                              uint64_t max_size,
                                              uint32_t parallelism,
                                              const char *dest_folder_path) {
@@ -48,7 +48,7 @@ void ParallelWorkloadPartitioner::initialize(BaseQueryMatrix *queries,
   }
 }
 
-void ParallelWorkloadPartitioner::partition() {
+void ConflictGraphPartitioner::partition() {
   while (_array_iter_start_offset < _array_size) {
     _total_num_edges = 0;
     _total_pre_cross_core_edges = 0;
@@ -69,7 +69,7 @@ void ParallelWorkloadPartitioner::partition() {
   }
 }
 
-void ParallelWorkloadPartitioner::write_to_files() {
+void ConflictGraphPartitioner::write_to_files() {
   for (auto i = 0u; i < _num_arrays; i++) {
     char file_name[200];
     get_workload_file_name(_folder_path, i, file_name);
@@ -80,7 +80,7 @@ void ParallelWorkloadPartitioner::write_to_files() {
   }
 }
 
-void ParallelWorkloadPartitioner::partition_per_iteration() {
+void ConflictGraphPartitioner::partition_per_iteration() {
   uint64_t start_time, end_time;
   double duration;
 
@@ -190,7 +190,7 @@ void ParallelWorkloadPartitioner::partition_per_iteration() {
  * is just a concatenation.
  * @return
  */
-ParMETIS_CSRGraph *ParallelWorkloadPartitioner::parallel_create_graph() {
+ParMETIS_CSRGraph *ConflictGraphPartitioner::parallel_create_graph() {
   auto threads = new pthread_t[_parallelism];
   auto data = new ThreadLocalData[_parallelism];
   auto creators = new METIS_CSRGraphCreator[_parallelism];
@@ -225,9 +225,9 @@ ParMETIS_CSRGraph *ParallelWorkloadPartitioner::parallel_create_graph() {
   return graph->get_graph();
 }
 
-void *ParallelWorkloadPartitioner::parallel_create_graph_helper(void *data) {
+void *ConflictGraphPartitioner::parallel_create_graph_helper(void *data) {
   auto threadLocalData = reinterpret_cast<ThreadLocalData *>(data);
-  auto partitioner = reinterpret_cast<ParallelWorkloadPartitioner *>(
+  auto partitioner = reinterpret_cast<ConflictGraphPartitioner *>(
       threadLocalData->fields[0]);
   auto thread_id = (uint32_t)threadLocalData->fields[1];
   auto creator =
@@ -276,7 +276,7 @@ void *ParallelWorkloadPartitioner::parallel_create_graph_helper(void *data) {
   return nullptr;
 }
 
-METIS_CSRGraph *ParallelWorkloadPartitioner::create_graph() {
+METIS_CSRGraph *ConflictGraphPartitioner::create_graph() {
   auto creator = new METIS_CSRGraphCreator();
   BaseQuery *q1, *q2;
   uint32_t t1, t2;
@@ -307,7 +307,7 @@ METIS_CSRGraph *ParallelWorkloadPartitioner::create_graph() {
   return creator->get_graph();
 }
 
-void ParallelWorkloadPartitioner::parallel_compute_post_stats() {
+void ConflictGraphPartitioner::parallel_compute_post_stats() {
   auto threads = new pthread_t[_parallelism];
   auto data = new ThreadLocalData[_parallelism];
   for (auto i = 0u; i < _parallelism; i++) {
@@ -326,9 +326,9 @@ void ParallelWorkloadPartitioner::parallel_compute_post_stats() {
   delete[] data;
 }
 
-void *ParallelWorkloadPartitioner::compute_statistics_helper(void *data) {
+void *ConflictGraphPartitioner::compute_statistics_helper(void *data) {
   auto threadLocalData = reinterpret_cast<ThreadLocalData *>(data);
-  auto partitioner = reinterpret_cast<ParallelWorkloadPartitioner *>(
+  auto partitioner = reinterpret_cast<ConflictGraphPartitioner *>(
       threadLocalData->fields[0]);
   auto thread_id = (uint32_t)threadLocalData->fields[1];
 
@@ -368,7 +368,7 @@ void *ParallelWorkloadPartitioner::compute_statistics_helper(void *data) {
   return nullptr;
 }
 
-void ParallelWorkloadPartitioner::compute_post_stats() {
+void ConflictGraphPartitioner::compute_post_stats() {
   BaseQuery *q1, *q2;
   idx_t t1, t2;
   for (auto i = 0u; i < _max_size; i++) {
@@ -390,11 +390,11 @@ void ParallelWorkloadPartitioner::compute_post_stats() {
   }
 }
 
-void ParallelWorkloadPartitioner::compute_data_info() {
+void ConflictGraphPartitioner::compute_data_info() {
   // Nothing to do in base class
 }
 
-void ParallelWorkloadPartitioner::write_pre_partition_file() {
+void ConflictGraphPartitioner::write_pre_partition_file() {
   char file_name[100];
   snprintf(file_name, sizeof(file_name), "pre_partition_%d.txt",
            _current_iteration);
@@ -417,7 +417,7 @@ void ParallelWorkloadPartitioner::write_pre_partition_file() {
   fclose(pre_partition_file);
 }
 
-void ParallelWorkloadPartitioner::write_post_partition_file() {
+void ConflictGraphPartitioner::write_post_partition_file() {
   char file_name[100];
   snprintf(file_name, sizeof(file_name), "post_partition_%d.txt",
            _current_iteration);
@@ -442,7 +442,7 @@ void ParallelWorkloadPartitioner::write_post_partition_file() {
   fclose(post_partition_file);
 }
 
-void ParallelWorkloadPartitioner::print_partition_summary() {
+void ConflictGraphPartitioner::print_partition_summary() {
   printf("******** PARTITION SUMMARY AT ITERATION %d ***********\n",
          _current_iteration);
   printf("%-30s: %lu\n", "Num Vertices", _max_size);
@@ -462,7 +462,7 @@ void ParallelWorkloadPartitioner::print_partition_summary() {
   printf("]\n");
 }
 
-void ParallelWorkloadPartitioner::print_execution_summary() {
+void ConflictGraphPartitioner::print_execution_summary() {
   auto num_iterations = _current_iteration + 1;
   printf("************** EXECUTION SUMMARY **************** \n");
   printf("%-25s :: total: %10lf, avg: %10lf\n", "Obtain Data Statistics",

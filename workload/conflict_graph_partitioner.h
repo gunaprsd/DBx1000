@@ -8,13 +8,13 @@
 #define WORKLOAD_PARTITIONER_H_
 
 /*
- * ParallelWorkloadPartitioner:
+ * ConflictGraphPartitioner:
  * ----------------------------
  * Partitions a given workload using the METIS graph partitioner
  * Any benchmark has to implement a compute weight function that is invoked
  * for every pair of transactions.
  */
-class ParallelWorkloadPartitioner {
+class ConflictGraphPartitioner {
 public:
   virtual void initialize(BaseQueryMatrix *queries, uint64_t max_size,
                           uint32_t parallelism, const char *dest_folder_path);
@@ -37,7 +37,7 @@ protected:
   static void *compute_statistics_helper(void *data);
 
   // Creating graphs for clustering
-  ParMETIS_CSRGraph *parallel_create_graph();
+  ParMETIS_CSRGraph * parallel_create_graph();
   METIS_CSRGraph *create_graph();
   static void *parallel_create_graph_helper(void *data);
 
@@ -83,7 +83,7 @@ protected:
   virtual void per_thread_write_to_file(uint32_t thread_id, FILE *file) = 0;
 };
 
-inline void ParallelWorkloadPartitioner::get_query(uint64_t qid,
+inline void ConflictGraphPartitioner::get_query(uint64_t qid,
                                                    BaseQuery **query) {
   auto array_idx = static_cast<uint32_t>(qid % _num_arrays);
   auto array_offset =
@@ -91,7 +91,7 @@ inline void ParallelWorkloadPartitioner::get_query(uint64_t qid,
   _orig_queries->get(array_idx, array_offset, query);
 }
 
-inline uint32_t ParallelWorkloadPartitioner::get_array_idx(uint64_t qid) {
+inline uint32_t ConflictGraphPartitioner::get_array_idx(uint64_t qid) {
   return static_cast<uint32_t>(qid % _num_arrays);
 }
 

@@ -1,6 +1,7 @@
 #ifndef DBX1000_TPCC_H
 #define DBX1000_TPCC_H
 
+#include "access_graph_partitioner.h"
 #include "global.h"
 #include "helper.h"
 #include "table.h"
@@ -9,7 +10,7 @@
 #include "thread.h"
 #include "query.h"
 #include "generator.h"
-#include "partitioner.h"
+#include "conflict_graph_partitioner.h"
 #include "tpcc_helper.h"
 #include "tpcc_const.h"
 
@@ -127,7 +128,7 @@ protected:
     uint32_t	*				_array_sizes;
 };
 
-class TPCCWorkloadPartitioner : public ParallelWorkloadPartitioner {
+class TPCCConflictGraphPartitioner : public ConflictGraphPartitioner {
 public:
     void initialize(BaseQueryMatrix * queries,
                     uint64_t max_cluster_graph_size,
@@ -205,6 +206,29 @@ private:
     }
 };
 
+class TPCCAccessGraphPartitioner : public AccessGraphPartitioner {
+public:
+    void initialize(BaseQueryMatrix *queries, uint64_t max_cluster_graph_size,
+                    uint32_t parallelism, const char *dest_folder_path) override;
+    void partition() override;
+protected:
+    void first_pass();
+    void second_pass();
+    void third_pass();
+    void compute_post_stats(idx_t * parts);
+    inline uint32_t get_hash(uint64_t key) { return static_cast<uint32_t>(key); }
+    void partition_per_iteration() override;
+    void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
+
+    tpcc_query **_partitioned_queries;
+
+    TxnDataInfo * _info_array;
+
+    vector<idx_t> vwgt;
+    vector<idx_t> adjwgt;
+    vector<idx_t> xadj;
+    vector<idx_t> adjncy;
+};
 class TPCCExecutor : public BenchmarkExecutor {
 public:
     void initialize(uint32_t num_threads, const char * path) override;

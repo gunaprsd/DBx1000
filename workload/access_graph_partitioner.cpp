@@ -1,8 +1,8 @@
 // Copyright [2017] <Guna Prasaad>
 
-#include "data_partitioner.h"
+#include "access_graph_partitioner.h"
 
-void DataPartitioner::initialize(BaseQueryMatrix *queries, uint64_t max_size,
+void AccessGraphPartitioner::initialize(BaseQueryMatrix *queries, uint64_t max_size,
                                  uint32_t parallelism,
                                  const char *dest_folder_path) {
   _original_queries = queries;
@@ -33,14 +33,15 @@ void DataPartitioner::initialize(BaseQueryMatrix *queries, uint64_t max_size,
   second_pass_duration = 0.0;
   third_pass_duration = 0.0;
   partition_duration = 0.0;
-  total_cross_core_access = 0.0;
+
+  total_cross_core_access = 0;
   min_data_degree = 0;
   max_data_degree = 0;
   min_cross_data_degree = 0;
   max_cross_data_degree = 0;
 }
 
-void DataPartitioner::write_to_files() {
+void AccessGraphPartitioner::write_to_files() {
   for (auto i = 0u; i < _num_arrays; i++) {
     char file_name[200];
     get_workload_file_name(_folder_path, i, file_name);
@@ -51,7 +52,7 @@ void DataPartitioner::write_to_files() {
   }
 }
 
-void DataPartitioner::partition() {
+void AccessGraphPartitioner::partition() {
   while (_current_array_start_offset < _array_size) {
     // Partition a graph of max_size
     partition_per_iteration();
@@ -65,7 +66,7 @@ void DataPartitioner::partition() {
   }
 }
 
-void DataPartitioner::write_post_partition_file() {
+void AccessGraphPartitioner::debug_write_post_partition_file() {
   char file_name[100];
   snprintf(file_name, sizeof(file_name), "post_partition_%d.txt",
            _current_iteration);
@@ -90,7 +91,7 @@ void DataPartitioner::write_post_partition_file() {
   fclose(post_partition_file);
 }
 
-void DataPartitioner::write_pre_partition_file() {
+void AccessGraphPartitioner::debug_write_pre_partition_file() {
   char file_name[100];
   snprintf(file_name, sizeof(file_name), "pre_partition_%d.txt",
            _current_iteration);
@@ -114,7 +115,7 @@ void DataPartitioner::write_pre_partition_file() {
 }
 
 
-void DataPartitioner::print_execution_summary() {
+void AccessGraphPartitioner::print_execution_summary() {
   auto num_iterations = _current_iteration;
   printf("************** EXECUTION SUMMARY **************** \n");
   printf("%-25s :: total: %10lf, avg: %10lf\n", "First Pass",
@@ -128,7 +129,7 @@ void DataPartitioner::print_execution_summary() {
   printf("************************************************* \n");
 }
 
-void DataPartitioner::print_partition_summary() {
+void AccessGraphPartitioner::print_partition_summary() {
  printf("******** PARTITION SUMMARY AT ITERATION %d ***********\n",
          _current_iteration);
   printf("%-30s: %lu\n", "Num Vertices", _current_total_num_vertices);

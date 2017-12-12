@@ -20,6 +20,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <math.h>
+#include <metis.h>
 
 #include "pthread.h"
 #include "config.h"
@@ -175,6 +176,15 @@ struct ThreadLocalData {
 
 class BaseQuery;
 void print_query(FILE * file, BaseQuery * query);
+
+
+struct TxnDataInfo {
+		uint64_t epoch = UINT64_MAX;
+		idx_t id = -1;
+		uint64_t num_reads = 0;
+		uint64_t num_writes = 0;
+		vector<idx_t> txns;
+};
 
 
 /* PRE_PROCESSING */

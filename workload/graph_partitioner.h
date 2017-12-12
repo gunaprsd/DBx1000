@@ -192,9 +192,8 @@ class ParMETISGraphPartitioner {
 public:
   static void compute_partitions(ParMETIS_CSRGraph *parGraph, idx_t nparts,
                                  idx_t *parts);
-
 protected:
-  static void *partition_helper(void *data);
+    static void * partition_helper(void * data);
 };
 
 #endif // WORKLOAD_GRAPH_PARTITIONER_H_

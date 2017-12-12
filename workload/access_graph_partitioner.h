@@ -4,23 +4,24 @@
 #include "query.h"
 #include <vector>
 
-#ifndef WORKLOAD_DATA_PARTITIONER_H_
-#define WORKLOAD_DATA_PARTITIONER_H_
+#ifndef WORKLOAD_DATA_GRAPH_PARTITIONER_H_
+#define WORKLOAD_DATA_GRAPH_PARTITIONER_H_
 
-class DataPartitioner {
+class AccessGraphPartitioner {
 public:
   virtual void initialize(BaseQueryMatrix *queries, uint64_t max_size,
                           uint32_t parallelism, const char *dest_folder_path);
-  void write_to_files();
   virtual void partition();
+  void write_to_files();
   void print_execution_summary();
   void print_partition_summary();
-protected:
-	void write_pre_partition_file();
-	void write_post_partition_file();
 
-	void get_query(uint64_t qid, BaseQuery **query);
-  uint32_t get_array_idx(uint64_t qid);
+protected:
+	void debug_write_pre_partition_file();
+	void debug_write_post_partition_file();
+
+	void internal_get_query(uint64_t qid, BaseQuery **query);
+  uint32_t internal_get_array_idx(uint64_t qid);
 
   uint32_t _parallelism;
   uint32_t _num_arrays;
@@ -39,6 +40,7 @@ protected:
 	double second_pass_duration;
 	double third_pass_duration;
 	double partition_duration;
+
 	uint32_t total_cross_core_access;
 	uint32_t min_data_degree;
 	uint32_t max_data_degree;
@@ -54,14 +56,14 @@ protected:
   virtual void per_thread_write_to_file(uint32_t thread_id, FILE *file) = 0;
 };
 
-inline void DataPartitioner::get_query(uint64_t qid, BaseQuery **query) {
+inline void AccessGraphPartitioner::internal_get_query(uint64_t qid, BaseQuery **query) {
   auto array_idx = static_cast<uint32_t>(qid % _num_arrays);
   auto array_offset =
       static_cast<uint32_t>((qid / _num_arrays) + _current_array_start_offset);
   _original_queries->get(array_idx, array_offset, query);
 }
 
-inline uint32_t DataPartitioner::get_array_idx(uint64_t qid) {
+inline uint32_t AccessGraphPartitioner::internal_get_array_idx(uint64_t qid) {
   return static_cast<uint32_t>(qid % _num_arrays);
 }
-#endif // WORKLOAD_DATA_PARTITIONER_H_
+#endif // WORKLOAD_DATA_GRAPH_PARTITIONER_H_

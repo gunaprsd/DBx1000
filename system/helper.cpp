@@ -133,7 +133,7 @@ void check_and_init_variables() {
     if (strcmp(g_benchmark_tag, "low") == 0) {
       g_zipf_theta = 0;
       g_read_perc = 0.9;
-      g_max_nodes_for_clustering = 128 * 1024;
+      g_max_nodes_for_clustering = 1024 * 1024;
       g_queries_per_thread = g_max_nodes_for_clustering / g_thread_cnt;
     } else if (strcmp(g_benchmark_tag, "medium") == 0) {
       g_zipf_theta = 0.8;
@@ -143,7 +143,7 @@ void check_and_init_variables() {
     } else if (strcmp(g_benchmark_tag, "high") == 0) {
       g_zipf_theta = 0.9;
       g_read_perc = 0.5;
-      g_max_nodes_for_clustering = 128 * 1024;
+      g_max_nodes_for_clustering = 1024 * 1024;
       g_queries_per_thread = g_max_nodes_for_clustering / g_thread_cnt;
     } else {
       assert(false);

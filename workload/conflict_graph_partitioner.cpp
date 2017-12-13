@@ -74,6 +74,10 @@ void ConflictGraphPartitioner::write_to_files() {
     char file_name[200];
     get_workload_file_name(_folder_path, i, file_name);
     FILE *file = fopen(file_name, "w");
+    if(file == nullptr) {
+      printf("Unable to open file %s\n", file_name);
+      exit(0);
+    }
     per_thread_write_to_file(i, file);
     fflush(file);
     fclose(file);

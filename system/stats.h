@@ -1,4 +1,6 @@
-#pragma once 
+#pragma once
+#include "global.h"
+#include "helper.h"
 
 class Stats_thd {
 public:
@@ -22,7 +24,7 @@ public:
 	uint64_t debug3;
 	uint64_t debug4;
 	uint64_t debug5;
-	
+
 	uint64_t latency;
 	uint64_t * all_debug1;
 	uint64_t * all_debug2;
@@ -43,15 +45,15 @@ class Stats {
 public:
 	// PER THREAD statistics
 	Stats_thd ** _stats;
-	// stats are first written to tmp_stats, if the txn successfully commits, 
+	// stats are first written to tmp_stats, if the txn successfully commits,
 	// copy the values in tmp_stats to _stats
 	Stats_tmp ** tmp_stats;
-	
+
 	// GLOBAL statistics
 	double dl_detect_time;
 	double dl_wait_time;
 	uint64_t cycle_detect;
-	uint64_t deadlock;	
+	uint64_t deadlock;
 
 	void init();
 	void init(uint64_t thread_id);

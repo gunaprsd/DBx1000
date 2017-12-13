@@ -1,24 +1,24 @@
 #include "global.h"
-#include "mem_alloc.h"
-#include "stats.h"
 #include "dl_detect.h"
 #include "manager.h"
-#include "query.h"
-#include "plock.h"
+#include "mem_alloc.h"
 #include "occ.h"
+#include "plock.h"
+#include "query.h"
+#include "stats.h"
+#include "tpcc.h"
 #include "vll.h"
 #include "ycsb.h"
-#include "tpcc.h"
 
 mem_alloc mem_allocator;
 Stats stats;
 DL_detect dl_detector;
-Manager * glob_manager;
+Manager *glob_manager;
 Plock part_lock_man;
 OptCC occ_man;
 #if CC_ALG == VLL
 VLLMan vll_man;
-#endif 
+#endif
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
@@ -55,12 +55,10 @@ UInt32 g_req_per_query = REQ_PER_QUERY;
 UInt32 g_field_per_tuple = FIELD_PER_TUPLE;
 UInt32 g_init_parallelism = INIT_PARALLELISM;
 
-
-
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;
 bool g_wh_update = WH_UPDATE;
-char * output_file = NULL;
+char *output_file = NULL;
 
 double g_contention_perc = CONTENTION_PERC;
 UInt32 g_pos_in_txn = POS_IN_TXN;
@@ -71,62 +69,61 @@ map<string, string> g_params;
 #if TPCC_SMALL
 UInt32 g_max_items = 10000;
 UInt32 g_cust_per_dist = 2000;
-#else 
+#else
 UInt32 g_max_items = 100000;
 UInt32 g_cust_per_dist = 3000;
 #endif
 
-
-void print_ycsb_query(FILE * file, ycsb_query * query) {
-	for(uint64_t k = 0; k < query->params.request_cnt; k++) {
-		fprintf(file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
-	}
+void print_ycsb_query(FILE *file, ycsb_query *query) {
+  for (uint64_t k = 0; k < query->params.request_cnt; k++) {
+    fprintf(file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
+  }
 }
 
-void print_tpcc_query(FILE * file, tpcc_query * query) {
-	if(query->type == TPCC_PAYMENT_QUERY) {
-		auto params = (tpcc_payment_params *)(& query->params);
-		fprintf(file, "\tw_id\t:%lu\n", params->w_id);
-		fprintf(file, "\td_id\t:%lu\n", params->d_id);
-		fprintf(file, "\tc_id\t:%lu\n", params->c_id);
-		fprintf(file, "\td_w_id\t:%lu\n", params->d_w_id);
-		fprintf(file, "\tc_w_id\t:%lu\n", params->c_w_id);
-		fprintf(file, "\tc_d_id\t:%lu\n", params->c_d_id);
-		fprintf(file, "\tc_last\t:%s\n", params->c_last);
-		fprintf(file, "\th_amount\t:%lf\n", params->h_amount);
-	} else if(query->type == TPCC_NEW_ORDER_QUERY) {
-		auto params = (tpcc_new_order_params *)(& query->params);
-		fprintf(file, "\tw_id\t:%lu\n", params->w_id);
-		fprintf(file, "\td_id\t:%lu\n", params->d_id);
-		fprintf(file, "\tc_id\t:%lu\n", params->c_id);
-		fprintf(file, "\tol_cnt\t:%lu\n", params->ol_cnt);
-		fprintf(file, "\to_entry_d\t:%lu\n", params->o_entry_d);
-		for(uint32_t i = 0; i < params->ol_cnt; i++) {
-			fprintf(file, "\t\tol_i_id\t:%lu\n", params->items[i].ol_i_id);
-			fprintf(file, "\t\tol_supply_w_id\t:%lu\n", params->items[i].ol_supply_w_id);
-			fprintf(file, "\t\tol_quantity\t:%lu\n", params->items[i].ol_quantity);
-		}
-	}
+void print_tpcc_query(FILE *file, tpcc_query *query) {
+  if (query->type == TPCC_PAYMENT_QUERY) {
+    auto params = (tpcc_payment_params *)(&query->params);
+    fprintf(file, "\tw_id\t:%lu\n", params->w_id);
+    fprintf(file, "\td_id\t:%lu\n", params->d_id);
+    fprintf(file, "\tc_id\t:%lu\n", params->c_id);
+    fprintf(file, "\td_w_id\t:%lu\n", params->d_w_id);
+    fprintf(file, "\tc_w_id\t:%lu\n", params->c_w_id);
+    fprintf(file, "\tc_d_id\t:%lu\n", params->c_d_id);
+    fprintf(file, "\tc_last\t:%s\n", params->c_last);
+    fprintf(file, "\th_amount\t:%lf\n", params->h_amount);
+  } else if (query->type == TPCC_NEW_ORDER_QUERY) {
+    auto params = (tpcc_new_order_params *)(&query->params);
+    fprintf(file, "\tw_id\t:%lu\n", params->w_id);
+    fprintf(file, "\td_id\t:%lu\n", params->d_id);
+    fprintf(file, "\tc_id\t:%lu\n", params->c_id);
+    fprintf(file, "\tol_cnt\t:%lu\n", params->ol_cnt);
+    fprintf(file, "\to_entry_d\t:%lu\n", params->o_entry_d);
+    for (uint32_t i = 0; i < params->ol_cnt; i++) {
+      fprintf(file, "\t\tol_i_id\t:%lu\n", params->items[i].ol_i_id);
+      fprintf(file, "\t\tol_supply_w_id\t:%lu\n",
+              params->items[i].ol_supply_w_id);
+      fprintf(file, "\t\tol_quantity\t:%lu\n", params->items[i].ol_quantity);
+    }
+  }
 }
 
-void print_query(FILE * file, BaseQuery * query) {
-	switch(query->type) {
-		case YCSB_QUERY:
-			print_ycsb_query(file, (ycsb_query *)query);
-			break;
-		case TPCC_NEW_ORDER_QUERY:
-	case TPCC_PAYMENT_QUERY:
-			print_tpcc_query(file, (tpcc_query *)query);
-			break;
-		default:
-			assert(false);
-	}
+void print_query(FILE *file, BaseQuery *query) {
+  switch (query->type) {
+  case YCSB_QUERY:
+    print_ycsb_query(file, (ycsb_query *)query);
+    break;
+  case TPCC_NEW_ORDER_QUERY:
+  case TPCC_PAYMENT_QUERY:
+    print_tpcc_query(file, (tpcc_query *)query);
+    break;
+  default:
+    assert(false);
+  }
 }
-
 
 uint64_t g_queries_per_thread = MAX_TXN_PER_PART;
 uint64_t g_max_nodes_for_clustering = MAX_NODES_FOR_CLUSTERING;
 TaskType g_task_type = GENERATE;
-char * g_benchmark = nullptr;
-char * g_benchmark_tag = nullptr;
-int    g_ufactor = -1;
+char *g_benchmark = nullptr;
+char *g_benchmark_tag = nullptr;
+int g_ufactor = -1;

@@ -148,7 +148,6 @@ void *YCSBConflictGraphPartitioner::compute_data_info_helper(void *data) {
   return nullptr;
 }
 
-
 void YCSBAccessGraphPartitioner::initialize(BaseQueryMatrix *queries,
                                             uint64_t max_cluster_graph_size,
                                             uint32_t parallelism,

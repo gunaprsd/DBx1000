@@ -6,12 +6,12 @@
 /***********************************************/
 #define NOGRAPHITE 1
 #define THREAD_CNT 4
-#define PART_CNT 1
+#define PART_CNT 2
 // each transaction only accesses 1 virtual compute_partitions. But the lock/ts
 // manager and index are not aware of such partitioning. VIRTUAL_PART_CNT
 // describes the request distribution and is only used to generate queries. For
 // HSTORE, VIRTUAL_PART_CNT should be the same as PART_CNT.
-#define VIRTUAL_PART_CNT 1
+#define VIRTUAL_PART_CNT 2
 #define PAGE_SIZE 4096
 #define CL_SIZE 64
 // CPU_FREQ is used to get accurate timing info
@@ -54,8 +54,8 @@
 // per-row lock/ts management or central lock/ts management
 #define CENTRAL_MAN false
 #define BUCKET_CNT 31
-#define ABORT_PENALTY 100000
-#define ABORT_BUFFER_SIZE 10
+#define ABORT_PENALTY 10000
+#define ABORT_BUFFER_SIZE 100
 #define ABORT_BUFFER_ENABLE true
 // [ INDEX ]
 #define ENABLE_LATCH false
@@ -137,7 +137,7 @@
 #define PERC_MULTI_PART 1
 #define REQ_PER_QUERY 16
 #define FIELD_PER_TUPLE 10
-#define MAX_REQ_PER_QUERY 16
+#define MAX_REQ_PER_QUERY 20
 
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory

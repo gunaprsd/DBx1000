@@ -48,6 +48,7 @@ void YCSBWorkloadGenerator::gen_requests(uint32_t thread_id,
 
   uint64_t max_row_id = _config.table_size / _config.num_partitions;
   uint64_t req_id = 0;
+  auto part_id = _rand_generator.nextInt64(thread_id) % _config.num_partitions;
   for (uint32_t tmp = 0; tmp < MAX_REQ_PER_QUERY; tmp++) {
     assert(req_id < MAX_REQ_PER_QUERY);
     ycsb_request *req = &(query->params.requests[req_id]);
@@ -60,7 +61,8 @@ void YCSBWorkloadGenerator::gen_requests(uint32_t thread_id,
       req->rtype = WR;
     }
 
-    auto part_id = static_cast<uint64_t>(((double)tmp / (double)MAX_REQ_PER_QUERY) * parts.size());
+    auto part_idx = static_cast<uint64_t>(((double)tmp / (double)MAX_REQ_PER_QUERY) * parts.size());
+    assert(part_idx >= 0 && part_idx < num_parts);
     auto row_id = _zipf_generator.nextInt64(thread_id);
     assert(row_id < max_row_id);
     req->key = row_id * _config.num_partitions + part_id;

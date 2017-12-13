@@ -19,7 +19,7 @@ void Thread::initialize(uint32_t id,
     this->thread_id = id;
     this->db = db;
     this->query_queue = new ThreadQueue();
-    query_queue->initialize(id, query_list, true);
+    query_queue->initialize(id, query_list, ABORT_BUFFER_ENABLE);
 }
 
 RC Thread::run() {
@@ -152,4 +152,3 @@ void BenchmarkExecutor::initialize(uint32_t num_threads, const char *path) {
     _threads = (Thread *) _mm_malloc(sizeof(Thread) * _num_threads, 64);
     strcpy(_path, path);
 }
-

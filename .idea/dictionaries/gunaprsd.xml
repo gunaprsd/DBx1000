@@ -31,6 +31,8 @@
       <w>sigmod</w>
       <w>tictoc</w>
       <w>tpwgts</w>
+      <w>txncnt</w>
+      <w>txnids</w>
       <w>ubvec</w>
       <w>vals</w>
       <w>vsize</w>

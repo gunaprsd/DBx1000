@@ -39,7 +39,7 @@ row_t::switch_schema(table_t * host_table) {
 
 void row_t::init_manager(row_t * row) {
 #if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE
-    manager = (Row_lock *) mem_allocator.alloc(sizeof(Row_lock), _part_id);
+    manager = (RowLock *) mem_allocator.alloc(sizeof(RowLock), _part_id);
 #elif CC_ALG == TIMESTAMP
     manager = (Row_ts *) mem_allocator.alloc(sizeof(Row_ts), _part_id);
 #elif CC_ALG == MVCC
@@ -133,6 +133,7 @@ void row_t::free_row() {
 }
 
 RC row_t::get_row(access_t type, txn_man * txn, row_t *& row) {
+
 	RC rc = RCOK;
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == NONE || CC_ALG == DL_DETECT
 	uint64_t thd_id = txn->get_thd_id();

@@ -23,7 +23,7 @@
 class table_t;
 class Catalog;
 class txn_man;
-class Row_lock;
+class RowLock;
 class Row_mvcc;
 class Row_hekaton;
 class Row_ts;
@@ -84,7 +84,7 @@ public:
 	void return_row(access_t type, txn_man * txn, row_t * row);
 	
   #if CC_ALG == DL_DETECT || CC_ALG == NO_WAIT || CC_ALG == WAIT_DIE || CC_ALG == NONE
-    Row_lock * manager;
+    RowLock * manager;
   #elif CC_ALG == TIMESTAMP
    	Row_ts * manager;
   #elif CC_ALG == MVCC

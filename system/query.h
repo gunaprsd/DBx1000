@@ -20,6 +20,7 @@ class BaseQueryList {
 public:
     virtual BaseQuery * next() = 0;
     virtual bool        done() = 0;
+		virtual void reset() = 0;
 };
 
 template<typename T>
@@ -43,6 +44,10 @@ public:
     bool done() override {
       return (current == num_queries);
     }
+
+		void reset() override {
+			current = 0;
+		};
 
 protected:
     Query<T> * queries;

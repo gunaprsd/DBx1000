@@ -7,6 +7,12 @@ void YCSBConflictGraphPartitioner::initialize(BaseQueryMatrix *queries,
                                               const char *dest_folder_path) {
   ConflictGraphPartitioner::initialize(queries, max_cluster_graph_size,
                                        parallelism, dest_folder_path);
+  auto cmd = new char[300];
+  snprintf(cmd, 300, "mkdir -p %s", dest_folder_path);
+  if(system(cmd)) {
+    printf("Folder %s created!", dest_folder_path);
+  }
+  delete cmd;
   _partitioned_queries = nullptr;
   _data_info_size = static_cast<uint32_t>(g_synth_table_size);
   _data_info = new DataInfo[_data_info_size];

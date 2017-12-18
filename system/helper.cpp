@@ -110,11 +110,10 @@ void get_workload_file_name(const char *base_file_name, uint32_t thread_id,
 char *get_benchmark_path(bool partitioned) {
   auto path = new char[200];
   if (partitioned)
-    snprintf(path, 200, "data/%s/%s/c%d/partitioned/u%d", g_benchmark,
-             g_benchmark_tag, static_cast<int>(g_thread_cnt),
-             static_cast<int>(g_ufactor));
+    snprintf(path, 200, "data/%s-%s-%s-c%d-partitioned-u%d", g_benchmark,
+             g_benchmark_tag, g_benchmark_tag2, static_cast<int>(g_thread_cnt), g_ufactor);
   else
-    snprintf(path, 200, "data/%s/%s/c%d/raw", g_benchmark, g_benchmark_tag,
+    snprintf(path, 200, "data/%s-%s-%s-c%d-raw", g_benchmark, g_benchmark_tag, g_benchmark_tag2,
              static_cast<int>(g_thread_cnt));
   return path;
 }
@@ -122,6 +121,7 @@ char *get_benchmark_path(bool partitioned) {
 void check_and_init_variables() {
   assert(g_benchmark != nullptr);
   assert(g_benchmark_tag != nullptr);
+	assert(g_benchmark_tag2 != nullptr);
   assert((g_task_type == PARTITION_DATA || g_task_type == PARTITION_CONFLICT ||
           g_task_type == EXECUTE_PARTITIONED)
              ? g_ufactor != -1
@@ -133,30 +133,78 @@ void check_and_init_variables() {
     if (strcmp(g_benchmark_tag, "low") == 0) {
       g_zipf_theta = 0;
       g_read_perc = 0.9;
-      g_max_nodes_for_clustering = 1024 * 1024;
-      g_queries_per_thread = g_max_nodes_for_clustering / g_thread_cnt;
+      g_size = 1024 * 1024;
     } else if (strcmp(g_benchmark_tag, "medium") == 0) {
       g_zipf_theta = 0.8;
       g_read_perc = 0.9;
-      g_max_nodes_for_clustering = 1024 * 1024;
-      g_queries_per_thread = g_max_nodes_for_clustering / g_thread_cnt;
+      g_size = 1024 * 1024;
     } else if (strcmp(g_benchmark_tag, "high") == 0) {
       g_zipf_theta = 0.9;
       g_read_perc = 0.5;
-      g_max_nodes_for_clustering = 1024 * 1024;
-      g_queries_per_thread = g_max_nodes_for_clustering / g_thread_cnt;
+      g_size = 1024 * 1024;
     } else {
       assert(false);
     }
+    g_size_per_thread = g_size / g_thread_cnt;
+
+    if (strcmp(g_benchmark_tag2, "sp-plc") == 0) {
+      g_perc_multi_part = 0;
+      g_part_cnt = g_thread_cnt / 2;
+    } else if (strcmp(g_benchmark_tag2, "sp-pec") == 0) {
+      g_perc_multi_part = 0;
+      g_part_cnt = g_thread_cnt;
+    } else if (strcmp(g_benchmark_tag2, "sp-pgc") == 0) {
+      g_perc_multi_part = 0;
+      g_part_cnt = g_thread_cnt * 4;
+    } else {
+      double correlation = 0;
+      g_perc_multi_part = 1;
+      if (strcmp(g_benchmark_tag2, "mp-lr-lc") == 0) {
+        g_remote_perc = 0.1;
+        correlation = 0.1;
+      } else if (strcmp(g_benchmark_tag2, "mp-lr-mc") == 0) {
+        g_remote_perc = 0.1;
+        correlation = 0.5;
+      } else if (strcmp(g_benchmark_tag2, "mp-lr-hc") == 0) {
+        g_remote_perc = 0.1;
+        correlation = 0.9;
+      } else if (strcmp(g_benchmark_tag2, "mp-mr-lc") == 0) {
+        g_remote_perc = 0.5;
+        correlation = 0.1;
+      } else if (strcmp(g_benchmark_tag2, "mp-mr-mc") == 0) {
+        g_remote_perc = 0.5;
+        correlation = 0.5;
+      } else if (strcmp(g_benchmark_tag2, "mp-mr-hc") == 0) {
+        g_remote_perc = 0.5;
+        correlation = 0.9;
+      } else if (strcmp(g_benchmark_tag2, "mp-hr-lc") == 0) {
+        g_remote_perc = 0.8;
+        correlation = 0.1;
+      } else if (strcmp(g_benchmark_tag2, "mp-hr-mc") == 0) {
+        g_remote_perc = 0.8;
+        correlation = 0.5;
+      } else if (strcmp(g_benchmark_tag2, "mp-hr-hc") == 0) {
+        g_remote_perc = 0.8;
+        correlation = 0.9;
+      } else {
+        assert(false);
+      }
+
+      g_part_cnt = g_thread_cnt * 8;
+      g_local_partitions = g_part_cnt / g_thread_cnt;
+      g_remote_partitions = static_cast<UInt32>(
+          (1 - correlation) * (g_thread_cnt - 1) * (double)g_local_partitions);
+    }
+
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     if (strcmp(g_benchmark_tag, "wh4") == 0) {
       g_num_wh = 4;
-      g_queries_per_thread = 128 * 1024;
-      g_max_nodes_for_clustering = 16 * 1024;
+      g_size_per_thread = 128 * 1024;
+      g_size = 16 * 1024;
     } else if (strcmp(g_benchmark_tag, "wh64") == 0) {
       g_num_wh = 64;
-      g_queries_per_thread = 512 * 1024;
-      g_max_nodes_for_clustering = 32 * 1024;
+      g_size_per_thread = 512 * 1024;
+      g_size = 32 * 1024;
     } else {
       assert(false);
     }

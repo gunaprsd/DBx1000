@@ -54,6 +54,10 @@ UInt64 g_synth_table_size = SYNTH_TABLE_SIZE;
 UInt32 g_req_per_query = REQ_PER_QUERY;
 UInt32 g_field_per_tuple = FIELD_PER_TUPLE;
 UInt32 g_init_parallelism = INIT_PARALLELISM;
+double g_remote_perc = 0.0;
+UInt32 g_remote_partitions = 0;
+UInt32 g_local_partitions = 0;
+UInt32 g_repeat = 1;
 
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;
@@ -121,9 +125,10 @@ void print_query(FILE *file, BaseQuery *query) {
   }
 }
 
-uint64_t g_queries_per_thread = MAX_TXN_PER_PART;
-uint64_t g_max_nodes_for_clustering = MAX_NODES_FOR_CLUSTERING;
+uint64_t g_size_per_thread = MAX_TXN_PER_PART;
+uint64_t g_size = MAX_NODES_FOR_CLUSTERING;
 TaskType g_task_type = GENERATE;
 char *g_benchmark = nullptr;
 char *g_benchmark_tag = nullptr;
+char *g_benchmark_tag2 = nullptr;
 int g_ufactor = -1;

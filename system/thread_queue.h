@@ -55,6 +55,18 @@ public:
     }
   }
 
+  void reset() {
+    _query_not_returned = false;
+    _current_query = NULL;
+    _previous_query = NULL;
+    _previous_query_status = RCOK;
+    if (_abort_buffer_enable) {
+      _abort_buffer_size = ABORT_BUFFER_SIZE;
+      _abort_buffer_empty_slots = ABORT_BUFFER_SIZE;
+    }
+    _query_list->reset();
+  }
+
   bool done() {
     // we are not done if a query is being executed
     bool finish = !_query_not_returned;

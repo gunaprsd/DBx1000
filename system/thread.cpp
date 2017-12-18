@@ -33,24 +33,26 @@ RC Thread::run() {
     BaseQuery * m_query = nullptr;
     uint64_t thd_txn_id = 0;
 
-    while (!query_queue->done()) {
-        ts_t start_time = get_sys_clock();
+    for(uint32_t run_id = 0; run_id < g_repeat; run_id++) {
+        query_queue->reset();
+        while (!query_queue->done()) {
+            ts_t start_time = get_sys_clock();
 
-        //Step 1: Obtain a query from the query queue
-        m_query = query_queue->next_query();
-        INC_STATS(thread_id, time_query, get_sys_clock() - start_time);
+            //Step 1: Obtain a query from the query queue
+            m_query = query_queue->next_query();
+            INC_STATS(thread_id, time_query, get_sys_clock() - start_time);
 
-        //Step 2: Prepare the transaction manager
-        uint64_t global_txn_id = thread_id + thd_txn_id * g_thread_cnt;
-        thd_txn_id++;
-        m_txn->reset(global_txn_id);
+            //Step 2: Prepare the transaction manager
+            uint64_t global_txn_id = thread_id + thd_txn_id * g_thread_cnt;
+            thd_txn_id++;
+            m_txn->reset(global_txn_id);
 
-        //Step 3: Execute the transaction
-        rc = RCOK;
+            //Step 3: Execute the transaction
+            rc = RCOK;
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
-        rc = m_txn->run_txn(m_query);
+            rc = m_txn->run_txn(m_query);
 #elif CC_ALG == OCC
-				m_txn->start_ts = get_next_ts();
+            m_txn->start_ts = get_next_ts();
         rc = m_txn->run_txn(m_query);
 #elif CC_ALG == MVCC || CC_ALG == HEKATON
 				m_txn->set_ts(get_next_ts());
@@ -71,24 +73,26 @@ RC Thread::run() {
 			rc = m_txn->run_txn(m_query);
 #endif
 
-        //Step 4: Return status to query queue
-        query_queue->return_status(rc);
+            //Step 4: Return status to query queue
+            query_queue->return_status(rc);
 
-        ts_t end_time = get_sys_clock();
+            ts_t end_time = get_sys_clock();
 
-        //Step 5: Update statistics
-        uint64_t duration = end_time - start_time;
-        INC_STATS(thread_id, run_time, duration);
-        INC_STATS(thread_id, latency, duration);
-        if (rc == RCOK) {
-            INC_STATS(thread_id, txn_cnt, 1);
-            stats.commit(thread_id);
-        } else if (rc == Abort) {
-            INC_STATS(thread_id, time_abort, duration);
-            INC_STATS(thread_id, abort_cnt, 1);
-            stats.abort(thread_id);
+            //Step 5: Update statistics
+            uint64_t duration = end_time - start_time;
+            INC_STATS(thread_id, run_time, duration);
+            INC_STATS(thread_id, latency, duration);
+            if (rc == RCOK) {
+                INC_STATS(thread_id, txn_cnt, 1);
+                stats.commit(thread_id);
+            } else if (rc == Abort) {
+                INC_STATS(thread_id, time_abort, duration);
+                INC_STATS(thread_id, abort_cnt, 1);
+                stats.abort(thread_id);
+            }
         }
     }
+
 
     return FINISH;
 }

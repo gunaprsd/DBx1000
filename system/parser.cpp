@@ -64,7 +64,7 @@ void parser(int argc, char **argv) {
     else if (argv[i][1] == 'e')
       g_perc_multi_part = atof(&argv[i][2]);
     else if (argv[i][1] == 'r')
-      g_read_perc = atof(&argv[i][2]);
+      g_repeat = atoi(&argv[i][2]);
     else if (argv[i][1] == 'w')
       g_write_perc = atof(&argv[i][2]);
     else if (argv[i][1] == 'z')
@@ -137,14 +137,19 @@ void parser(int argc, char **argv) {
         g_contention_perc = atof(&argv[i][3]);
       else
         assert(false);
-    } else if (argv[i][1] == 'P') {
+    }
+		else if (argv[i][1] == 'P') {
 
       switch (argv[i][2]) {
       case 'b':
         g_benchmark = &argv[i][3];
         break;
       case 't':
-        g_benchmark_tag = &argv[i][3];
+        if(argv[i][3] == '2') {
+          g_benchmark_tag2 = &argv[i][4];
+        } else {
+          g_benchmark_tag = &argv[i][3];
+        }
         break;
       case 'u':
         g_ufactor = atoi(&argv[i][3]);

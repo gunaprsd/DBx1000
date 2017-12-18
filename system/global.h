@@ -101,6 +101,11 @@ extern double g_read_perc;
 extern double g_write_perc;
 extern double g_zipf_theta;
 extern UInt64 g_synth_table_size;
+extern double g_remote_perc;
+extern UInt32 g_remote_partitions;
+extern UInt32 g_local_partitions;
+extern UInt32 g_repeat;
+
 extern UInt32 g_req_per_query;
 extern UInt32 g_field_per_tuple;
 extern UInt32 g_init_parallelism;
@@ -194,10 +199,11 @@ struct DataInfo {
 
 /* PRE_PROCESSING */
 enum TaskType {GENERATE, PARTITION_DATA, PARTITION_CONFLICT, EXECUTE_RAW, EXECUTE_PARTITIONED};
-extern uint64_t g_queries_per_thread;
-extern uint64_t g_max_nodes_for_clustering;
+extern uint64_t g_size_per_thread;
+extern uint64_t g_size;
 extern TaskType g_task_type;
 
 extern char * g_benchmark;
 extern char * g_benchmark_tag;
+extern char * g_benchmark_tag2;
 extern int    g_ufactor;

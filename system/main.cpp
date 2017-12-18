@@ -24,16 +24,14 @@ void partition() {
     loader.load();
     if (g_task_type == PARTITION_DATA) {
       YCSBAccessGraphPartitioner partitioner;
-      partitioner.initialize(loader.get_queries_matrix(),
-                             g_max_nodes_for_clustering, 1,
+      partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
                              dst_folder_path.c_str());
       partitioner.partition();
       partitioner.write_to_files();
       partitioner.print_execution_summary();
     } else if (g_task_type == PARTITION_CONFLICT) {
       YCSBConflictGraphPartitioner partitioner;
-      partitioner.initialize(loader.get_queries_matrix(),
-                             g_max_nodes_for_clustering, 1,
+      partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
                              dst_folder_path.c_str());
       partitioner.partition();
       partitioner.write_to_files();
@@ -41,7 +39,6 @@ void partition() {
     } else {
       assert(false);
     }
-
     loader.release();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     TPCCWorkloadLoader loader;
@@ -51,8 +48,7 @@ void partition() {
       assert(false);
     } else if (g_task_type == PARTITION_CONFLICT) {
       TPCCConflictGraphPartitioner partitioner;
-      partitioner.initialize(loader.get_queries_matrix(),
-                             g_max_nodes_for_clustering, 1,
+      partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
                              dst_folder_path.c_str());
       partitioner.partition();
       partitioner.write_to_files();
@@ -69,16 +65,22 @@ void partition() {
 
 void generate() {
   if (strcmp(g_benchmark, "ycsb") == 0) {
-    YCSBWorkloadConfig config{g_synth_table_size, g_zipf_theta,
-                              g_read_perc,        g_part_cnt,
-                              g_perc_multi_part,  g_part_per_txn};
+    struct YCSBWorkloadConfig config = {
+        .table_size = g_synth_table_size,
+        .zipfian_theta = g_zipf_theta,
+        .read_percent = g_read_perc,
+        .num_partitions = g_part_cnt,
+        .multi_part_txns_percent = g_perc_multi_part,
+        .num_local_partitions = g_local_partitions,
+        .remote_access_percent = g_remote_perc,
+        .num_remote_partitions = g_remote_partitions};
 
-    YCSBWorkloadGenerator generator(config, g_thread_cnt, g_queries_per_thread,
+    YCSBWorkloadGenerator generator(config, g_thread_cnt, g_size_per_thread,
                                     string(get_benchmark_path(false)));
     generator.generate();
     generator.release();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
-    TPCCWorkloadGenerator generator(g_thread_cnt, g_queries_per_thread,
+    TPCCWorkloadGenerator generator(g_thread_cnt, g_size_per_thread,
                                     string(get_benchmark_path(false)));
     generator.generate();
     generator.release();
@@ -121,7 +123,7 @@ int main(int argc, char **argv) {
 
   check_and_init_variables();
 
-  assert(g_max_nodes_for_clustering == g_thread_cnt * g_queries_per_thread);
+  assert(g_size == g_thread_cnt * g_size_per_thread);
   switch (g_task_type) {
   case GENERATE:
     generate();

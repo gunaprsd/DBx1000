@@ -22,10 +22,14 @@ struct YCSBWorkloadConfig {
   uint32_t num_partitions;
 
   // percent of multi-partition transactions (MPT)
-  double multi_part_percent;
+  double multi_part_txns_percent;
 
   // number of partitions accessed by an MPT
-  uint32_t parts_per_txn;
+  uint32_t num_local_partitions;
+
+	double remote_access_percent;
+
+	uint32_t num_remote_partitions;
 };
 
 class YCSBWorkloadGenerator : public ParallelWorkloadGenerator {
@@ -38,11 +42,12 @@ public:
 protected:
   void per_thread_generate(uint32_t thread_id) override;
   void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
-  void gen_requests(uint32_t thd_id, ycsb_query *query);
+  void gen_single_partition_requests(uint32_t thd_id, ycsb_query *query);
+	void gen_multi_partition_requests(uint32_t thd_id, ycsb_query *query);
   ycsb_query **_queries;
   YCSBWorkloadConfig _config;
-  ZipfianNumberGenerator _zipf_generator;
-  RandomNumberGenerator _rand_generator;
+  ZipfianNumberGenerator _zipfian;
+  RandomNumberGenerator _random;
   friend class YCSBConflictGraphPartitioner;
 };
 

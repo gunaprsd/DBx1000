@@ -78,7 +78,7 @@ void parser(int argc, char **argv) {
     else if (argv[i][1] == 't')
       g_thread_cnt = atoi(&argv[i][2]);
     else if (argv[i][1] == 's')
-      g_synth_table_size = atoi(&argv[i][2]);
+      g_size_factor = atoi(&argv[i][2]);
     else if (argv[i][1] == 'R')
       g_req_per_query = atoi(&argv[i][2]);
     else if (argv[i][1] == 'f')

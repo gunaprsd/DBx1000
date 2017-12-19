@@ -19,7 +19,6 @@ YCSBWorkloadGenerator::YCSBWorkloadGenerator(const YCSBWorkloadConfig &config,
 		printf("Folder %s created!", folder_path.c_str());
 	}
 	delete cmd;
-	assert(_config.num_partitions == _config.num_local_partitions * _num_threads);
   _queries = new ycsb_query *[_num_threads];
   for (uint32_t i = 0; i < _num_threads; i++) {
     _queries[i] = new ycsb_query[_num_queries_per_thread];
@@ -111,6 +110,8 @@ void YCSBWorkloadGenerator::gen_single_partition_requests(uint32_t thread_id,
 
 void YCSBWorkloadGenerator::gen_multi_partition_requests(uint32_t thread_id,
                                                          ycsb_query *query) {
+	assert(_config.num_partitions == _config.num_local_partitions * _num_threads);
+
   vector<uint64_t> parts;
   set<uint64_t> all_keys;
 

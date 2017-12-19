@@ -126,10 +126,6 @@ RC YCSBTransactionManager::run_txn(BaseQuery *query) {
           char *data = row->get_data();
           *(uint64_t *)(&data[fid * 10]) = 0;
         }
-
-	 for(int i = 0; i < 1000; i++) {
-	   asm("nop");
-	 }
       }
 
       iteration++;

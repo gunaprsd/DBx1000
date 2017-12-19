@@ -13,8 +13,7 @@ public:
 private:
     uint64_t        thread_id;
     Database *      db;
-    ThreadQueue *   query_queue;
-
+    BaseQueryList * query_list;
     ts_t 		    _curr_ts;
     ts_t 		get_next_ts();
 };

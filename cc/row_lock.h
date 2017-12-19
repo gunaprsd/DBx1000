@@ -18,11 +18,12 @@ struct LockEntry {
   LockEntry *prev;
 
   static bool conflict_lock(lock_t l1, lock_t l2) {
-    if (l1 == LOCK_EX || l2 == LOCK_EX) {
-      return (l1 == LOCK_NONE || l2 == LOCK_NONE);
-    } else {
+    if(l1 == LOCK_NONE || l2 == LOCK_NONE)
       return false;
-    }
+    else if(l1 == LOCK_EX || l2 == LOCK_EX)
+      return true;
+    else
+      return false;
   }
 };
 
@@ -49,6 +50,7 @@ struct Owners {
         } else {
           prev_entry->next = entry->next;
         }
+	count--;
         return true;
       } else {
         prev_entry = entry;
@@ -190,6 +192,7 @@ protected:
     entry->prev = nullptr;
     head = entry;
     tail = entry;
+    count++;
   }
 
   void insert_entry_before(LockEntry *entry, LockEntry *before) {

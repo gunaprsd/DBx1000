@@ -127,6 +127,7 @@ void print_query(FILE *file, BaseQuery *query) {
 
 uint64_t g_size_per_thread = MAX_TXN_PER_PART;
 uint64_t g_size = MAX_NODES_FOR_CLUSTERING;
+uint32_t g_size_factor = 1024;
 TaskType g_task_type = GENERATE;
 char *g_benchmark = nullptr;
 char *g_benchmark_tag = nullptr;

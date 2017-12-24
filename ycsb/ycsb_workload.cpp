@@ -20,7 +20,11 @@ YCSBWorkloadGenerator::YCSBWorkloadGenerator(const YCSBWorkloadConfig &config,
 	}
 	delete cmd;
   _queries = new ycsb_query *[_num_threads];
+  _data = new ThreadLocalData[_num_threads];
   for (uint32_t i = 0; i < _num_threads; i++) {
+    for(uint32_t j = 0; j < 8; j++) {
+      _data[i].fields[j] = 0;
+    }
     _queries[i] = new ycsb_query[_num_queries_per_thread];
   }
 }
@@ -47,6 +51,10 @@ void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
       gen_single_partition_requests(thread_id, &(_queries[thread_id][i]));
     }
   }
+  printf("Number of 1 accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[0]);
+  printf("Number of 2 accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[1]);
+  printf("Number of other accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[2]);
+
 }
 
 void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id,
@@ -74,6 +82,13 @@ void YCSBWorkloadGenerator::gen_single_partition_requests(uint32_t thread_id,
 
     auto row_id = _zipfian.nextInt64(thread_id);
     assert(row_id < max_row_id);
+    if(row_id == 1) {
+      _data[thread_id].fields[0]++;
+    } else if(row_id == 2) {
+      _data[thread_id].fields[1]++;
+    } else {
+      _data[thread_id].fields[2]++;
+    }
     req->key = row_id * _config.num_partitions + part_id;
     req->value = static_cast<char>(_random.nextInt64(thread_id) % (1 << 8));
 

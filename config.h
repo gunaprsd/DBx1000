@@ -137,7 +137,7 @@
 #define PERC_MULTI_PART 1
 #define REQ_PER_QUERY 16
 #define FIELD_PER_TUPLE 10
-#define MAX_REQ_PER_QUERY 20
+#define MAX_REQ_PER_QUERY 16
 
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory

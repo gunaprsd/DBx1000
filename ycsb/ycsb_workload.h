@@ -48,6 +48,7 @@ protected:
   YCSBWorkloadConfig _config;
   ZipfianNumberGenerator _zipfian;
   RandomNumberGenerator _random;
+  ThreadLocalData * _data;
   friend class YCSBConflictGraphPartitioner;
 };
 

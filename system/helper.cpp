@@ -127,8 +127,6 @@ void check_and_init_variables() {
           g_task_type == EXECUTE_PARTITIONED)
              ? g_ufactor != -1
              : true);
-  assert(g_thread_cnt == 2 || g_thread_cnt == 4 || g_thread_cnt == 8 ||
-         g_thread_cnt == 16 || g_thread_cnt == 32);
 
   if (strcmp(g_benchmark, "ycsb") == 0) {
     if (strcmp(g_benchmark_tag, "low") == 0) {
@@ -138,7 +136,7 @@ void check_and_init_variables() {
       g_zipf_theta = 0.8;
       g_read_perc = 0.9;
     } else if (strcmp(g_benchmark_tag, "high") == 0) {
-      g_zipf_theta = 0.9;
+      g_zipf_theta = 0.99;
       g_read_perc = 0.5;
     } else {
       assert(false);
@@ -148,16 +146,17 @@ void check_and_init_variables() {
 
     if (strcmp(g_benchmark_tag2, "sp-plc") == 0) {
       g_perc_multi_part = 0;
-      g_part_cnt = g_thread_cnt / 2;
-      g_local_partitions = g_part_cnt / g_thread_cnt;
+      g_part_cnt = g_thread_cnt/2;
     } else if (strcmp(g_benchmark_tag2, "sp-pec") == 0) {
       g_perc_multi_part = 0;
       g_part_cnt = g_thread_cnt;
-      g_local_partitions = g_part_cnt / g_thread_cnt;
     } else if (strcmp(g_benchmark_tag2, "sp-pgc") == 0) {
       g_perc_multi_part = 0;
       g_part_cnt = g_thread_cnt * 4;
-      g_local_partitions = g_part_cnt / g_thread_cnt;
+    } else if(strncmp(g_benchmark_tag2, "sp-custom-", 10) == 0) {
+      g_perc_multi_part = 0;
+      g_part_cnt = atoi(& g_benchmark_tag2[10]);
+      assert(g_part_cnt > 0);
     } else {
       double correlation = 0;
       g_perc_multi_part = 1;
@@ -192,7 +191,7 @@ void check_and_init_variables() {
         assert(false);
       }
 
-      g_part_cnt = g_thread_cnt * 8;
+      g_part_cnt = g_thread_cnt * 16;
       g_local_partitions = g_part_cnt / g_thread_cnt;
       g_remote_partitions = static_cast<UInt32>(
           (1 - correlation) * (g_thread_cnt - 1) * (double)g_local_partitions);

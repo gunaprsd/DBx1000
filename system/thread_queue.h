@@ -93,6 +93,7 @@ public:
               current_time > _abort_buffer[i].ready_time) {
             _current_query = _abort_buffer[i].query;
             _abort_buffer[i].query = NULL;
+            _abort_buffer[i].ready_time = UINT64_MAX;
             _abort_buffer_empty_slots++;
             break;
           } else if (_abort_buffer_empty_slots == 0 &&
@@ -118,7 +119,6 @@ public:
       if (_current_query == nullptr) {
         return next_query();
       }
-
     } else {
       // Take from main list only when previous txn status is OK
       if (_previous_query_status == RCOK) {
@@ -149,14 +149,17 @@ public:
 
       if (_abort_buffer_enable) {
         assert(_abort_buffer_empty_slots > 0);
+	bool added = false;
         for (uint32_t i = 0; i < _abort_buffer_size; i++) {
           if (_abort_buffer[i].query == NULL) {
             _abort_buffer[i].query = _previous_query;
             _abort_buffer[i].ready_time = get_sys_clock() + penalty;
             _abort_buffer_empty_slots--;
+	    added = true;
             break;
           }
         }
+	assert(added);
       } else {
         usleep(penalty / 1000);
       }

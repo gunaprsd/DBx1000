@@ -155,7 +155,7 @@ void check_and_init_variables() {
       g_part_cnt = g_thread_cnt * 4;
     } else if(strncmp(g_benchmark_tag2, "sp-custom-", 10) == 0) {
       g_perc_multi_part = 0;
-      g_part_cnt = atoi(& g_benchmark_tag2[10]);
+      g_part_cnt = static_cast<UInt32>(atoi(& g_benchmark_tag2[10]));
       assert(g_part_cnt > 0);
     } else {
       double correlation = 0;
@@ -198,17 +198,9 @@ void check_and_init_variables() {
     }
 
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
-    if (strcmp(g_benchmark_tag, "wh4") == 0) {
-      g_num_wh = 4;
-      g_size_per_thread = 128 * 1024;
-      g_size = 16 * 1024;
-    } else if (strcmp(g_benchmark_tag, "wh64") == 0) {
-      g_num_wh = 64;
-      g_size_per_thread = 512 * 1024;
-      g_size = 32 * 1024;
-    } else {
-      assert(false);
-    }
+    g_num_wh = static_cast<UInt32>(atoi(&g_benchmark_tag[2]));
+    g_size = g_size_factor * 1024;
+    g_size_per_thread = g_size/g_thread_cnt;
   } else {
     assert(false);
   }

@@ -47,6 +47,7 @@ void partition() {
     if (g_task_type == PARTITION_DATA) {
       assert(false);
     } else if (g_task_type == PARTITION_CONFLICT) {
+      assert(false);
       TPCCConflictGraphPartitioner partitioner;
       partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
                              dst_folder_path.c_str());

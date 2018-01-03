@@ -1,0 +1,106 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.8)
+PROJECT(DBx1000)
+
+SET(CMAKE_CXX_STANDARD 11)
+
+SET(SRC_LIST cc/occ.h
+        cc/plock.h
+        cc/vll.h
+        cc/row_tictoc.h
+        cc/row_mvcc.h
+        cc/row_vll.h
+        cc/row_hekaton.h
+        cc/row_silo.h
+        cc/row_occ.h
+        cc/row_lock.h
+        cc/dl_detect.h
+        cc/row_ts.h
+        config-std.h
+        config.h
+        lib/include/metis.h
+        lib/include/parmetis.h
+        storage/index_hash.h
+        storage/index_base.h
+        storage/catalog.h
+        storage/table.h
+        storage/index_btree.h
+        storage/row.h
+        system/helper.h
+        system/query.h
+        system/global.h
+        system/manager.h
+        system/txn.h
+        system/thread_queue.h
+        system/thread.h
+        system/database.h
+        system/stats.h
+        system/mem_alloc.h
+        tpcc/tpcc_helper.h
+        tpcc/tpcc.h
+        tpcc/tpcc_database.h
+        tpcc/tpcc_const.h
+        tpcc/tpcc_partitioner.h
+        tpcc/tpcc_workload.h
+        workload/conflict_graph_partitioner.h
+        workload/distributions.h
+        workload/graph_partitioner.h
+        workload/access_graph_partitioner.h
+        workload/generator.h
+        ycsb/ycsb_workload.h
+        ycsb/ycsb.h
+        ycsb/ycsb_database.h
+        ycsb/ycsb_partitioner.h
+        config.cpp
+        cc/row_ts.cpp
+        cc/vll.cpp
+        cc/row_hekaton.cpp
+        cc/occ.cpp
+        cc/row_mvcc.cpp
+        cc/dl_detect.cpp
+        cc/row_vll.cpp
+        cc/row_tictoc.cpp
+        cc/row_occ.cpp
+        cc/plock.cpp
+        cc/row_lock.cpp
+        cc/silo.cpp
+        cc/hekaton.cpp
+        cc/tictoc.cpp
+        cc/row_silo.cpp
+        storage/index_hash.cpp
+        storage/table.cpp
+        storage/row.cpp
+        storage/index_btree.cpp
+        storage/catalog.cpp
+        system/thread.cpp
+        system/stats.cpp
+        system/txn.cpp
+        system/mem_alloc.cpp
+        system/helper.cpp
+        system/manager.cpp
+        system/database.cpp
+        system/global.cpp
+        system/parser.cpp
+        system/main.cpp
+        tpcc/tpcc_partitioner.cpp
+        tpcc/tpcc_database.cpp
+        tpcc/tpcc_workload.cpp
+        tpcc/tpcc_txn.cpp
+        tpcc/tpcc_helper.cpp
+        workload/access_graph_partitioner.cpp
+        workload/generator.cpp
+        workload/conflict_graph_partitioner.cpp
+        workload/graph_partitioner.cpp
+        ycsb/ycsb_workload.cpp
+        ycsb/ycsb_database.cpp
+        ycsb/ycsb_partitioner.cpp)
+
+INCLUDE_DIRECTORIES(.)
+INCLUDE_DIRECTORIES(ycsb)
+INCLUDE_DIRECTORIES(tpcc)
+INCLUDE_DIRECTORIES(cc)
+INCLUDE_DIRECTORIES(storage)
+INCLUDE_DIRECTORIES(system)
+INCLUDE_DIRECTORIES(workload)
+INCLUDE_DIRECTORIES(lib/include)
+
+ADD_EXECUTABLE(DBx1000 ${SRC_LIST})

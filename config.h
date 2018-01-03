@@ -44,7 +44,7 @@
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL,
 // TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
-#define CC_ALG 				        NO_WAIT
+#define CC_ALG 				       MVCC
 #define ISOLATION_LEVEL SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.
@@ -54,8 +54,8 @@
 // per-row lock/ts management or central lock/ts management
 #define CENTRAL_MAN false
 #define BUCKET_CNT 31
-#define ABORT_PENALTY 10000
-#define ABORT_BUFFER_SIZE 100
+#define ABORT_PENALTY 100000
+#define ABORT_BUFFER_SIZE 10
 #define ABORT_BUFFER_ENABLE true
 // [ INDEX ]
 #define ENABLE_LATCH false

@@ -20,6 +20,7 @@ protected:
 		void gen_payment_request(uint64_t thread_id, tpcc_payment_params *params);
 		void gen_new_order_request(uint64_t thd_id, tpcc_new_order_params *params);
 		tpcc_query **_queries;
+		TPCCUtility utility;
 };
 
 class TPCCWorkloadLoader : public ParallelWorkloadLoader {

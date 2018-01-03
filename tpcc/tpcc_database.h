@@ -32,6 +32,7 @@ public:
 		INDEX *i_stock;
 
 protected:
+		TPCCUtility * utility;
 		void load_tables(uint32_t thread_id) override;
 
 private:

@@ -3,30 +3,29 @@
 
 #include "global.h"
 #include "helper.h"
+#include "distributions.h"
 
-uint64_t distKey(uint64_t d_id, uint64_t d_w_id);
-uint64_t custKey(uint64_t c_id, uint64_t c_d_id, uint64_t c_w_id);
-uint64_t orderlineKey(uint64_t w_id, uint64_t d_id, uint64_t o_id);
-uint64_t orderPrimaryKey(uint64_t w_id, uint64_t d_id, uint64_t o_id);
-// non-primary key
-uint64_t custNPKey(char * c_last, uint64_t c_d_id, uint64_t c_w_id);
-uint64_t stockKey(uint64_t s_i_id, uint64_t s_w_id);
 
-uint64_t Lastname(uint64_t num, char* name);
+class TPCCUtility {
+		uint64_t C_255, C_1023, C_8191;
+public:
+		RandomNumberGenerator random;
+		TPCCUtility(uint32_t num_threads);
+		uint64_t generateRandom(uint64_t max, uint64_t thd_id);
+		uint64_t generateRandom(uint64_t x, uint64_t y, uint64_t thd_id);
+		uint64_t generateNonUniformRandom(uint64_t A, uint64_t x, uint64_t y, uint64_t thd_id);
+		uint64_t generateAlphaString(int min, int max, char *str, uint64_t thd_id);
+		uint64_t generateNumberString(int min, int max, char *str, uint64_t thd_id);
 
-extern drand48_data ** tpcc_buffer;
-
-// return random data from [0, max-1]
-uint64_t RAND(uint64_t max, uint64_t thd_id);
-// random number from [x, y]
-uint64_t URand(uint64_t x, uint64_t y, uint64_t thd_id);
-// non-uniform random number
-uint64_t NURand(uint64_t A, uint64_t x, uint64_t y, uint64_t thd_id);
-// random string with random length beteen min and max.
-uint64_t MakeAlphaString(int min, int max, char * str, uint64_t thd_id);
-uint64_t MakeNumberString(int min, int max, char* str, uint64_t thd_id);
-
-int wh_to_part(uint64_t wid);
+		static uint64_t getDistrictKey(uint64_t d_id, uint64_t d_w_id);
+		static uint64_t getCustomerPrimaryKey(uint64_t c_id, uint64_t c_d_id, uint64_t c_w_id);
+		static uint64_t getCustomerLastNameKey(char *c_last, uint64_t c_d_id, uint64_t c_w_id);
+		static uint64_t getOrderLineKey(uint64_t w_id, uint64_t d_id, uint64_t o_id);
+		static uint64_t getOrderPrimaryKey(uint64_t w_id, uint64_t d_id, uint64_t o_id);
+		static uint64_t getStockKey(uint64_t s_i_id, uint64_t s_w_id);
+		static uint64_t findLastNameForNum(uint64_t num, char *name);
+		static int getPartition(uint64_t wid);
+};
 
 
 #define COPY_CONST_STRING(dst, src, len) memcpy(dst, src, len); dst[len] = '\0';

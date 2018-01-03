@@ -13,6 +13,7 @@ BaseQueryMatrix *TPCCWorkloadGenerator::get_queries_matrix() {
 }
 
 void TPCCWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
+  utility.random.seed(thread_id, thread_id + 1);
   for (uint32_t i = 0; i < _num_queries_per_thread; i++) {
     double x = (double)(rand() % 100) / 100.0;
     if (x < g_perc_payment) {

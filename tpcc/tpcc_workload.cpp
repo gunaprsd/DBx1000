@@ -138,10 +138,17 @@ void TPCCWorkloadGenerator::gen_new_order_request(
 
 TPCCWorkloadGenerator::TPCCWorkloadGenerator(uint32_t num_threads,
                                              uint64_t num_params_per_thread,
-                                             const string &base_file_name)
+                                             const string &folder_path)
     : ParallelWorkloadGenerator(num_threads, num_params_per_thread,
-                                base_file_name),
+                                folder_path),
       utility(num_threads) {
+  auto cmd = new char[300];
+  snprintf(cmd, 300, "mkdir -p %s", folder_path.c_str());
+  if (system(cmd)) {
+    printf("Folder %s created!", folder_path.c_str());
+  }
+  delete cmd;
+
   _queries = new tpcc_query *[_num_threads];
   for (uint32_t i = 0; i < _num_threads; i++) {
     _queries[i] = new tpcc_query[_num_queries_per_thread];

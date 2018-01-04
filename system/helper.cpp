@@ -111,24 +111,25 @@ char *get_benchmark_path(bool partitioned) {
   auto path = new char[200];
   if (partitioned)
     snprintf(path, 200, "data/%s-%s-%s-c%d-partitioned-u%d", g_benchmark,
-             g_benchmark_tag, g_benchmark_tag2, static_cast<int>(g_thread_cnt),
+             g_benchmark_tag, g_benchmark_tag2 == nullptr ? "null" : g_benchmark_tag2, static_cast<int>(g_thread_cnt),
              g_ufactor);
   else
     snprintf(path, 200, "data/%s-%s-%s-c%d-raw", g_benchmark, g_benchmark_tag,
-             g_benchmark_tag2, static_cast<int>(g_thread_cnt));
+             g_benchmark_tag2 == nullptr ? "null" : g_benchmark_tag2, static_cast<int>(g_thread_cnt));
   return path;
 }
 
 void check_and_init_variables() {
   assert(g_benchmark != nullptr);
-  assert(g_benchmark_tag != nullptr);
-  assert(g_benchmark_tag2 != nullptr);
   assert((g_task_type == PARTITION_DATA || g_task_type == PARTITION_CONFLICT ||
           g_task_type == EXECUTE_PARTITIONED)
              ? g_ufactor != -1
              : true);
 
   if (strcmp(g_benchmark, "ycsb") == 0) {
+    assert(g_benchmark_tag != nullptr);
+    assert(g_benchmark_tag2 != nullptr);
+
     if (strcmp(g_benchmark_tag, "low") == 0) {
       g_zipf_theta = 0;
       g_read_perc = 0.9;
@@ -146,16 +147,16 @@ void check_and_init_variables() {
 
     if (strcmp(g_benchmark_tag2, "sp-plc") == 0) {
       g_perc_multi_part = 0;
-      g_part_cnt = g_thread_cnt/2;
+      g_part_cnt = g_thread_cnt / 2;
     } else if (strcmp(g_benchmark_tag2, "sp-pec") == 0) {
       g_perc_multi_part = 0;
       g_part_cnt = g_thread_cnt;
     } else if (strcmp(g_benchmark_tag2, "sp-pgc") == 0) {
       g_perc_multi_part = 0;
       g_part_cnt = g_thread_cnt * 4;
-    } else if(strncmp(g_benchmark_tag2, "sp-custom-", 10) == 0) {
+    } else if (strncmp(g_benchmark_tag2, "sp-custom-", 10) == 0) {
       g_perc_multi_part = 0;
-      g_part_cnt = static_cast<UInt32>(atoi(& g_benchmark_tag2[10]));
+      g_part_cnt = static_cast<UInt32>(atoi(&g_benchmark_tag2[10]));
       assert(g_part_cnt > 0);
     } else {
       double correlation = 0;
@@ -198,9 +199,14 @@ void check_and_init_variables() {
     }
 
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
-    g_num_wh = static_cast<UInt32>(atoi(&g_benchmark_tag[2]));
+    assert(g_benchmark_tag != nullptr);
+    if (strncmp(g_benchmark_tag, "wh", 2) == 0) {
+      g_num_wh = static_cast<UInt32>(atoi(&g_benchmark_tag[2]));
+    } else {
+      g_num_wh = g_thread_cnt;
+    }
     g_size = g_size_factor * 1024;
-    g_size_per_thread = g_size/g_thread_cnt;
+    g_size_per_thread = g_size / g_thread_cnt;
   } else {
     assert(false);
   }

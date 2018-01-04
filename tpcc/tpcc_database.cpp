@@ -3,7 +3,7 @@
 #include "row.h"
 #include "table.h"
 
-void TPCCDatabase::initialize(uint32_t num_threads)  {
+void TPCCDatabase::initialize(uint32_t num_threads) {
   Database::initialize(num_threads);
 
   utility = new TPCCUtility(num_threads);
@@ -184,10 +184,10 @@ void TPCCDatabase::load_districts_table(uint64_t wid) {
     row->set_value(D_NEXT_O_ID, 3001);
 
     // Insert into index with a combined key (wid, did) and with part id = wid
-    index_insert(i_district, TPCCUtility::getDistrictKey(did, wid), row, TPCCUtility::getPartition(wid));
+    index_insert(i_district, TPCCUtility::getDistrictKey(did, wid), row,
+                 TPCCUtility::getPartition(wid));
   }
 }
-
 
 /*
  * Each warehouse contains g_max_items stock
@@ -238,7 +238,8 @@ void TPCCDatabase::load_stocks_table(uint64_t wid) {
     row->set_value(S_DATA, s_data);
 #endif
     // Inserting with a complex key and into wid partition
-    index_insert(i_stock, TPCCUtility::getStockKey(sid, wid), row, TPCCUtility::getPartition(wid));
+    index_insert(i_stock, TPCCUtility::getStockKey(sid, wid), row,
+                 TPCCUtility::getPartition(wid));
   }
 }
 
@@ -261,7 +262,8 @@ void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
     if (cid <= 1000) {
       TPCCUtility::findLastNameForNum(cid - 1, c_last);
     } else {
-      TPCCUtility::findLastNameForNum(utility->generateNonUniformRandom(255, 0, 999, wid - 1), c_last);
+      TPCCUtility::findLastNameForNum(
+          utility->generateNonUniformRandom(255, 0, 999, wid - 1), c_last);
     }
     row->set_value(C_LAST, c_last);
 #if !TPCC_SMALL
@@ -276,7 +278,7 @@ void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
     char c_data[500];
 
     utility->generateAlphaString(FIRSTNAME_MINLEN, sizeof(c_first), c_first,
-                                     wid - 1);
+                                 wid - 1);
     utility->generateAlphaString(10, 20, street, wid - 1);
     utility->generateAlphaString(10, 20, street2, wid - 1);
     utility->generateAlphaString(10, 20, city, wid - 1);
@@ -306,15 +308,19 @@ void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
       strcpy(tmp, "BC");
       row->set_value(C_CREDIT, tmp);
     }
-    row->set_value(C_DISCOUNT, (double)utility->generateRandom(5000, wid - 1) / 10000);
+    row->set_value(C_DISCOUNT,
+                   (double)utility->generateRandom(5000, wid - 1) / 10000);
     row->set_value(C_BALANCE, -10.0);
     row->set_value(C_YTD_PAYMENT, 10.0);
     row->set_value(C_PAYMENT_CNT, 1);
 
     // Insert into primary index - cid
-    index_insert(i_customer_id, TPCCUtility::getCustomerPrimaryKey(cid, did, wid), row, TPCCUtility::getPartition(wid));
+    index_insert(i_customer_id,
+                 TPCCUtility::getCustomerPrimaryKey(cid, did, wid), row,
+                 TPCCUtility::getPartition(wid));
     // Insert into seconday index - last_name
-    index_insert(i_customer_last, TPCCUtility::getCustomerLastNameKey(c_last, did, wid), row,
+    index_insert(i_customer_last,
+                 TPCCUtility::getCustomerLastNameKey(c_last, did, wid), row,
                  TPCCUtility::getPartition(wid));
   }
 }
@@ -408,7 +414,9 @@ void TPCCDatabase::load_order_table(uint64_t did, uint64_t wid) {
         ol_row->set_value(OL_AMOUNT, 0);
       } else {
         ol_row->set_value(OL_DELIVERY_D, 0);
-        ol_row->set_value(OL_AMOUNT, (double)utility->generateRandom(1, 999999, wid - 1) / 100);
+        ol_row->set_value(OL_AMOUNT,
+                          (double)utility->generateRandom(1, 999999, wid - 1) /
+                              100);
       }
       // set district information
       char ol_dist_info[24];
@@ -453,14 +461,16 @@ void TPCCDatabase::load_tables(uint32_t thread_id) {
     load_items_table();
   }
 
-  load_warehouse_table(wid);
-  load_districts_table(wid);
-  load_stocks_table(wid);
-  for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
-    load_customer_table(did, wid);
-    load_order_table(did, wid);
-    for (uint64_t cid = 1; cid <= g_cust_per_dist; cid++) {
-      load_history_table(cid, did, wid);
+  if (wid <= g_num_wh) {
+    load_warehouse_table(wid);
+    load_districts_table(wid);
+    load_stocks_table(wid);
+    for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
+      load_customer_table(did, wid);
+      load_order_table(did, wid);
+      for (uint64_t cid = 1; cid <= g_cust_per_dist; cid++) {
+        load_history_table(cid, did, wid);
+      }
     }
   }
 }
@@ -497,7 +507,8 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
   uint64_t c_w_id = params->c_w_id;
 
   // Obtain local copy of warehouse row with appropriate access
-  item = index_read(db->i_warehouse, params->w_id, TPCCUtility::getPartition(params->w_id));
+  item = index_read(db->i_warehouse, params->w_id,
+                    TPCCUtility::getPartition(params->w_id));
   assert(item != nullptr);
   row_t *r_wh = ((row_t *)item->location);
   row_t *r_wh_local = nullptr;
@@ -597,8 +608,10 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
        c_by_name;
                 +===========================================================================*/
 
-    key = TPCCUtility::getCustomerLastNameKey(params->c_last, params->c_d_id, params->c_w_id);
-    item = index_read(db->i_customer_last, key, TPCCUtility::getPartition(c_w_id));
+    key = TPCCUtility::getCustomerLastNameKey(params->c_last, params->c_d_id,
+                                              params->c_w_id);
+    item =
+        index_read(db->i_customer_last, key, TPCCUtility::getPartition(c_w_id));
     assert(item != nullptr);
     int cnt = 0;
     itemid_t *it = item;
@@ -612,8 +625,10 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
     }
     r_customer = ((row_t *)mid->location);
   } else {
-    key = TPCCUtility::getCustomerPrimaryKey(params->c_id, params->c_d_id, params->c_w_id);
-    item = index_read(db->i_customer_id, key, TPCCUtility::getPartition(c_w_id));
+    key = TPCCUtility::getCustomerPrimaryKey(params->c_id, params->c_d_id,
+                                             params->c_w_id);
+    item =
+        index_read(db->i_customer_id, key, TPCCUtility::getPartition(c_w_id));
     assert(item != NULL);
     r_customer = (row_t *)item->location;
   }
@@ -793,7 +808,8 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
 
     uint64_t stock_key = TPCCUtility::getStockKey(ol_i_id, ol_supply_w_id);
     itemid_t *stock_item;
-    index_read(db->i_stock, stock_key, TPCCUtility::getPartition(ol_supply_w_id), stock_item);
+    index_read(db->i_stock, stock_key,
+               TPCCUtility::getPartition(ol_supply_w_id), stock_item);
     assert(item != nullptr);
     row_t *r_stock = ((row_t *)stock_item->location);
     row_t *r_stock_local = get_row(r_stock, WR);
@@ -845,8 +861,8 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
 //		r_ol->set_value(OL_I_ID, &ol_i_id);
 #if !TPCC_SMALL
 //		int w_tax=1, d_tax=1;
-//		int64_t ol_amount = ol_quantity * i_price * (1 + w_tax + d_tax) *
-//(1 - c_discount); 		r_ol->set_value(OL_SUPPLY_W_ID,
+//		int64_t ol_amount = ol_quantity * i_price * (1 + w_tax + d_tax)
+//* (1 - c_discount); 		r_ol->set_value(OL_SUPPLY_W_ID,
 //&ol_supply_w_id); 		r_ol->set_value(OL_QUANTITY, &ol_quantity);
 //		r_ol->set_value(OL_AMOUNT, &ol_amount);
 #endif

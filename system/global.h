@@ -190,6 +190,10 @@ struct TxnDataInfo {
 		uint64_t num_reads = 0;
 		uint64_t num_writes = 0;
 		vector<idx_t> txns;
+
+		void reset(uint64_t epoch, idx_t id) {
+
+		}
 };
 
 struct DataInfo {

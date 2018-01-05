@@ -498,6 +498,11 @@ RC TPCCTransactionManager::run_txn(BaseQuery *query) {
   }
 }
 
+/*
+ * - Reading warehouse tuple from warehouse table (for optional update)
+ * - Reading district tuple for update
+ * - Reading customer tuple (either through last name or customer id) for update
+ */
 RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
   RC rc = RCOK;
   itemid_t *item = nullptr;
@@ -674,6 +679,16 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
   return finish(rc);
 }
 
+/*
+ * - Read warehouse tuple
+ * - Read district tuple for update
+ * - Read customer tuple using cid
+ * - Insert order tuple
+ * for each order line tuples:
+ *    - read item tuple
+ *    - read stocks tuple for update
+ *    - insert new order line tuple
+ */
 RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
   RC rc = RCOK;
   uint64_t key = 0;

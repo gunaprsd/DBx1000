@@ -45,7 +45,12 @@ void partition() {
     loader.initialize(g_thread_cnt, src_folder_path.c_str());
     loader.load();
     if (g_task_type == PARTITION_DATA) {
-      assert(false);
+      TPCCAccessGraphPartitioner partitioner;
+      partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
+                             dst_folder_path.c_str());
+      partitioner.partition();
+      partitioner.write_to_files();
+      partitioner.print_execution_summary();
     } else if (g_task_type == PARTITION_CONFLICT) {
       assert(false);
       TPCCConflictGraphPartitioner partitioner;

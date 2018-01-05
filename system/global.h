@@ -1,31 +1,31 @@
 #pragma once
 
 #include "stdint.h"
-#include <unistd.h>
+#include <cassert>
 #include <cstddef>
 #include <cstdlib>
-#include <cassert>
-#include <stdio.h>
-#include <iostream>
 #include <fstream>
-#include <string.h>
-#include <typeinfo>
+#include <iostream>
 #include <list>
-#include <mm_malloc.h>
 #include <map>
-#include <set>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <time.h>
-#include <sys/time.h>
 #include <math.h>
 #include <metis.h>
+#include <mm_malloc.h>
+#include <set>
+#include <sstream>
+#include <stdio.h>
+#include <string.h>
+#include <string>
+#include <sys/time.h>
+#include <time.h>
+#include <typeinfo>
+#include <unistd.h>
+#include <vector>
 
-#include "pthread.h"
 #include "config.h"
-#include "stats.h"
 #include "dl_detect.h"
+#include "pthread.h"
+#include "stats.h"
 #ifndef NOGRAPHITE
 #include "carbon_user.h"
 #endif
@@ -47,7 +47,7 @@ typedef int64_t SInt64;
 
 typedef int32_t int32;
 typedef int64_t int64;
-typedef uint64_t ts_t;  // time stamp type
+typedef uint64_t ts_t; // time stamp type
 
 /******************************************/
 // Global Data Structure
@@ -55,7 +55,7 @@ typedef uint64_t ts_t;  // time stamp type
 extern mem_alloc mem_allocator;
 extern Stats stats;
 extern DL_detect dl_detector;
-extern Manager * glob_manager;
+extern Manager *glob_manager;
 extern Plock part_lock_man;
 extern OptCC occ_man;
 #if CC_ALG == VLL
@@ -88,8 +88,6 @@ extern ts_t g_dl_loop_detect;
 extern bool g_ts_batch_alloc;
 extern UInt32 g_ts_batch_num;
 
-
-
 extern map<string, string> g_params;
 
 // YCSB
@@ -120,11 +118,11 @@ extern UInt32 g_txn_length;
 extern UInt32 g_num_wh;
 extern double g_perc_payment;
 extern bool g_wh_update;
-extern char * output_file;
+extern char *output_file;
 extern UInt32 g_max_items;
 extern UInt32 g_cust_per_dist;
 
-enum RC { RCOK, Commit, Abort, WAIT, ERROR, FINISH};
+enum RC { RCOK, Commit, Abort, WAIT, ERROR, FINISH };
 
 /* Thread */
 typedef uint64_t txnid_t;
@@ -133,82 +131,88 @@ typedef uint64_t txnid_t;
 typedef uint64_t txn_t;
 
 /* Table and Row */
-typedef uint64_t rid_t; // row id
+typedef uint64_t rid_t;  // row id
 typedef uint64_t pgid_t; // page id
 
-
-
 /* INDEX */
-enum latch_t {LATCH_EX, LATCH_SH, LATCH_NONE};
+enum latch_t { LATCH_EX, LATCH_SH, LATCH_NONE };
 // accessing type determines the latch type on nodes
-enum idx_acc_t {INDEX_INSERT, INDEX_READ, INDEX_NONE};
-typedef uint64_t idx_key_t; // key id for index
-typedef uint64_t (*func_ptr)(idx_key_t);	// part_id func_ptr(index_key);
+enum idx_acc_t { INDEX_INSERT, INDEX_READ, INDEX_NONE };
+typedef uint64_t idx_key_t;              // key id for index
+typedef uint64_t (*func_ptr)(idx_key_t); // part_id func_ptr(index_key);
 
 /* general concurrency control */
-enum access_t {RD, WR, XP, SCAN};
+enum access_t { RD, WR, XP, SCAN };
 /* LOCK */
-enum lock_t {LOCK_EX, LOCK_SH, LOCK_NONE };
+enum lock_t { LOCK_EX, LOCK_SH, LOCK_NONE };
 /* TIMESTAMP */
-enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
+enum TsType { R_REQ, W_REQ, P_REQ, XP_REQ };
 
-
-#define MSG(str, args...) { \
-	printf("[%s : %d] " str, __FILE__, __LINE__, args); } \
+#define MSG(str, args...)                                                      \
+  { printf("[%s : %d] " str, __FILE__, __LINE__, args); }                      \
 //	printf(args); }
 
 // principal index structure. The workload may decide to use a different
-// index structure for specific purposes. (e.g. non-primary key access should use hash)
+// index structure for specific purposes. (e.g. non-primary key access should
+// use hash)
 #if (INDEX_STRUCT == IDX_BTREE)
-#define INDEX		index_btree
-#else  // IDX_HASH
-#define INDEX		IndexHash
+#define INDEX index_btree
+#else // IDX_HASH
+#define INDEX IndexHash
 #endif
 
 /************************************************/
 // constants
 /************************************************/
 #ifndef UINT64_MAX
-#define UINT64_MAX 		18446744073709551615UL
+#define UINT64_MAX 18446744073709551615UL
 #endif // UINT64_MAX
 
-
 struct ThreadLocalData {
-	uint64_t fields[8];
+  uint64_t fields[8];
 };
 
 #define WRITE_PARTITIONS_TO_FILE false
 #define PRINT_PARTITION_SUMMARY true
 
 class BaseQuery;
-void print_query(FILE * file, BaseQuery * query);
-
+void print_query(FILE *file, BaseQuery *query);
 
 struct TxnDataInfo {
-		uint64_t epoch = UINT64_MAX;
-		idx_t id = -1;
-		uint64_t num_reads = 0;
-		uint64_t num_writes = 0;
-		vector<idx_t> txns;
+  uint64_t epoch;
+  idx_t id;
+  uint64_t num_reads;
+  uint64_t num_writes;
+  std::vector<idx_t> txns;
 
-		void reset(uint64_t epoch, idx_t id) {
-
-		}
+  TxnDataInfo() : txns() {
+    epoch = UINT64_MAX;
+    id = -1;
+    num_reads = 0;
+    num_writes = 0;
+    txns.clear();
+  }
 };
 
 struct DataInfo {
-		uint64_t epoch;
-		uint64_t num_writes;
-		uint64_t num_reads;
+  uint64_t epoch;
+  uint64_t num_writes;
+  uint64_t num_reads;
 };
 
 /* PRE_PROCESSING */
-enum TaskType {GENERATE, PARTITION_DATA, PARTITION_CONFLICT, EXECUTE_RAW, EXECUTE_PARTITIONED};
+enum TaskType {
+  GENERATE,
+  PARTITION_DATA,
+  PARTITION_CONFLICT,
+  EXECUTE_RAW,
+  EXECUTE_PARTITIONED
+};
 extern uint64_t g_size_per_thread;
 extern uint64_t g_size;
 extern TaskType g_task_type;
 
-extern char * g_benchmark;
-extern char * g_benchmark_tag;
-extern char * g_benchmark_tag2;
-extern int    g_ufactor;
+extern char *g_benchmark;
+extern char *g_benchmark_tag;
+extern char *g_benchmark_tag2;
+extern int g_ufactor;

@@ -1,12 +1,10 @@
 #include "tpcc_helper.h"
 
-
 TPCCUtility::TPCCUtility(uint32_t num_threads) : random(num_threads) {
-		C_255 = (uint64_t)generateRandom(0, 255, 0);
-		C_1023 = (uint64_t)generateRandom(0, 1023, 0);
-		C_8191 = (uint64_t)generateRandom(0, 8191, 0);
+  C_255 = (uint64_t)generateRandom(0, 255, 0);
+  C_1023 = (uint64_t)generateRandom(0, 1023, 0);
+  C_8191 = (uint64_t)generateRandom(0, 8191, 0);
 }
-
 
 uint64_t TPCCUtility::generateRandom(uint64_t max, uint64_t thd_id) {
   return random.nextInt64(static_cast<uint32_t>(thd_id)) % max;
@@ -16,22 +14,22 @@ uint64_t TPCCUtility::generateRandom(uint64_t x, uint64_t y, uint64_t thd_id) {
   return x + generateRandom(y - x + 1, thd_id);
 }
 
-uint64_t TPCCUtility::generateNonUniformRandom(uint64_t A, uint64_t x, uint64_t y,
-                                               uint64_t thd_id) {
+uint64_t TPCCUtility::generateNonUniformRandom(uint64_t A, uint64_t x,
+                                               uint64_t y, uint64_t thd_id) {
   int C = 0;
   switch (A) {
-    case 255:
-      C = static_cast<int>(C_255);
-      break;
-    case 1023:
-      C = static_cast<int>(C_1023);
-      break;
-    case 8191:
-      C = static_cast<int>(C_8191);
-      break;
-    default:
-      M_ASSERT(false, "Error! generateNonUniformRandom\n");
-      exit(-1);
+  case 255:
+    C = static_cast<int>(C_255);
+    break;
+  case 1023:
+    C = static_cast<int>(C_1023);
+    break;
+  case 8191:
+    C = static_cast<int>(C_8191);
+    break;
+  default:
+    M_ASSERT(false, "Error! generateNonUniformRandom\n");
+    exit(-1);
   }
   return (((generateRandom(0, A, thd_id) | generateRandom(x, y, thd_id)) + C) %
           (y - x + 1)) +
@@ -65,8 +63,6 @@ uint64_t TPCCUtility::generateNumberString(int min, int max, char *str,
   }
   return cnt;
 }
-
-
 
 uint64_t TPCCUtility::getDistrictKey(uint64_t d_id, uint64_t d_w_id) {
   return d_w_id * DIST_PER_WARE + d_id;

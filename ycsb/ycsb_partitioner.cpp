@@ -9,7 +9,7 @@ void YCSBConflictGraphPartitioner::initialize(BaseQueryMatrix *queries,
                                        parallelism, dest_folder_path);
   auto cmd = new char[300];
   snprintf(cmd, 300, "mkdir -p %s", dest_folder_path);
-  if(system(cmd)) {
+  if (system(cmd)) {
     printf("Folder %s created!", dest_folder_path);
   }
   delete cmd;
@@ -160,9 +160,9 @@ void YCSBAccessGraphPartitioner::initialize(BaseQueryMatrix *queries,
                                             const char *dest_folder_path) {
   AccessGraphPartitioner::initialize(queries, max_cluster_graph_size,
                                      parallelism, dest_folder_path);
-    auto cmd = new char[300];
+  auto cmd = new char[300];
   snprintf(cmd, 300, "mkdir -p %s", dest_folder_path);
-  if(system(cmd)) {
+  if (system(cmd)) {
     printf("Folder %s created!", dest_folder_path);
   }
   delete cmd;

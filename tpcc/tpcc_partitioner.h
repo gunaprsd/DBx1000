@@ -108,8 +108,7 @@ protected:
   void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
 
 private:
-  void add_internal_connection(TxnDataInfo *info, idx_t txn_id,
-                               bool write = false) {
+  void init(TxnDataInfo *info) {
     if (info->epoch != _current_iteration) {
       info->epoch = _current_iteration;
       info->id = _current_total_num_vertices;
@@ -118,16 +117,55 @@ private:
       info->txns.clear();
       _current_total_num_vertices++;
     }
+  }
+
+  TxnDataInfo *get_wh_info(uint64_t wid) {
+    auto info = &_wh_info[wid % wh_cnt];
+    init(info);
+    return info;
+  }
+
+  TxnDataInfo *get_dist_info(uint64_t wid, uint64_t did) {
+    auto info =
+        &_district_info[TPCCUtility::getDistrictKey(did, wid) % district_cnt];
+    init(info);
+    return info;
+  }
+
+  TxnDataInfo *get_cust_info(uint64_t wid, uint64_t did, uint64_t cid) {
+    auto info =
+        &_customer_info[TPCCUtility::getCustomerPrimaryKey(cid, did, wid) %
+                        customer_cnt];
+    init(info);
+    return info;
+  }
+
+  TxnDataInfo *get_item_info(uint64_t iid) {
+    auto info = &_items_info[iid % items_cnt];
+    init(info);
+    return info;
+  }
+
+  TxnDataInfo *get_stock_info(uint64_t wid, uint64_t iid) {
+    auto info = &_stocks_info[TPCCUtility::getStockKey(iid, wid) % stocks_cnt];
+    init(info);
+    return info;
+  }
+
+  void add_internal_connection(TxnDataInfo *info, idx_t txn_id,
+                               bool write = false) {
 
     info->txns.push_back(txn_id);
+    _current_total_num_edges++;
     if (write) {
       info->num_writes++;
     } else {
       info->num_reads++;
     }
-    _current_total_num_edges++;
+    assert(info->epoch == _current_iteration);
   }
-  void add_data_node(TxnDataInfo *info) {
+
+  void add_data_info(TxnDataInfo *info) {
     xadj.push_back(static_cast<idx_t>(adjncy.size()));
     vwgt.push_back(0);
 
@@ -138,7 +176,7 @@ private:
     max_data_degree = max(max_data_degree, (uint32_t)info->txns.size());
   }
 
-  void compute_stats_helper(idx_t* parts, TxnDataInfo *info) {
+  void compute_stats_helper(idx_t *parts, TxnDataInfo *info) {
     uint32_t data_cross_degree = 0;
     idx_t data_cluster = parts[info->id];
     for (auto txn : info->txns) {
@@ -150,6 +188,7 @@ private:
     min_cross_data_degree = min(min_cross_data_degree, data_cross_degree);
     max_cross_data_degree = max(max_cross_data_degree, data_cross_degree);
   }
+
   tpcc_query **_partitioned_queries;
   TxnDataInfo *_wh_info;
   TxnDataInfo *_district_info;

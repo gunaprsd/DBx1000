@@ -6,6 +6,8 @@
 #include "access_graph_partitioner.h"
 #include "conflict_graph_partitioner.h"
 #include "tpcc.h"
+#include "tpcc_helper.h"
+#include <algorithm>
 
 class TPCCConflictGraphPartitioner : public ConflictGraphPartitioner {
 public:
@@ -103,7 +105,6 @@ protected:
   void second_pass();
   void third_pass();
   void compute_post_stats(idx_t *parts);
-  inline uint32_t get_hash(uint64_t key) { return static_cast<uint32_t>(key); }
   void partition_per_iteration() override;
   void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
 
@@ -126,67 +127,79 @@ private:
   }
 
   TxnDataInfo *get_dist_info(uint64_t wid, uint64_t did) {
-    auto info =
-        &_district_info[TPCCUtility::getDistrictKey(did, wid) % district_cnt];
+    auto key = TPCCUtility::getDistrictKey(did, wid);
+    auto index = key % district_cnt;
+    auto info = &_district_info[index];
     init(info);
     return info;
   }
 
   TxnDataInfo *get_cust_info(uint64_t wid, uint64_t did, uint64_t cid) {
-    auto info =
-        &_customer_info[TPCCUtility::getCustomerPrimaryKey(cid, did, wid) %
-                        customer_cnt];
+    auto key = TPCCUtility::getCustomerPrimaryKey(cid, did, wid);
+    auto index = key % customer_cnt;
+    auto info = &_customer_info[index];
     init(info);
     return info;
   }
 
   TxnDataInfo *get_item_info(uint64_t iid) {
-    auto info = &_items_info[iid % items_cnt];
+    auto index = iid % items_cnt;
+    auto info = &_items_info[index];
     init(info);
     return info;
   }
 
   TxnDataInfo *get_stock_info(uint64_t wid, uint64_t iid) {
-    auto info = &_stocks_info[TPCCUtility::getStockKey(iid, wid) % stocks_cnt];
+    auto key = TPCCUtility::getStockKey(iid, wid);
+    auto index = key % stocks_cnt;
+    auto info = &_stocks_info[index];
     init(info);
     return info;
   }
 
-  void add_internal_connection(TxnDataInfo *info, idx_t txn_id,
-                               bool write = false) {
+  void first_pass_helper(TxnDataInfo *info, idx_t txn_id, bool write = false) {
+    assert(info->epoch == _current_iteration);
 
-    info->txns.push_back(txn_id);
     _current_total_num_edges++;
+    info->txns.push_back(txn_id);
     if (write) {
       info->num_writes++;
     } else {
       info->num_reads++;
     }
-    assert(info->epoch == _current_iteration);
   }
 
-  void add_data_info(TxnDataInfo *info) {
-    xadj.push_back(static_cast<idx_t>(adjncy.size()));
-    vwgt.push_back(0);
+  void second_pass_helper(TxnDataInfo *info) {
+    adjncy.push_back(info->id);
+    adjwgt.push_back(1);
+  }
 
-    adjncy.insert(adjncy.end(), info->txns.begin(), info->txns.end());
-    adjwgt.insert(adjwgt.end(), info->txns.size(), 1);
+  void third_pass_helper(TxnDataInfo *info) {
 
-    min_data_degree = min(min_data_degree, (uint32_t)info->txns.size());
-    max_data_degree = max(max_data_degree, (uint32_t)info->txns.size());
+    if (info->id == _next_data_id) {
+      xadj.push_back(static_cast<idx_t>(adjncy.size()));
+      vwgt.push_back(0);
+
+      adjncy.insert(adjncy.end(), info->txns.begin(), info->txns.end());
+      adjwgt.insert(adjwgt.end(), info->txns.size(), 1);
+
+      _next_data_id++;
+    }
   }
 
   void compute_stats_helper(idx_t *parts, TxnDataInfo *info) {
-    uint32_t data_cross_degree = 0;
-    idx_t data_cluster = parts[info->id];
-    for (auto txn : info->txns) {
-      if (parts[txn] != data_cluster) {
-        data_cross_degree++;
-        total_cross_core_access++;
-      }
+    if (info->epoch == _current_iteration) {
+      min_data_degree = min(min_data_degree, (uint32_t)info->txns.size());
+      max_data_degree = max(max_data_degree, (uint32_t)info->txns.size());
+
+      uint32_t data_cross_degree = static_cast<uint32_t>(
+              std::count_if(info->txns.begin(), info->txns.end(),
+                            [parts, info](idx_t txn) { return parts[txn] != parts[info->id]; }));
+      total_cross_core_access += data_cross_degree;
+
+      min_cross_data_degree = min(min_cross_data_degree, data_cross_degree);
+      max_cross_data_degree = max(max_cross_data_degree, data_cross_degree);
     }
-    min_cross_data_degree = min(min_cross_data_degree, data_cross_degree);
-    max_cross_data_degree = max(max_cross_data_degree, data_cross_degree);
   }
 
   tpcc_query **_partitioned_queries;
@@ -206,5 +219,7 @@ private:
   vector<idx_t> adjwgt;
   vector<idx_t> xadj;
   vector<idx_t> adjncy;
+
+  idx_t _next_data_id;
 };
 #endif // TPCC_TPCC_PARTITIONER_H_

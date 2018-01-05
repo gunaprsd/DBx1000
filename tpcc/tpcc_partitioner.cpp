@@ -1,5 +1,4 @@
 #include "tpcc_partitioner.h"
-#include "tpcc_helper.h"
 
 BaseQueryList *
 TPCCConflictGraphPartitioner::get_queries_list(uint32_t thread_id) {
@@ -89,8 +88,7 @@ void TPCCAccessGraphPartitioner::partition() {
   }
 }
 
-// Add edges to data nodes
-// Compute stats
+//Create meta data
 void TPCCAccessGraphPartitioner::first_pass() {
   BaseQuery *query = nullptr;
   // data ids start from max_size as the first max_size nodes are transactions
@@ -99,36 +97,38 @@ void TPCCAccessGraphPartitioner::first_pass() {
   for (auto txn_id = 0u; txn_id < _max_size; txn_id++) {
     internal_get_query(txn_id, &query);
     auto typed_query = reinterpret_cast<tpcc_query *>(query);
+
     if (query->type == TPCC_PAYMENT_QUERY) {
-      auto params =
-          reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
+      auto params = reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
 
       auto wh = get_wh_info(params->w_id);
       auto dist = get_dist_info(params->d_w_id, params->d_id);
-      add_internal_connection(wh, txn_id, g_wh_update);
-      add_internal_connection(dist, txn_id);
+
+      first_pass_helper(wh, txn_id, g_wh_update);
+      first_pass_helper(dist, txn_id);
 
       if (!params->by_last_name) {
         auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
-        add_internal_connection(cust, txn_id, true);
+        first_pass_helper(cust, txn_id, true);
       }
 
     } else if (query->type == TPCC_NEW_ORDER_QUERY) {
-      auto params =
-          reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
+      auto params = reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
 
       auto wh = get_wh_info(params->w_id);
-      auto dist = get_dist_info(params->d_w_id, params->d_id);
-      auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
-      add_internal_connection(wh, txn_id, g_wh_update);
-      add_internal_connection(dist, txn_id);
-      add_internal_connection(cust, txn_id, true);
+      auto dist = get_dist_info(params->w_id, params->d_id);
+      auto cust = get_cust_info(params->w_id, params->d_id, params->c_id);
+
+      first_pass_helper(wh, txn_id);
+      first_pass_helper(dist, txn_id);
+      first_pass_helper(cust, txn_id, true);
 
       for (unsigned int i = 0; i < params->ol_cnt; i++) {
-	auto item = get_item_info(params->items[i].ol_i_id);
-	auto stock = get_stock_info(params->items[i].ol_supply_w_id, params->items[i].ol_i_id);
-        add_internal_connection(item, txn_id);
-        add_internal_connection(stock, txn_id, true);
+        auto item = get_item_info(params->items[i].ol_i_id);
+        auto stock = get_stock_info(params->items[i].ol_supply_w_id,
+                                    params->items[i].ol_i_id);
+        first_pass_helper(item, txn_id);
+        first_pass_helper(stock, txn_id, true);
       }
 
     } else {
@@ -147,61 +147,43 @@ void TPCCAccessGraphPartitioner::second_pass() {
   BaseQuery *query = nullptr;
   for (auto txn_id = 0u; txn_id < _max_size; txn_id++) {
     internal_get_query(txn_id, &query);
-    auto typed_query = reinterpret_cast<tpcc_query *>(query);
+    auto typed_query = static_cast<tpcc_query *>(query);
 
     if (query->type == TPCC_PAYMENT_QUERY) {
-      auto params =
-          reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
+      auto params = reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
+      vwgt.push_back(3);
 
       auto wh = get_wh_info(params->w_id);
-      adjncy.push_back(wh->id);
-      adjwgt.push_back(1);
-
       auto dist = get_dist_info(params->d_w_id, params->d_id);
-      adjncy.push_back(dist->id);
-      adjwgt.push_back(1);
+
+      second_pass_helper(wh);
+      second_pass_helper(dist);
 
       if (!params->by_last_name) {
-      auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
-        adjncy.push_back(cust->id);
-        adjwgt.push_back(1);
-        vwgt.push_back(3);
-      } else {
-        vwgt.push_back(2);
+        auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
+        second_pass_helper(cust);
       }
 
     } else if (query->type == TPCC_NEW_ORDER_QUERY) {
-      auto params =
-          reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
-
+      auto params = reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       vwgt.push_back(3 + 2 * params->ol_cnt);
 
       auto wh = get_wh_info(params->w_id);
-      adjncy.push_back(wh->id);
-      adjwgt.push_back(1);
+      auto dist = get_dist_info(params->w_id, params->d_id);
+      auto cust = get_cust_info(params->w_id, params->d_id, params->c_id);
 
-      auto dist = get_dist_info(params->d_w_id, params->d_id);
-      adjncy.push_back(dist->id);
-      adjwgt.push_back(1);
-
-      auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
-      adjncy.push_back(cust->id);
-      adjwgt.push_back(1);
+      second_pass_helper(wh);
+      second_pass_helper(dist);
+      second_pass_helper(cust);
 
       for (unsigned int i = 0; i < params->ol_cnt; i++) {
-        TxnDataInfo *item = &_items_info[params->items[i].ol_i_id % items_cnt];
-        adjncy.push_back(item->id);
-        adjwgt.push_back(1);
-
-        TxnDataInfo *stock =
-            &_stocks_info[TPCCUtility::getStockKey(
-                              params->items[i].ol_i_id,
-                              params->items[i].ol_supply_w_id) %
-                          stocks_cnt];
-        adjncy.push_back(stock->id);
-        adjwgt.push_back(1);
+        auto item = get_item_info(params->items[i].ol_i_id);
+        auto stock = get_stock_info(params->items[i].ol_supply_w_id,
+                                    params->items[i].ol_i_id);
+        second_pass_helper(item);
+        second_pass_helper(stock);
       }
 
     } else {
@@ -212,77 +194,43 @@ void TPCCAccessGraphPartitioner::second_pass() {
 
 // Create data portion of the graph
 void TPCCAccessGraphPartitioner::third_pass() {
-  min_data_degree = static_cast<uint32_t>(1 << 31);
-  max_data_degree = 0;
-
-  idx_t next_data_id = _max_size;
+  _next_data_id = _max_size;
   BaseQuery *query = nullptr;
   for (auto txn_id = 0u; txn_id < _max_size; txn_id++) {
     internal_get_query(txn_id, &query);
     auto typed_query = reinterpret_cast<tpcc_query *>(query);
 
     if (query->type == TPCC_PAYMENT_QUERY) {
-      auto params =
-          reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
+      auto params = reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
 
       auto wh = get_wh_info(params->w_id);
-      if (wh->id == next_data_id) {
-        add_data_info(wh);
-        next_data_id++;
-      }
-
       auto dist = get_dist_info(params->d_w_id, params->d_id);
-      if (dist->id == next_data_id) {
-        add_data_info(dist);
-        next_data_id++;
-      }
+
+      third_pass_helper(wh);
+      third_pass_helper(dist);
 
       if (!params->by_last_name) {
-      auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
-        if (cust->id == next_data_id) {
-          add_data_info(cust);
-          next_data_id++;
-        }
+        auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
+        third_pass_helper(cust);
       }
 
     } else if (query->type == TPCC_NEW_ORDER_QUERY) {
-      auto params =
-          reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
+      auto params = reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
 
       auto wh = get_wh_info(params->w_id);
-      if (wh->id == next_data_id) {
-        add_data_info(wh);
-        next_data_id++;
-      }
+      auto dist = get_dist_info(params->w_id, params->d_id);
+      auto cust = get_cust_info(params->w_id, params->d_id, params->c_id);
 
-      auto dist = get_dist_info(params->d_w_id, params->d_id);
-      if (dist->id == next_data_id) {
-        add_data_info(dist);
-        next_data_id++;
-      }
-
-      auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
-      if (cust->id == next_data_id) {
-        add_data_info(cust);
-        next_data_id++;
-      }
+      third_pass_helper(wh);
+      third_pass_helper(dist);
+      third_pass_helper(cust);
 
       for (unsigned int i = 0; i < params->ol_cnt; i++) {
-        TxnDataInfo *item = &_items_info[params->items[i].ol_i_id % items_cnt];
-        if (item->id == next_data_id) {
-          add_data_info(item);
-          next_data_id++;
-        }
-
-        TxnDataInfo *stock =
-            &_stocks_info[TPCCUtility::getStockKey(
-                              params->items[i].ol_i_id,
-                              params->items[i].ol_supply_w_id) %
-                          stocks_cnt];
-        if (stock->id == next_data_id) {
-          add_data_info(stock);
-          next_data_id++;
-        }
+        auto item = get_item_info(params->items[i].ol_i_id);
+        auto stock = get_stock_info(params->items[i].ol_supply_w_id,
+                                    params->items[i].ol_i_id);
+        third_pass_helper(item);
+        third_pass_helper(stock);
       }
 
     } else {
@@ -290,52 +238,44 @@ void TPCCAccessGraphPartitioner::third_pass() {
     }
   }
 
-  xadj.push_back(adjncy.size());
+  xadj.push_back(static_cast<idx_t>(adjncy.size()));
 }
 
 void TPCCAccessGraphPartitioner::compute_post_stats(idx_t *parts) {
-  min_cross_data_degree = 1 << 31;
+	min_data_degree = static_cast<uint32_t>(1 << 31);
+	max_data_degree = 0;
+  min_cross_data_degree = static_cast<uint32_t>(1 << 31);
   max_cross_data_degree = 0;
   total_cross_core_access = 0;
 
   // warehouse
   for (int i = 0; i < wh_cnt; i++) {
     TxnDataInfo *info = &_wh_info[i];
-    if (info->epoch == _current_iteration) {
-      compute_stats_helper(parts, info);
-    }
+		compute_stats_helper(parts, info);
   }
 
   // districts
   for (int i = 0; i < district_cnt; i++) {
     TxnDataInfo *info = &_district_info[i];
-    if (info->epoch == _current_iteration) {
-      compute_stats_helper(parts, info);
-    }
+		compute_stats_helper(parts, info);
   }
 
   // customers
   for (int i = 0; i < customer_cnt; i++) {
     TxnDataInfo *info = &_customer_info[i];
-    if (info->epoch == _current_iteration) {
-      compute_stats_helper(parts, info);
-    }
+		compute_stats_helper(parts, info);
   }
 
   // items
   for (int i = 0; i < items_cnt; i++) {
     TxnDataInfo *info = &_items_info[i];
-    if (info->epoch == _current_iteration) {
-      compute_stats_helper(parts, info);
-    }
+		compute_stats_helper(parts, info);
   }
 
   // stocks
   for (int i = 0; i < stocks_cnt; i++) {
     TxnDataInfo *info = &_stocks_info[i];
-    if (info->epoch == _current_iteration) {
-      compute_stats_helper(parts, info);
-    }
+		compute_stats_helper(parts, info);
   }
 }
 

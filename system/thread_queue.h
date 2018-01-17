@@ -80,56 +80,65 @@ public:
   }
 
   BaseQuery *next_query() {
-    assert(_current_query == NULL);
+    assert(_current_query == nullptr);
 
-    if (_abort_buffer_enable) {
-      if (_abort_buffer_empty_slots < _abort_buffer_size) {
-        // Look through the abort buffer for any ready query or compute min
-        // ready time (when buffer is full)
-        ts_t current_time = get_sys_clock();
-        ts_t min_ready_time = UINT64_MAX;
-        for (uint32_t i = 0; i < _abort_buffer_size; i++) {
-          if (_abort_buffer[i].query != NULL &&
-              current_time > _abort_buffer[i].ready_time) {
-            _current_query = _abort_buffer[i].query;
-            _abort_buffer[i].query = NULL;
-            _abort_buffer[i].ready_time = UINT64_MAX;
-            _abort_buffer_empty_slots++;
-            break;
-          } else if (_abort_buffer_empty_slots == 0 &&
-                     _abort_buffer[i].ready_time < min_ready_time) {
-            min_ready_time = _abort_buffer[i].ready_time;
+    while (true) {
+      if (_abort_buffer_enable) {
+        if (_abort_buffer_empty_slots < _abort_buffer_size) {
+          int trial = 0;
+          while (trial < 2) {
+
+            // Look through the abort buffer for any ready query or compute min
+            // ready time (when buffer is full)
+            ts_t current_time = get_sys_clock();
+            ts_t min_ready_time = UINT64_MAX;
+            for (uint32_t i = 0; i < _abort_buffer_size; i++) {
+              if (_abort_buffer[i].query != nullptr &&
+                  current_time > _abort_buffer[i].ready_time) {
+                _current_query = _abort_buffer[i].query;
+                _abort_buffer[i].query = nullptr;
+                _abort_buffer[i].ready_time = UINT64_MAX;
+                _abort_buffer_empty_slots++;
+                break;
+              } else if (trial == 0 && _abort_buffer_empty_slots == 0 &&
+                         _abort_buffer[i].ready_time < min_ready_time) {
+                min_ready_time = _abort_buffer[i].ready_time;
+              }
+            }
+
+            // sleep until you can at least one query is ready, if abort buffer
+            // is full
+            if (_abort_buffer_empty_slots == 0 && _current_query == nullptr) {
+              assert(min_ready_time >= current_time);
+              usleep(min_ready_time - current_time);
+            } else if (_current_query != nullptr) {
+              break;
+            }
+
+            trial++;
           }
         }
 
-        // sleep until you can at least one query is ready, if abort buffer is
-        // full
-        if (_abort_buffer_empty_slots == 0 && _current_query == NULL) {
-          assert(min_ready_time >= current_time);
-          usleep(min_ready_time - current_time);
-          return next_query();
+        // Obtain a query from the main array
+        if (_current_query == nullptr) {
+          _current_query = _query_list->next();
+        }
+
+      } else {
+        // Take from main list only when previous txn status is OK
+        if (_previous_query_status == RCOK) {
+          _current_query = _query_list->next();
+        } else {
+          _current_query = _previous_query;
         }
       }
 
-      // Obtain a query from the main array
-      if (_current_query == nullptr) {
-        _current_query = _query_list->next();
-      }
-
-      if (_current_query == nullptr) {
-        return next_query();
-      }
-    } else {
-      // Take from main list only when previous txn status is OK
-      if (_previous_query_status == RCOK) {
-        _current_query = _query_list->next();
-      } else {
-        _current_query = _previous_query;
+      if (_current_query != nullptr) {
+        break;
       }
     }
 
     _query_not_returned = true;
-    assert(_current_query != nullptr);
     return _current_query;
   }
 
@@ -149,17 +158,17 @@ public:
 
       if (_abort_buffer_enable) {
         assert(_abort_buffer_empty_slots > 0);
-	bool added = false;
+        //        bool added = false;
         for (uint32_t i = 0; i < _abort_buffer_size; i++) {
-          if (_abort_buffer[i].query == NULL) {
+          if (_abort_buffer[i].query == nullptr) {
             _abort_buffer[i].query = _previous_query;
             _abort_buffer[i].ready_time = get_sys_clock() + penalty;
             _abort_buffer_empty_slots--;
-	    added = true;
+            //  added = true;
             break;
           }
         }
-	assert(added);
+        //        assert(added);
       } else {
         usleep(penalty / 1000);
       }

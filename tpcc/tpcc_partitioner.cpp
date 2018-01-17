@@ -88,7 +88,7 @@ void TPCCAccessGraphPartitioner::partition() {
   }
 }
 
-//Create meta data
+// Create meta data
 void TPCCAccessGraphPartitioner::first_pass() {
   BaseQuery *query = nullptr;
   // data ids start from max_size as the first max_size nodes are transactions
@@ -99,7 +99,8 @@ void TPCCAccessGraphPartitioner::first_pass() {
     auto typed_query = reinterpret_cast<tpcc_query *>(query);
 
     if (query->type == TPCC_PAYMENT_QUERY) {
-      auto params = reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
+      auto params =
+          reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
 
       auto wh = get_wh_info(params->w_id);
       auto dist = get_dist_info(params->d_w_id, params->d_id);
@@ -113,7 +114,8 @@ void TPCCAccessGraphPartitioner::first_pass() {
       }
 
     } else if (query->type == TPCC_NEW_ORDER_QUERY) {
-      auto params = reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
+      auto params =
+          reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
 
       auto wh = get_wh_info(params->w_id);
       auto dist = get_dist_info(params->w_id, params->d_id);
@@ -150,7 +152,8 @@ void TPCCAccessGraphPartitioner::second_pass() {
     auto typed_query = static_cast<tpcc_query *>(query);
 
     if (query->type == TPCC_PAYMENT_QUERY) {
-      auto params = reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
+      auto params =
+          reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       vwgt.push_back(3);
 
@@ -166,7 +169,8 @@ void TPCCAccessGraphPartitioner::second_pass() {
       }
 
     } else if (query->type == TPCC_NEW_ORDER_QUERY) {
-      auto params = reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
+      auto params =
+          reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       vwgt.push_back(3 + 2 * params->ol_cnt);
 
@@ -201,7 +205,8 @@ void TPCCAccessGraphPartitioner::third_pass() {
     auto typed_query = reinterpret_cast<tpcc_query *>(query);
 
     if (query->type == TPCC_PAYMENT_QUERY) {
-      auto params = reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
+      auto params =
+          reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
 
       auto wh = get_wh_info(params->w_id);
       auto dist = get_dist_info(params->d_w_id, params->d_id);
@@ -215,7 +220,8 @@ void TPCCAccessGraphPartitioner::third_pass() {
       }
 
     } else if (query->type == TPCC_NEW_ORDER_QUERY) {
-      auto params = reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
+      auto params =
+          reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
 
       auto wh = get_wh_info(params->w_id);
       auto dist = get_dist_info(params->w_id, params->d_id);
@@ -242,8 +248,8 @@ void TPCCAccessGraphPartitioner::third_pass() {
 }
 
 void TPCCAccessGraphPartitioner::compute_post_stats(idx_t *parts) {
-	min_data_degree = static_cast<uint32_t>(1 << 31);
-	max_data_degree = 0;
+  min_data_degree = static_cast<uint32_t>(1 << 31);
+  max_data_degree = 0;
   min_cross_data_degree = static_cast<uint32_t>(1 << 31);
   max_cross_data_degree = 0;
   total_cross_core_access = 0;
@@ -251,31 +257,31 @@ void TPCCAccessGraphPartitioner::compute_post_stats(idx_t *parts) {
   // warehouse
   for (int i = 0; i < wh_cnt; i++) {
     TxnDataInfo *info = &_wh_info[i];
-		compute_stats_helper(parts, info);
+    compute_stats_helper(parts, info);
   }
 
   // districts
   for (int i = 0; i < district_cnt; i++) {
     TxnDataInfo *info = &_district_info[i];
-		compute_stats_helper(parts, info);
+    compute_stats_helper(parts, info);
   }
 
   // customers
   for (int i = 0; i < customer_cnt; i++) {
     TxnDataInfo *info = &_customer_info[i];
-		compute_stats_helper(parts, info);
+    compute_stats_helper(parts, info);
   }
 
   // items
   for (int i = 0; i < items_cnt; i++) {
-    TxnDataInfo *info = &_items_info[i];
-		compute_stats_helper(parts, info);
+    //    TxnDataInfo *info = &_items_info[i];
+    //    compute_stats_helper(parts, info);
   }
 
   // stocks
   for (int i = 0; i < stocks_cnt; i++) {
     TxnDataInfo *info = &_stocks_info[i];
-		compute_stats_helper(parts, info);
+    compute_stats_helper(parts, info);
   }
 }
 

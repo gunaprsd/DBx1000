@@ -1,50 +1,36 @@
 import os
 # Single Partition
 configs = []
-for tag in ["low", "medium", "high"]:
-    for tag2 in ["sp-plc", "sp-pec", "sp-pgc"]:
-        for cores in [2, 4, 8, 16, 32]:
-            config = ""
-            config += " -Pbycsb"
-            config += " -Pt" + tag
-            config += " -Pt2" + tag2
-            config += " -t" + str(cores)
-            config += " -s" + str(cores * 256)
-            configs.append(config)
+for tag in ["high"]:
+    for cores in [15, 30]:
+        for parts in [4, 8, 15, 30, 60]:
+            if parts <= 2 * cores:
+                config = ""
+                config += " -Pbycsb"
+                config += " -Pt" + tag
+                config += " -Pt2sp-custom-" + str(parts)
+                config += " -t" + str(cores)
+                config += " -s" + str(cores * 256)
+                configs.append(config)
 
+
+log_file = "ycsb_stats.txt"
 
 #for config in configs:
-#    command = "./rundb" + config + " -Pg"
+#    command = "./rundb" + config + " -Pg >> " + log_file
 #    print(command)
+#    os.system("echo " + command + " >> " + log_file)
 #    os.system(command)
 
 #for config in configs:
-#    command = "./rundb" + config + " -Ppa -Pu5"
+#    command = "./rundb" + config + " -Ppa -Pu5 >> " + log_file
 #    print(command)
+#    os.system("echo " + command + " >> " + log_file)
 #    os.system(command)
 
-#for config in configs:
-#    command = "./rundb" + config + " -Ppa -Pu300"
-#    print(command)
-#    os.system(command)
-
-file = "results/sp-no-wait-raw.txt"
-os.system("touch " + file)
 for config in configs:
-    command = "./rundb" + config + " -Per -r5 >> " + file
-    print(command)
-    os.system(command)
-
-file = "results/sp-no-wait-u5.txt"
-os.system("touch " + file)
-for config in configs:
-    command = "./rundb" + config + " -Pep -Pu5 -r5 >> " + file
-    print(command)
-    os.system(command)
-
-file = "results/sp-no-wait-u300.txt"
-os.system("touch " + file)
-for config in configs:
-    command = "./rundb" + config + " -Pep -Pu300 -r5 >> " + file
-    print(command)
-    os.system(command)
+    for i in xrange(0, 5):
+        command = "./rundb" + config + " -Pep -Pu5 >> " + log_file
+        print(command)
+        os.system("echo " + command + " >> " + log_file)
+        os.system(command)

@@ -1,5 +1,5 @@
 // Copyright [2017] <Guna Prasaad>
-
+#include <algorithm>
 #include "access_graph_partitioner.h"
 
 void AccessGraphPartitioner::initialize(BaseQueryMatrix *queries, uint64_t max_size,
@@ -35,11 +35,12 @@ void AccessGraphPartitioner::initialize(BaseQueryMatrix *queries, uint64_t max_s
   third_pass_duration = 0.0;
   partition_duration = 0.0;
 
-  total_cross_core_access = 0;
-  min_data_degree = 0;
-  max_data_degree = 0;
-  min_cross_data_degree = 0;
-  max_cross_data_degree = 0;
+  pre_total_cross_core_access = 0;
+  pre_min_cross_core_access = 0;
+  pre_max_cross_core_access = 0;
+  post_total_cross_core_access = 0;
+  post_min_cross_core_access = 0;
+  post_max_cross_core_access = 0;
 }
 
 void AccessGraphPartitioner::write_to_files() {
@@ -122,37 +123,31 @@ void AccessGraphPartitioner::debug_write_pre_partition_file() {
 
 
 void AccessGraphPartitioner::print_execution_summary() {
-  auto num_iterations = _current_iteration;
-  printf("************** EXECUTION SUMMARY **************** \n");
-  printf("%-25s :: total: %10lf, avg: %10lf\n", "First Pass",
-	 first_pass_duration, first_pass_duration / num_iterations);
-  printf("%-25s :: total: %10lf, avg: %10lf\n", "Second Pass",
-	 second_pass_duration, second_pass_duration / num_iterations);
-  printf("%-25s :: total: %10lf, avg: %10lf\n", "Third Pass",
-	 third_pass_duration, third_pass_duration / num_iterations);
-  printf("%-25s :: total: %10lf, avg: %10lf\n", "Partition",
-	 partition_duration, partition_duration / num_iterations);
-  printf("************************************************* \n");
+  printf("%-30s: %10lf\n", "First-Pass-Duration", first_pass_duration);
+  printf("%-30s: %10lf\n", "Second-Pass-Duration", second_pass_duration);
+  printf("%-30s: %10lf\n", "Third-Pass-Duration", third_pass_duration);
+  printf("%-30s: %10lf\n", "Partition-Duration", partition_duration);
 }
 
 void AccessGraphPartitioner::print_partition_summary() {
- printf("******** PARTITION SUMMARY AT ITERATION %d ***********\n",
-         _current_iteration);
-  printf("%-30s: %lu\n", "Num Vertices", _current_total_num_vertices);
-  printf("%-30s: %lu\n", "Num Edges", _current_total_num_edges);
-  printf("%-30s: %-10u, Avg: %-10lf\n", "Cross-Core Accesses",
-         total_cross_core_access, (double)total_cross_core_access / (double)_max_size);
-  printf("%-30s: %u\n", "Min Data Degree", min_data_degree);
-  printf("%-30s: %u\n", "Max Data Degree", max_data_degree);
-  printf("%-30s: %u\n", "Min Cross Data Degree", min_cross_data_degree);
-  printf("%-30s: %u\n", "Max Cross Data Degree", max_cross_data_degree);
-  printf("%-30s: [", "Partition Sizes");
+  printf("%-30s: %u\n", "Iteration", _current_iteration);
+  printf("%-30s: %lu\n", "Num-Vertices", _current_total_num_vertices);
+  printf("%-30s: %lu\n", "Num-Edges", _current_total_num_edges);
+  printf("%-30s: %lu\n", "Pre-Total-Cross-Core-Access", post_total_cross_core_access);
+  printf("%-30s: %lu\n", "Pre-Min-Cross-Core-Access", post_min_cross_core_access);
+  printf("%-30s: %lu\n", "Pre-Max-Cross-Core-Access", post_max_cross_core_access);
+  printf("%-30s: %lu\n", "Post-Total-Cross-Core-Access", post_total_cross_core_access);
+  printf("%-30s: %lu\n", "Post-Min-Cross-Core-Access", post_min_cross_core_access);
+  printf("%-30s: %lu\n", "Post-Max-Cross-Core-Access", post_max_cross_core_access);
+
+  int32_t min_partition_size = INT32_MAX;
+  int32_t max_partition_size = INT32_MIN;
   for (auto i = 0u; i < _num_arrays; i++) {
-    auto diff = _tmp_queries[i].size() - _tmp_array_sizes[i];
-    if (i + 1 < _num_arrays)
-      printf("%d, ", static_cast<int32>(diff));
-    else
-      printf("%d", static_cast<int32>(diff));
+    int32_t diff = static_cast<int32_t>(_tmp_queries[i].size() - _tmp_array_sizes[i]);
+    min_partition_size = min(min_partition_size, diff);
+    max_partition_size = max(max_partition_size, diff);
   }
-  printf("]\n");
+
+  printf("%-30s: %d\n", "Min-Cluster-Size", min_partition_size);
+  printf("%-30s: %d\n", "Max-Cluster-Size", max_partition_size);
 }

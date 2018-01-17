@@ -41,11 +41,12 @@ protected:
 	double third_pass_duration;
 	double partition_duration;
 
-	uint32_t total_cross_core_access;
-	uint32_t min_data_degree;
-	uint32_t max_data_degree;
-	uint32_t min_cross_data_degree;
-	uint32_t max_cross_data_degree;
+	uint64_t pre_total_cross_core_access;
+	uint64_t pre_min_cross_core_access;
+	uint64_t pre_max_cross_core_access;
+	uint64_t post_total_cross_core_access;
+	uint64_t post_min_cross_core_access;
+	uint64_t post_max_cross_core_access;
 
   BaseQueryMatrix *_original_queries;
   vector<BaseQuery *> *_tmp_queries;

@@ -248,40 +248,72 @@ void TPCCAccessGraphPartitioner::third_pass() {
 }
 
 void TPCCAccessGraphPartitioner::compute_post_stats(idx_t *parts) {
-  min_data_degree = static_cast<uint32_t>(1 << 31);
-  max_data_degree = 0;
-  min_cross_data_degree = static_cast<uint32_t>(1 << 31);
-  max_cross_data_degree = 0;
-  total_cross_core_access = 0;
 
-  // warehouse
-  for (int i = 0; i < wh_cnt; i++) {
-    TxnDataInfo *info = &_wh_info[i];
-    compute_stats_helper(parts, info);
+  pre_total_cross_core_access = 0;
+  pre_max_cross_core_access = 0;
+  pre_min_cross_core_access = UINT64_MAX;
+  post_total_cross_core_access = 0;
+  post_max_cross_core_access = 0;
+  post_min_cross_core_access = UINT64_MAX;
+
+  idx_t *random_parts = new idx_t[_current_total_num_vertices];
+  for(size_t i = 0; i < _current_total_num_vertices; i++) {
+    random_parts[i] = rand() % _num_arrays;
   }
 
-  // districts
-  for (int i = 0; i < district_cnt; i++) {
-    TxnDataInfo *info = &_district_info[i];
-    compute_stats_helper(parts, info);
-  }
+  BaseQuery *query = nullptr;
+  uint64_t pre_cross_access, post_cross_access;
+  for (auto txn_id = 0u; txn_id < _max_size; txn_id++) {
+    internal_get_query(txn_id, &query);
+    auto typed_query = reinterpret_cast<tpcc_query *>(query);
+    pre_cross_access = 0;
+    post_cross_access = 0;
+    if (query->type == TPCC_PAYMENT_QUERY) {
+      auto params =
+              reinterpret_cast<tpcc_payment_params *>(&typed_query->params);
 
-  // customers
-  for (int i = 0; i < customer_cnt; i++) {
-    TxnDataInfo *info = &_customer_info[i];
-    compute_stats_helper(parts, info);
-  }
+      auto wh = get_wh_info(params->w_id);
+      auto dist = get_dist_info(params->d_w_id, params->d_id);
+      UPDATE(txn_id, wh->id)
+      UPDATE(txn_id, dist->id)
 
-  // items
-  for (int i = 0; i < items_cnt; i++) {
-    //    TxnDataInfo *info = &_items_info[i];
-    //    compute_stats_helper(parts, info);
-  }
+      if (!params->by_last_name) {
+        auto cust = get_cust_info(params->c_w_id, params->c_d_id, params->c_id);
+        third_pass_helper(cust);
+        UPDATE(txn_id, cust->id)
+      }
 
-  // stocks
-  for (int i = 0; i < stocks_cnt; i++) {
-    TxnDataInfo *info = &_stocks_info[i];
-    compute_stats_helper(parts, info);
+    } else if (query->type == TPCC_NEW_ORDER_QUERY) {
+      auto params =
+              reinterpret_cast<tpcc_new_order_params *>(&typed_query->params);
+
+      auto wh = get_wh_info(params->w_id);
+      auto dist = get_dist_info(params->w_id, params->d_id);
+      auto cust = get_cust_info(params->w_id, params->d_id, params->c_id);
+
+      UPDATE(txn_id, wh->id)
+      UPDATE(txn_id, dist->id)
+      UPDATE(txn_id, cust->id)
+
+      for (unsigned int i = 0; i < params->ol_cnt; i++) {
+        auto item = get_item_info(params->items[i].ol_i_id);
+        auto stock = get_stock_info(params->items[i].ol_supply_w_id,
+                                    params->items[i].ol_i_id);
+        UPDATE(txn_id, item->id)
+        UPDATE(txn_id, stock->id)
+      }
+
+    } else {
+      assert(false);
+    }
+
+    pre_total_cross_core_access += pre_cross_access;
+    pre_min_cross_core_access = min(pre_min_cross_core_access, pre_cross_access);
+    pre_max_cross_core_access = max(pre_max_cross_core_access, pre_cross_access);
+
+    post_total_cross_core_access += post_cross_access;
+    post_min_cross_core_access = min(post_min_cross_core_access, post_cross_access);
+    post_max_cross_core_access = max(post_max_cross_core_access, post_cross_access);
   }
 }
 

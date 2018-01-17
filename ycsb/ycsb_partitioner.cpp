@@ -343,8 +343,6 @@ void YCSBAccessGraphPartitioner::second_pass() {
  * and add its portion information into the graph
  */
 void YCSBAccessGraphPartitioner::third_pass() {
-  min_data_degree = static_cast<uint32_t>(1 << 31);
-  max_data_degree = 0;
   idx_t next_data_id = _max_size;
   BaseQuery *query = nullptr;
   for (auto txn_id = 0u; txn_id < _max_size; txn_id++) {
@@ -364,23 +362,31 @@ void YCSBAccessGraphPartitioner::third_pass() {
         adjncy.insert(adjncy.end(), info->txns.begin(), info->txns.end());
         adjwgt.insert(adjwgt.end(), info->txns.size(), 1);
 
-        min_data_degree = min(min_data_degree, (uint32_t)info->txns.size());
-        max_data_degree = max(max_data_degree, (uint32_t)info->txns.size());
         next_data_id++;
       }
     }
   }
-
   xadj.push_back(static_cast<idx_t>(adjncy.size()));
 }
 
 void YCSBAccessGraphPartitioner::compute_post_stats(idx_t *parts) {
+  pre_total_cross_core_access = 0;
+  pre_max_cross_core_access = 0;
+  pre_min_cross_core_access = UINT64_MAX;
+  post_total_cross_core_access = 0;
+  post_max_cross_core_access = 0;
+  post_min_cross_core_access = UINT64_MAX;
+
+  idx_t *random_parts = new idx_t[_current_total_num_vertices];
+  for(size_t i = 0; i < _current_total_num_vertices; i++) {
+    random_parts[i] = rand() % _num_arrays;
+  }
+
   BaseQuery *query = nullptr;
-  min_cross_data_degree = 1 << 31;
-  max_cross_data_degree = 0;
-  total_cross_core_access = 0;
-  idx_t next_data_id = _max_size;
+  uint64_t pre_cross_access, post_cross_access;
   for (auto txn_id = 0u; txn_id < _max_size; txn_id++) {
+    pre_cross_access = 0;
+    post_cross_access = 0;
     internal_get_query(txn_id, &query);
     auto typed_query = reinterpret_cast<ycsb_query *>(query);
     auto params = &typed_query->params;
@@ -388,19 +394,22 @@ void YCSBAccessGraphPartitioner::compute_post_stats(idx_t *parts) {
       auto hash = get_hash(params->requests[j].key);
       auto info = &_info_array[hash];
 
-      if (info->id == next_data_id) {
-        uint32_t data_cross_degree = 0;
-        idx_t data_cluster = parts[info->id];
-        for (auto txn : info->txns) {
-          if (parts[txn] != data_cluster) {
-            data_cross_degree++;
-            total_cross_core_access++;
-          }
-        }
-        min_cross_data_degree = min(min_cross_data_degree, data_cross_degree);
-        max_cross_data_degree = max(max_cross_data_degree, data_cross_degree);
-        next_data_id++;
+      if(random_parts[txn_id] != random_parts[info->id]) {
+        pre_cross_access++;
+      }
+      if(parts[txn_id] != parts[info->id]) {
+        post_cross_access++;
       }
     }
+
+    pre_total_cross_core_access += pre_cross_access;
+    pre_min_cross_core_access = min(pre_min_cross_core_access, pre_cross_access);
+    pre_max_cross_core_access = max(pre_max_cross_core_access, pre_cross_access);
+
+    post_total_cross_core_access += post_cross_access;
+    post_min_cross_core_access = min(post_min_cross_core_access, post_cross_access);
+    post_max_cross_core_access = max(post_max_cross_core_access, post_cross_access);
   }
+
+  delete random_parts;
 }

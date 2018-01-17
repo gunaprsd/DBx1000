@@ -9,6 +9,10 @@
 #include "tpcc_helper.h"
 #include <algorithm>
 
+#define UPDATE(tid, did)                                                       \
+  pre_cross_access += random_parts[tid] != random_parts[did] ? 1 : 0;           \
+  post_cross_access += parts[tid] != parts[did] ? 1 : 0;
+
 class TPCCConflictGraphPartitioner : public ConflictGraphPartitioner {
 public:
   void initialize(BaseQueryMatrix *queries, uint64_t max_cluster_graph_size,
@@ -187,18 +191,12 @@ private:
     }
   }
 
-  void compute_stats_helper(idx_t *parts, TxnDataInfo *info) {
-    if (info->epoch == _current_iteration) {
-      min_data_degree = min(min_data_degree, (uint32_t)info->txns.size());
-      max_data_degree = max(max_data_degree, (uint32_t)info->txns.size());
+  void compute_stats_helper(idx_t *pre_parts, idx_t *post_parts, idx_t txn_id,
+                            idx_t data_id) {
+    if (pre_parts[txn_id] != pre_parts[data_id]) {
+    }
 
-      uint32_t data_cross_degree = static_cast<uint32_t>(
-              std::count_if(info->txns.begin(), info->txns.end(),
-                            [parts, info](idx_t txn) { return parts[txn] != parts[info->id]; }));
-      total_cross_core_access += data_cross_degree;
-
-      min_cross_data_degree = min(min_cross_data_degree, data_cross_degree);
-      max_cross_data_degree = max(max_cross_data_degree, data_cross_degree);
+    if (post_parts[txn_id] != post_parts[data_id]) {
     }
   }
 
@@ -222,4 +220,5 @@ private:
 
   idx_t _next_data_id;
 };
+
 #endif // TPCC_TPCC_PARTITIONER_H_

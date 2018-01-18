@@ -92,7 +92,8 @@ SET(SRC_LIST cc/occ.h
         workload/graph_partitioner.cpp
         ycsb/ycsb_workload.cpp
         ycsb/ycsb_database.cpp
-        ycsb/ycsb_partitioner.cpp)
+        ycsb/ycsb_partitioner.cpp
+        workload/online_partitioner.h)
 
 INCLUDE_DIRECTORIES(.)
 INCLUDE_DIRECTORIES(ycsb)

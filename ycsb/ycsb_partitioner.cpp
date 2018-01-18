@@ -397,6 +397,7 @@ void YCSBAccessGraphPartitioner::compute_post_stats(idx_t *parts) {
       if(random_parts[txn_id] != random_parts[info->id]) {
         pre_cross_access++;
       }
+
       if(parts[txn_id] != parts[info->id]) {
         post_cross_access++;
       }

@@ -133,9 +133,9 @@ void AccessGraphPartitioner::print_partition_summary() {
   printf("%-30s: %u\n", "Iteration", _current_iteration);
   printf("%-30s: %lu\n", "Num-Vertices", _current_total_num_vertices);
   printf("%-30s: %lu\n", "Num-Edges", _current_total_num_edges);
-  printf("%-30s: %lu\n", "Pre-Total-Cross-Core-Access", post_total_cross_core_access);
-  printf("%-30s: %lu\n", "Pre-Min-Cross-Core-Access", post_min_cross_core_access);
-  printf("%-30s: %lu\n", "Pre-Max-Cross-Core-Access", post_max_cross_core_access);
+  printf("%-30s: %lu\n", "Pre-Total-Cross-Core-Access", pre_total_cross_core_access);
+  printf("%-30s: %lu\n", "Pre-Min-Cross-Core-Access", pre_min_cross_core_access);
+  printf("%-30s: %lu\n", "Pre-Max-Cross-Core-Access", pre_max_cross_core_access);
   printf("%-30s: %lu\n", "Post-Total-Cross-Core-Access", post_total_cross_core_access);
   printf("%-30s: %lu\n", "Post-Min-Cross-Core-Access", post_min_cross_core_access);
   printf("%-30s: %lu\n", "Post-Max-Cross-Core-Access", post_max_cross_core_access);

@@ -121,7 +121,6 @@ void AccessGraphPartitioner::debug_write_pre_partition_file() {
   fclose(pre_partition_file);
 }
 
-
 void AccessGraphPartitioner::print_execution_summary() {
   printf("%-30s: %10lf\n", "First-Pass-Duration", first_pass_duration);
   printf("%-30s: %10lf\n", "Second-Pass-Duration", second_pass_duration);

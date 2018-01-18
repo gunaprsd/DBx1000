@@ -35,7 +35,6 @@ protected:
   uint64_t _current_total_num_edges;
   uint64_t _current_total_num_vertices;
 
-
 	double first_pass_duration;
 	double second_pass_duration;
 	double third_pass_duration;

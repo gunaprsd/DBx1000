@@ -159,43 +159,23 @@ void check_and_init_variables() {
       g_part_cnt = static_cast<UInt32>(atoi(&g_benchmark_tag2[10]));
       assert(g_part_cnt > 0);
     } else {
-      double correlation = 0;
       g_perc_multi_part = 1;
-      if (strcmp(g_benchmark_tag2, "mp-lr-lc") == 0) {
-        g_remote_perc = 0.1;
-        correlation = 0.1;
-      } else if (strcmp(g_benchmark_tag2, "mp-lr-mc") == 0) {
-        g_remote_perc = 0.1;
-        correlation = 0.5;
-      } else if (strcmp(g_benchmark_tag2, "mp-lr-hc") == 0) {
-        g_remote_perc = 0.1;
-        correlation = 0.9;
-      } else if (strcmp(g_benchmark_tag2, "mp-mr-lc") == 0) {
+      if (strncmp(g_benchmark_tag2, "mp-custom-lc-", 13) == 0) {
         g_remote_perc = 0.5;
-        correlation = 0.1;
-      } else if (strcmp(g_benchmark_tag2, "mp-mr-mc") == 0) {
+        g_part_cnt = static_cast<uint32_t>(atoi(&g_benchmark_tag2[13]));
+        g_remote_partitions = static_cast<uint32_t>((double)0.1 * (double)g_part_cnt);
+      } else if (strncmp(g_benchmark_tag2, "mp-custom-mc-", 11) == 0) {
         g_remote_perc = 0.5;
-        correlation = 0.5;
-      } else if (strcmp(g_benchmark_tag2, "mp-mr-hc") == 0) {
+        g_part_cnt = static_cast<uint32_t>(atoi(&g_benchmark_tag2[13]));
+        g_remote_partitions = static_cast<uint32_t>((double)0.5 * (double)g_part_cnt);
+      } else if (strncmp(g_benchmark_tag2, "mp-custom-hc-", 11) == 0) {
         g_remote_perc = 0.5;
-        correlation = 0.9;
-      } else if (strcmp(g_benchmark_tag2, "mp-hr-lc") == 0) {
-        g_remote_perc = 0.8;
-        correlation = 0.1;
-      } else if (strcmp(g_benchmark_tag2, "mp-hr-mc") == 0) {
-        g_remote_perc = 0.8;
-        correlation = 0.5;
-      } else if (strcmp(g_benchmark_tag2, "mp-hr-hc") == 0) {
-        g_remote_perc = 0.8;
-        correlation = 0.9;
+        g_part_cnt = static_cast<uint32_t>(atoi(&g_benchmark_tag2[13]));
+        g_remote_partitions = static_cast<uint32_t>((double)0.9 * (double)g_part_cnt);
       } else {
         assert(false);
       }
-
-      g_part_cnt = g_thread_cnt * 16;
       g_local_partitions = g_part_cnt / g_thread_cnt;
-      g_remote_partitions = static_cast<UInt32>(
-          (1 - correlation) * (g_thread_cnt - 1) * (double)g_local_partitions);
     }
 
   } else if (strcmp(g_benchmark, "tpcc") == 0) {

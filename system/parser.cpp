@@ -137,15 +137,14 @@ void parser(int argc, char **argv) {
         g_contention_perc = atof(&argv[i][3]);
       else
         assert(false);
-    }
-		else if (argv[i][1] == 'P') {
+    } else if (argv[i][1] == 'P') {
 
       switch (argv[i][2]) {
       case 'b':
         g_benchmark = &argv[i][3];
         break;
       case 't':
-        if(argv[i][3] == '2') {
+        if (argv[i][3] == '2') {
           g_benchmark_tag2 = &argv[i][4];
         } else {
           g_benchmark_tag = &argv[i][3];
@@ -181,6 +180,9 @@ void parser(int argc, char **argv) {
           assert(false);
         }
         break;
+      case 'c':
+	g_op_cost = atoi(&argv[i][3]);
+	break;
       default:
         assert(false);
       }

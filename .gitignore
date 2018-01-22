@@ -1,5 +1,5 @@
 *.o
-data/
+data*/
 data_stacked/
 results_1/
 results/

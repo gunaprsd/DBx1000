@@ -104,6 +104,7 @@ extern UInt32 g_remote_partitions;
 extern UInt32 g_local_partitions;
 extern UInt32 g_size_factor;
 extern UInt32 g_repeat;
+extern int32_t g_op_cost;
 
 extern UInt32 g_req_per_query;
 extern UInt32 g_field_per_tuple;

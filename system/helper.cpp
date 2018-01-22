@@ -164,11 +164,11 @@ void check_and_init_variables() {
         g_remote_perc = 0.5;
         g_part_cnt = static_cast<uint32_t>(atoi(&g_benchmark_tag2[13]));
         g_remote_partitions = static_cast<uint32_t>((double)0.1 * (double)g_part_cnt);
-      } else if (strncmp(g_benchmark_tag2, "mp-custom-mc-", 11) == 0) {
+      } else if (strncmp(g_benchmark_tag2, "mp-custom-mc-", 13) == 0) {
         g_remote_perc = 0.5;
         g_part_cnt = static_cast<uint32_t>(atoi(&g_benchmark_tag2[13]));
         g_remote_partitions = static_cast<uint32_t>((double)0.5 * (double)g_part_cnt);
-      } else if (strncmp(g_benchmark_tag2, "mp-custom-hc-", 11) == 0) {
+      } else if (strncmp(g_benchmark_tag2, "mp-custom-hc-", 13) == 0) {
         g_remote_perc = 0.5;
         g_part_cnt = static_cast<uint32_t>(atoi(&g_benchmark_tag2[13]));
         g_remote_partitions = static_cast<uint32_t>((double)0.9 * (double)g_part_cnt);

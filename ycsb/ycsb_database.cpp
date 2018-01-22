@@ -114,16 +114,23 @@ RC YCSBTransactionManager::run_txn(BaseQuery *query) {
         goto final;
       }
 
+      char *data = row_local->get_data();
+      float a = *(float*)data;
+      for (int i = 0; i < g_op_cost; i++) {
+        a *= a;
+      }
+      *(float*)data = a;
+
       if (m_query->request_cnt > 1) {
         if (req->rtype == RD || req->rtype == SCAN) {
           int fid = 0;
-          char *data = row_local->get_data();
+          //char *data = row_local->get_data();
           __attribute__((unused)) uint64_t fval =
               *(uint64_t *)(&data[fid * 10]);
         } else {
           assert(req->rtype == WR);
           int fid = 0;
-          char *data = row->get_data();
+          //char *data = row->get_data();
           *(uint64_t *)(&data[fid * 10]) = 0;
         }
       }
@@ -134,6 +141,7 @@ RC YCSBTransactionManager::run_txn(BaseQuery *query) {
     }
   }
   rc = RCOK;
+
 final:
   rc = finish(rc);
   return rc;

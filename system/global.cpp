@@ -58,6 +58,7 @@ double g_remote_perc = 0.0;
 UInt32 g_remote_partitions = 0;
 UInt32 g_local_partitions = 0;
 UInt32 g_repeat = 1;
+int32_t g_op_cost = 1;
 
 UInt32 g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;

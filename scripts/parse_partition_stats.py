@@ -1,25 +1,15 @@
 import re
 import sys
 
-keys = ['Num Vertices', 'Num Edges', 'Cross-Core Accesses', 'Min Data Degree', 'Max Data Degree', 'Min Cross Data Degree', 'Max Cross Data Degree']
-keys2 = ['First Pass', 'Second Pass', 'Third Pass', 'Partition']
+keys = ['Num-Vertices', 'Num-Edges', 'Pre-Total-Cross-Core-Access', 'Pre-Min-Cross-Core-Access', 'Pre-Max-Cross-Core-Access', 'Post-Total-Cross-Core-Access', 'Post-Min-Cross-Core-Access', 'Post-Max-Cross-Core-Access', 'Min-Cluster-Size', 'Max-Cluster-Size', 'First-Pass-Duration', 'Second-Pass-Duration', 'Third-Pass-Duration', 'Partition-Duration']
 data = []
 
-def find_partition_summary(s, r):
-    rext = r
+def find_value_for_key(string, rgx):
+    rext = rgx
     while(len(rext) < 30):
         rext += ' '
     rext += ': '
-    m = re.findall('(?<=' + rext + ')[0-9]+\.*[0-9]*', s)
-    m = map(lambda x: x.strip(), m)
-    return m
-
-def find_execution_summary(s, key):
-    rext = key
-    while(len(rext) < 25):
-        rext += ' '
-    rext += ' :: total:'
-    m = re.findall('(?<=' + rext + ')\ +[0-9]+\.*[0-9]*', s)
+    m = re.findall('(?<=' + rext + ')\ *[0-9]+\.*[0-9]*', string)
     m = map(lambda x: x.strip(), m)
     return m
 
@@ -36,12 +26,9 @@ def pretty_print():
 
 def parse(fname):
     f = open(fname, 'r')
-    s = f.read()
+    sdata = f.read()
     for key in keys:
-        col = find_partition_summary(s, key)
-        data.append(col)
-    for key in keys2:
-        col = find_execution_summary(s, key)
+        col = find_value_for_key(sdata, key)
         data.append(col)
     pretty_print()
 

@@ -51,9 +51,9 @@ void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
       gen_single_partition_requests(thread_id, &(_queries[thread_id][i]));
     }
   }
-  printf("Number of 1 accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[0]);
-  printf("Number of 2 accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[1]);
-  printf("Number of other accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[2]);
+  //printf("Number of 1 accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[0]);
+  //printf("Number of 2 accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[1]);
+  //printf("Number of other accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[2]);
 }
 
 void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id,

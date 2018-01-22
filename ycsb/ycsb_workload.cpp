@@ -10,22 +10,26 @@ YCSBWorkloadGenerator::YCSBWorkloadGenerator(const YCSBWorkloadConfig &config,
     : ParallelWorkloadGenerator(num_threads, num_queries_per_thread,
                                 folder_path),
       _config(config), _zipfian(config.table_size / config.num_partitions,
-                                num_threads, config.zipfian_theta),
+                                config.num_partitions, config.zipfian_theta),
       _random(num_threads) {
 
-	auto cmd = new char[300];
-	snprintf(cmd, 300, "mkdir -p %s", folder_path.c_str());
-	if(system(cmd)) {
-		printf("Folder %s created!", folder_path.c_str());
-	}
-	delete cmd;
+  auto cmd = new char[300];
+  snprintf(cmd, 300, "mkdir -p %s", folder_path.c_str());
+  if (system(cmd)) {
+    printf("Folder %s created!", folder_path.c_str());
+  }
+  delete cmd;
   _queries = new ycsb_query *[_num_threads];
   _data = new ThreadLocalData[_num_threads];
   for (uint32_t i = 0; i < _num_threads; i++) {
-    for(uint32_t j = 0; j < 8; j++) {
+    for (uint32_t j = 0; j < 8; j++) {
       _data[i].fields[j] = 0;
     }
     _queries[i] = new ycsb_query[_num_queries_per_thread];
+  }
+
+  for (uint32_t i = 0; i < config.num_partitions; i++) {
+    _zipfian.seed(i, i + 1);
   }
 }
 
@@ -42,18 +46,14 @@ BaseQueryMatrix *YCSBWorkloadGenerator::get_queries_matrix() {
 }
 
 void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
-  _zipfian.seed(thread_id, thread_id + 1);
-  _random.seed(thread_id, 2 * thread_id + 1);
+  _random.seed(thread_id, thread_id + 1);
   for (uint64_t i = 0; i < _num_queries_per_thread; i++) {
-    if(_random.nextDouble(thread_id) < _config.multi_part_txns_percent) {
+    if (_random.nextDouble(thread_id) < _config.multi_part_txns_percent) {
       gen_multi_partition_requests(thread_id, &(_queries[thread_id][i]));
     } else {
       gen_single_partition_requests(thread_id, &(_queries[thread_id][i]));
     }
   }
-  //printf("Number of 1 accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[0]);
-  //printf("Number of 2 accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[1]);
-  //printf("Number of other accesses in thread %u: %lu\n", thread_id, _data[thread_id].fields[2]);
 }
 
 void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id,
@@ -62,34 +62,34 @@ void YCSBWorkloadGenerator::per_thread_write_to_file(uint32_t thread_id,
   fwrite(thread_queries, sizeof(ycsb_query), _num_queries_per_thread, file);
 }
 
+/*
+ * Single Partition Transactions:
+ * In this type of transactions, all requests pertain to a single partition.
+ * We first choose a partition at random. Each partition has a zipfian access
+ * distribution, which is used to generate the requests for that transaction.
+ */
 void YCSBWorkloadGenerator::gen_single_partition_requests(uint32_t thread_id,
                                                           ycsb_query *query) {
   set<uint64_t> all_keys;
-
   uint64_t max_row_id = _config.table_size / _config.num_partitions;
+  uint32_t part_id = static_cast<uint32_t>(_zipfian.nextRandInt64(thread_id) %
+                                           _config.num_partitions);
   uint64_t req_id = 0;
-  uint64_t part_id = _random.nextInt64(thread_id) % _config.num_partitions;
   for (uint32_t tmp = 0; tmp < MAX_REQ_PER_QUERY; tmp++) {
     ycsb_request *req = &(query->params.requests[req_id]);
 
-    // Choose the access type
-    if (_random.nextDouble(thread_id) < _config.read_percent) {
+    // Choose the access type based on random sequence from partition
+    if (_zipfian.nextRandDouble(part_id) < _config.read_percent) {
       req->rtype = RD;
     } else {
       req->rtype = WR;
     }
 
-    auto row_id = _zipfian.nextInt64(thread_id);
+    auto row_id = _zipfian.nextZipfInt64(part_id);
     assert(row_id < max_row_id);
-    if(row_id == 1) {
-      _data[thread_id].fields[0]++;
-    } else if(row_id == 2) {
-      _data[thread_id].fields[1]++;
-    } else {
-      _data[thread_id].fields[2]++;
-    }
+
     req->key = row_id * _config.num_partitions + part_id;
-    req->value = static_cast<char>(_random.nextInt64(thread_id) % (1 << 8));
+    req->value = static_cast<char>(_zipfian.nextRandInt64(part_id) % (1 << 8));
 
     // Make sure a single row is not accessed twice
     if (all_keys.find(req->key) == all_keys.end()) {
@@ -97,6 +97,7 @@ void YCSBWorkloadGenerator::gen_single_partition_requests(uint32_t thread_id,
       req_id++;
     } else {
       continue;
+      //which means it will be overwritten!
     }
   }
   query->params.request_cnt = req_id;
@@ -118,18 +119,14 @@ void YCSBWorkloadGenerator::gen_single_partition_requests(uint32_t thread_id,
       assert(query->params.requests[i].key < query->params.requests[i + 1].key);
     }
   }
-
-  assert(query->params.request_cnt <= MAX_REQ_PER_QUERY);
 }
 
 void YCSBWorkloadGenerator::gen_multi_partition_requests(uint32_t thread_id,
                                                          ycsb_query *query) {
-	assert(_config.num_partitions == _config.num_local_partitions * _num_threads);
-
-  vector<uint64_t> parts;
+  vector<uint32_t> parts;
   set<uint64_t> all_keys;
 
-  // Generate the parts that need to be accessed
+  // First generate all the parts that need to be accessed
   parts.reserve(MAX_REQ_PER_QUERY);
   for (uint32_t i = 0; i < MAX_REQ_PER_QUERY; i++) {
     auto rint64 = _random.nextInt64(thread_id);
@@ -142,7 +139,7 @@ void YCSBWorkloadGenerator::gen_multi_partition_requests(uint32_t thread_id,
       part_id = (thread_id * _config.num_local_partitions) +
                 (rint64 % _config.num_local_partitions);
     }
-    parts.push_back(part_id);
+    parts.push_back(static_cast<uint32_t>(part_id));
   }
 
   uint64_t max_row_id = _config.table_size / _config.num_partitions;
@@ -151,18 +148,18 @@ void YCSBWorkloadGenerator::gen_multi_partition_requests(uint32_t thread_id,
     assert(req_id < MAX_REQ_PER_QUERY);
     ycsb_request *req = &(query->params.requests[req_id]);
 
+    uint32_t part_id = parts[tmp];
     // Choose the access type
-    if (_random.nextDouble(thread_id) < _config.read_percent) {
+    if (_zipfian.nextRandDouble(part_id) < _config.read_percent) {
       req->rtype = RD;
     } else {
       req->rtype = WR;
     }
 
-    auto part_id = parts[tmp];
-    auto row_id = _zipfian.nextInt64(thread_id);
+    auto row_id = _zipfian.nextZipfInt64(part_id);
     assert(row_id < max_row_id);
     req->key = row_id * _config.num_partitions + part_id;
-    req->value = static_cast<char>(_random.nextInt64(thread_id) % (1 << 8));
+    req->value = static_cast<char>(_zipfian.nextRandInt64(part_id) % (1 << 8));
 
     // Make sure a single row is not accessed twice
     if (all_keys.find(req->key) == all_keys.end()) {
@@ -172,7 +169,6 @@ void YCSBWorkloadGenerator::gen_multi_partition_requests(uint32_t thread_id,
       continue;
     }
   }
-
   query->params.request_cnt = req_id;
 
   // Sort the requests in key order, if needed
@@ -192,8 +188,6 @@ void YCSBWorkloadGenerator::gen_multi_partition_requests(uint32_t thread_id,
       assert(query->params.requests[i].key < query->params.requests[i + 1].key);
     }
   }
-
-  assert(query->params.request_cnt <= MAX_REQ_PER_QUERY);
 }
 
 BaseQueryList *YCSBWorkloadLoader::get_queries_list(uint32_t thread_id) {

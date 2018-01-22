@@ -1,6 +1,7 @@
 // Copyright [2017] <Guna Prasaad>
 
 #include "global.h"
+#include <pthread.h>
 
 #ifndef WORKLOAD_DISTRIBUTIONS_H_
 #define WORKLOAD_DISTRIBUTIONS_H_
@@ -11,33 +12,54 @@
  * Generates 64bit and double random numbers using lrand48_r and drand48_r
  * Each thread has its own buffer data, so individually the threads generate
  * random distribution.
+ *
+ * Note that this is also thread-safe. It basically produces n sequences of numbers
+ * in which each sequence follows a random distribution.
  */
 class RandomNumberGenerator {
 public:
-  explicit RandomNumberGenerator(uint32_t num_threads) {
-    _num_threads = num_threads;
-    _buffers = new drand48_data *[num_threads];
-    for(uint32_t i = 0; i < num_threads; i++) {
-      _buffers[i] = reinterpret_cast<drand48_data *>(_mm_malloc(sizeof(drand48_data), 64));
+  explicit RandomNumberGenerator(uint32_t num_dists) {
+    _num_dists = num_dists;
+    _buffers = new drand48_data *[num_dists];
+    _latches = new pthread_mutex_t[num_dists];
+    for (uint32_t i = 0; i < num_dists; i++) {
+      _buffers[i] = reinterpret_cast<drand48_data *>(
+          _mm_malloc(sizeof(drand48_data), 64));
+      pthread_mutex_init(&_latches[i], NULL);
     }
   }
-  ~RandomNumberGenerator() { delete[] _buffers; }
-  uint64_t nextInt64(uint32_t thread_id) {
+  ~RandomNumberGenerator() {
+    for (uint32_t i = 0; i < _num_dists; i++) {
+      pthread_mutex_destroy(&_latches[i]);
+      free(_buffers[i]);
+    }
+    delete[] _buffers;
+    delete[] _latches;
+  }
+  uint64_t nextInt64(uint32_t dist_id) {
     int64_t rint64;
-    lrand48_r(_buffers[thread_id], &rint64);
+    pthread_mutex_lock(&_latches[dist_id]);
+    lrand48_r(_buffers[dist_id], &rint64);
+    pthread_mutex_unlock(&_latches[dist_id]);
     return static_cast<uint64_t>(rint64);
   }
-  double nextDouble(uint32_t thread_id) {
+  double nextDouble(uint32_t dist_id) {
     double rdouble;
-    drand48_r(_buffers[thread_id], &rdouble);
+    pthread_mutex_lock(&_latches[dist_id]);
+    drand48_r(_buffers[dist_id], &rdouble);
+    pthread_mutex_unlock(&_latches[dist_id]);
     return rdouble;
   }
-  void seed(uint32_t thread_id, long value) {
-    srand48_r(value, _buffers[thread_id]);
+  void seed(uint32_t dist_id, long value) {
+    pthread_mutex_lock(&_latches[dist_id]);
+    srand48_r(value, _buffers[dist_id]);
+    pthread_mutex_unlock(&_latches[dist_id]);
   }
+
 protected:
-  uint32_t _num_threads;
+  uint32_t _num_dists;
   drand48_data **_buffers;
+  pthread_mutex_t *_latches;
 };
 
 /*
@@ -58,14 +80,15 @@ protected:
  */
 class ZipfianNumberGenerator {
 public:
-  ZipfianNumberGenerator(uint64_t n, uint32_t num_threads, double zipfian_theta)
-      : _generator(num_threads) {
+  ZipfianNumberGenerator(uint64_t n, uint32_t num_distributions,
+                         double zipfian_theta)
+      : _generator(num_distributions) {
     _the_n = n - 1;
     _theta = zipfian_theta;
     initialize();
   }
-  uint64_t nextInt64(uint32_t thread_id) {
-    double u = _generator.nextDouble(thread_id);
+  uint64_t nextZipfInt64(uint32_t dist_id) {
+    double u = _generator.nextDouble(dist_id);
     double uz = u * _zeta_n_theta;
     if (uz < 1) {
       return 1;
@@ -75,9 +98,13 @@ public:
       return 1 + (uint64_t)(_the_n * pow(_eta * u - _eta + 1, _alpha));
     }
   }
-  void seed(uint32_t thread_id, long value){
-    _generator.seed(thread_id, value);
+  uint64_t nextRandInt64(uint32_t dist_id) {
+    return _generator.nextInt64(dist_id);
   }
+  double nextRandDouble(uint32_t dist_id) {
+    return _generator.nextDouble(dist_id);
+  }
+  void seed(uint32_t dist_id, long value) { _generator.seed(dist_id, value); }
   ~ZipfianNumberGenerator() = default;
 
 protected:

@@ -34,7 +34,8 @@ struct YCSBWorkloadConfig {
 
 class YCSBWorkloadGenerator : public ParallelWorkloadGenerator {
 public:
-  YCSBWorkloadGenerator(const YCSBWorkloadConfig &config, uint32_t num_threads,
+  YCSBWorkloadGenerator(const YCSBWorkloadConfig &config,
+												uint32_t num_threads,
                         uint64_t num_queries_per_thread,
                         const string &folder_path);
   BaseQueryList *get_queries_list(uint32_t thread_id) override;
@@ -44,6 +45,8 @@ protected:
   void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
   void gen_single_partition_requests(uint32_t thd_id, ycsb_query *query);
 	void gen_multi_partition_requests(uint32_t thd_id, ycsb_query *query);
+
+	//Data fields
   ycsb_query **_queries;
   YCSBWorkloadConfig _config;
   ZipfianNumberGenerator _zipfian;

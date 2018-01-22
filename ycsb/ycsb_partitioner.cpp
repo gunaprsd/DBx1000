@@ -339,7 +339,7 @@ void YCSBAccessGraphPartitioner::second_pass() {
 
 /*
  * In the third pass, we create the data portion of the graph.
- * Since we allotted data ids serially, we just seek to the nextInt64 data id
+ * Since we allotted data ids serially, we just seek to the nextZipfInt64 data id
  * and add its portion information into the graph
  */
 void YCSBAccessGraphPartitioner::third_pass() {

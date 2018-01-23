@@ -1,3 +1,4 @@
+#include <cstring>
 #include "tpcc_helper.h"
 
 TPCCUtility::TPCCUtility(uint32_t num_threads) : random(num_threads) {

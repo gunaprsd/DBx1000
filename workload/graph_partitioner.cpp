@@ -1,5 +1,6 @@
 // Copyright[2017] <Guna Prasaad>
 #include "graph_partitioner.h"
+#include <cstring>
 
 void METISGraphPartitioner::compute_partitions(
                               METIS_CSRGraph * graph,

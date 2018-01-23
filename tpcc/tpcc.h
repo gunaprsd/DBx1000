@@ -42,4 +42,26 @@ union tpcc_params {
 
 typedef Query<tpcc_params> tpcc_query;
 
+typedef AccessIterator<tpcc_params> tpcc_access_iterator;
+
+class TPCCAccessHelper {
+		static uint64_t wh_cnt;
+		static uint64_t wh_off;
+		static uint64_t district_cnt;
+		static uint64_t district_off;
+		static uint64_t customer_cnt;
+		static uint64_t customer_off;
+		static uint64_t items_cnt;
+		static uint64_t items_off;
+		static uint64_t stocks_cnt;
+		static uint64_t stocks_off;
+public:
+		static void initialize();
+		static uint64_t get_max_key();
+		static uint64_t get_warehouse_key(uint64_t wid);
+		static uint64_t get_district_key(uint64_t wid, uint64_t did);
+		static uint64_t get_customer_key(uint64_t wid, uint64_t did, uint64_t cid);
+		static uint64_t get_item_key(uint64_t iid);
+		static uint64_t get_stock_key(uint64_t wid, uint64_t iid);
+};
 #endif // TPCC_TPCC_H_

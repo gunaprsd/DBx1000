@@ -8,6 +8,7 @@
 #include "thread.h"
 #include "tpcc_helper.h"
 #include "tpcc.h"
+#include <cstring>
 
 class TPCCDatabase : public Database {
 public:

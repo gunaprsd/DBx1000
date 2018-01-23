@@ -4,6 +4,7 @@
 #include <vector>
 #include "global.h"
 #include "helper.h"
+#include <cstring>
 
 class Column {
 public:

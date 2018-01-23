@@ -27,14 +27,15 @@
  * before retrying.
  */
 
+template<typename T>
 class ThreadQueue {
   struct AbortBufferEntry {
     ts_t ready_time;
-    BaseQuery *query;
+    Query<T> *query;
   };
 
 public:
-  void initialize(uint32_t thread_id, BaseQueryList *query_list,
+  void initialize(uint32_t thread_id, QueryList<T> *query_list,
                   bool abort_buffer = true) {
     _thread_id = thread_id;
     srand48_r((_thread_id + 1) * get_sys_clock(), &_rand_buffer);
@@ -79,7 +80,7 @@ public:
     return finish;
   }
 
-  BaseQuery *next_query() {
+  Query<T> *next_query() {
     assert(_current_query == nullptr);
 
     while (true) {
@@ -182,12 +183,12 @@ protected:
 
   // Current status
   bool _query_not_returned;
-  BaseQuery *_current_query;
-  BaseQuery *_previous_query;
+  Query<T> *_current_query;
+  Query<T> *_previous_query;
   RC _previous_query_status;
 
   // Main Queue fields
-  BaseQueryList *_query_list;
+  QueryList<T> *_query_list;
 
   // Abort buffer fields
   bool _abort_buffer_enable;

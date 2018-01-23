@@ -2,6 +2,7 @@
 #include "global.h"
 #include "mem_alloc.h"
 #include "time.h"
+#include <cstring>
 
 bool itemid_t::operator==(const itemid_t &other) const {
   return (type == other.type && location == other.location);
@@ -101,21 +102,34 @@ uint64_t myrand::next() {
   return (seed / 65537) % RAND_MAX;
 }
 
-void get_workload_file_name(const char *base_file_name, uint32_t thread_id,
-                            char *destination) {
-  snprintf(destination, 200, "%s/core_%d.dat", base_file_name,
-           static_cast<int>(thread_id));
+string get_workload_file_name(const string & base_file_name, uint32_t thread_id) {
+  string output = base_file_name;
+  output += "/core_";
+  output += to_string(thread_id);
+  output += ".dat";
+  return output;
 }
 
-char *get_benchmark_path(bool partitioned) {
-  auto path = new char[200];
-  if (partitioned)
-    snprintf(path, 200, "data/%s-%s-%s-c%d-partitioned-u%d", g_benchmark,
-             g_benchmark_tag, g_benchmark_tag2 == nullptr ? "null" : g_benchmark_tag2, static_cast<int>(g_thread_cnt),
-             g_ufactor);
-  else
-    snprintf(path, 200, "data/%s-%s-%s-c%d-raw", g_benchmark, g_benchmark_tag,
-             g_benchmark_tag2 == nullptr ? "null" : g_benchmark_tag2, static_cast<int>(g_thread_cnt));
+string get_benchmark_path(const string & base, bool partitioned) {
+  string path = base;
+  path += "/";
+  path += string(g_benchmark);
+  path += "-";
+  path += string(g_benchmark_tag);
+  path += "-";
+  if(g_benchmark_tag2 != nullptr) {
+    path += string(g_benchmark_tag);
+    path += "-";
+  }
+  path += "c";
+  path += to_string(g_thread_cnt);
+  path += "-";
+  if(partitioned) {
+    path += "partitioner-u";
+    path += to_string(g_ufactor);
+  } else {
+    path += "raw";
+  }
   return path;
 }
 
@@ -190,4 +204,10 @@ void check_and_init_variables() {
   } else {
     assert(false);
   }
+}
+
+
+void ensure_folder_exists(string folder_path) {
+  string cmd = "mkdir -p " + folder_path;
+  if (system(cmd.c_str())) { printf("Folder %s created!", folder_path.c_str()); }
 }

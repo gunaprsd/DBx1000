@@ -5,43 +5,31 @@
 
 #include "generator.h"
 #include "global.h"
+#include "loader.h"
 #include "tpcc_database.h"
 #include "tpcc_helper.h"
 
-class TPCCWorkloadGenerator : public ParallelWorkloadGenerator {
+class TPCCWorkloadGenerator : public ParallelWorkloadGenerator<tpcc_params> {
 public:
-		TPCCWorkloadGenerator(uint32_t num_threads, uint64_t num_params_per_thread,
-													const string &base_file_name);
-		BaseQueryList *get_queries_list(uint32_t thread_id) override;
-		BaseQueryMatrix *get_queries_matrix() override;
-protected:
-		void per_thread_generate(uint32_t thread_id) override;
-		void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
-		void gen_payment_request(uint64_t thread_id, tpcc_payment_params *params);
-		void gen_new_order_request(uint64_t thd_id, tpcc_new_order_params *params);
-		tpcc_query **_queries;
-		TPCCUtility utility;
-};
-
-class TPCCWorkloadLoader : public ParallelWorkloadLoader {
-public:
-		void initialize(uint32_t num_threads, const char *base_file_name) override;
-		BaseQueryList *get_queries_list(uint32_t thread_id) override;
-		BaseQueryMatrix *get_queries_matrix() override;
+  TPCCWorkloadGenerator(uint32_t num_threads, uint64_t num_params_per_thread,
+                        const string &base_file_name);
 
 protected:
-		void per_thread_load(uint32_t thread_id, FILE *file) override;
-		tpcc_query **_queries;
-		uint32_t *_array_sizes;
+  void per_thread_generate(uint32_t thread_id) override;
+  void gen_payment_request(uint32_t thread_id, tpcc_payment_params *params);
+  void gen_new_order_request(uint32_t thread_id, tpcc_new_order_params *params);
+  TPCCUtility utility;
 };
 
-class TPCCExecutor : public BenchmarkExecutor {
+typedef ParallelWorkloadLoader<tpcc_params> TPCCWorkloadLoader;
+
+class TPCCExecutor : public BenchmarkExecutor<tpcc_params> {
 public:
-		void initialize(uint32_t num_threads, const char *path) override;
+  void initialize(const string &folder_path, uint32_t num_threads) override;
 
 protected:
-		TPCCDatabase *_db;
-		TPCCWorkloadLoader *_loader;
+  TPCCDatabase *_db;
+  TPCCWorkloadLoader *_loader;
 };
 
-#endif //TPCC_TPCC_WORKLOAD_GENERATOR_H_
+#endif // TPCC_TPCC_WORKLOAD_GENERATOR_H_

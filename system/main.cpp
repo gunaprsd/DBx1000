@@ -1,69 +1,37 @@
 // Copyright [2017] <Guna Prasaad>
 
+#include "scheduler.h"
 #include "config.h"
 #include "global.h"
 #include "manager.h"
 #include "mem_alloc.h"
 #include "thread.h"
 #include "tpcc_database.h"
-#include "tpcc_partitioner.h"
 #include "tpcc_workload.h"
 #include "ycsb_database.h"
-#include "ycsb_partitioner.h"
 #include "ycsb_workload.h"
+#include "partitioner.h"
 
 void parser(int argc, char **argv);
 
 void partition() {
-  string src_folder_path = get_benchmark_path(false);
-  string dst_folder_path = get_benchmark_path(true);
+  string src_folder_path = get_benchmark_path(g_data_folder, false);
+  string dst_folder_path = get_benchmark_path(g_data_folder, true);
 
   if (strcmp(g_benchmark, "ycsb") == 0) {
-    YCSBWorkloadLoader loader;
-    loader.initialize(g_thread_cnt, src_folder_path.c_str());
-    loader.load();
     if (g_task_type == PARTITION_DATA) {
-      YCSBAccessGraphPartitioner partitioner;
-      partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
-                             dst_folder_path.c_str());
-      partitioner.partition();
-      partitioner.write_to_files();
-      partitioner.print_execution_summary();
-    } else if (g_task_type == PARTITION_CONFLICT) {
-      YCSBConflictGraphPartitioner partitioner;
-      partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
-                             dst_folder_path.c_str());
-      partitioner.partition();
-      partitioner.write_to_files();
-      partitioner.print_execution_summary();
+      OfflineScheduler<ycsb_params> scheduler(src_folder_path, g_thread_cnt, g_size, dst_folder_path);
+      scheduler.schedule();
     } else {
       assert(false);
     }
-    loader.release();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
-    TPCCWorkloadLoader loader;
-    loader.initialize(g_thread_cnt, src_folder_path.c_str());
-    loader.load();
     if (g_task_type == PARTITION_DATA) {
-      TPCCAccessGraphPartitioner partitioner;
-      partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
-                             dst_folder_path.c_str());
-      partitioner.partition();
-      partitioner.write_to_files();
-      partitioner.print_execution_summary();
-    } else if (g_task_type == PARTITION_CONFLICT) {
-      assert(false);
-      TPCCConflictGraphPartitioner partitioner;
-      partitioner.initialize(loader.get_queries_matrix(), g_size, 1,
-                             dst_folder_path.c_str());
-      partitioner.partition();
-      partitioner.write_to_files();
-      partitioner.print_execution_summary();
+      OfflineScheduler<tpcc_params> scheduler(src_folder_path, g_thread_cnt, g_size, dst_folder_path);
+      scheduler.schedule();
     } else {
       assert(false);
     }
-
-    loader.release();
   } else {
     assert(false);
   }
@@ -82,12 +50,12 @@ void generate() {
         .num_remote_partitions = g_remote_partitions};
 
     YCSBWorkloadGenerator generator(config, g_thread_cnt, g_size_per_thread,
-                                    string(get_benchmark_path(false)));
+                                    get_benchmark_path(g_data_folder, false));
     generator.generate();
     generator.release();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     TPCCWorkloadGenerator generator(g_thread_cnt, g_size_per_thread,
-                                    string(get_benchmark_path(false)));
+                                    get_benchmark_path(g_data_folder, false));
     generator.generate();
     generator.release();
   }
@@ -96,21 +64,21 @@ void generate() {
 void execute() {
   string folder_path;
   if (g_task_type == EXECUTE_RAW) {
-    folder_path = get_benchmark_path(false);
+    folder_path = get_benchmark_path(g_data_folder, false);
   } else if (g_task_type == EXECUTE_PARTITIONED) {
-    folder_path = get_benchmark_path(true);
+    folder_path = get_benchmark_path(g_data_folder, true);
   } else {
     assert(false);
   }
 
   if (strcmp(g_benchmark, "ycsb") == 0) {
     YCSBExecutor executor;
-    executor.initialize(g_thread_cnt, folder_path.c_str());
+    executor.initialize(folder_path, g_thread_cnt);
     executor.execute();
     executor.release();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     TPCCExecutor executor;
-    executor.initialize(g_thread_cnt, folder_path.c_str());
+    executor.initialize(folder_path, g_thread_cnt);
     executor.execute();
     executor.release();
   } else {

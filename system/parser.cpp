@@ -70,7 +70,7 @@ void parser(int argc, char **argv) {
     else if (argv[i][1] == 'z')
       g_zipf_theta = atof(&argv[i][2]);
     else if (argv[i][1] == 'd')
-      g_prt_lat_distr = atoi(&argv[i][2]);
+      g_data_folder = string(&argv[i][2]);
     else if (argv[i][1] == 'p')
       g_part_cnt = atoi(&argv[i][2]);
     else if (argv[i][1] == 'v')

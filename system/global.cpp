@@ -29,54 +29,54 @@ carbon_barrier_t enable_barrier;
 
 ts_t g_abort_penalty = ABORT_PENALTY;
 bool g_central_man = CENTRAL_MAN;
-UInt32 g_ts_alloc = TS_ALLOC;
+uint32_t g_ts_alloc = TS_ALLOC;
 bool g_key_order = KEY_ORDER;
 bool g_no_dl = NO_DL;
 ts_t g_timeout = TIMEOUT;
 ts_t g_dl_loop_detect = DL_LOOP_DETECT;
 bool g_ts_batch_alloc = TS_BATCH_ALLOC;
-UInt32 g_ts_batch_num = TS_BATCH_NUM;
+uint32_t g_ts_batch_num = TS_BATCH_NUM;
 
 bool g_part_alloc = PART_ALLOC;
 bool g_mem_pad = MEM_PAD;
-UInt32 g_cc_alg = CC_ALG;
+uint32_t g_cc_alg = CC_ALG;
 ts_t g_query_intvl = QUERY_INTVL;
-UInt32 g_part_per_txn = PART_PER_TXN;
+uint32_t g_part_per_txn = PART_PER_TXN;
 double g_perc_multi_part = PERC_MULTI_PART;
 double g_read_perc = READ_PERC;
 double g_write_perc = WRITE_PERC;
 double g_zipf_theta = ZIPF_THETA;
 bool g_prt_lat_distr = PRT_LAT_DISTR;
-UInt32 g_part_cnt = PART_CNT;
-UInt32 g_virtual_part_cnt = VIRTUAL_PART_CNT;
-UInt32 g_thread_cnt = THREAD_CNT;
+uint32_t g_part_cnt = PART_CNT;
+uint32_t g_virtual_part_cnt = VIRTUAL_PART_CNT;
+uint32_t g_thread_cnt = THREAD_CNT;
 UInt64 g_synth_table_size = SYNTH_TABLE_SIZE;
-UInt32 g_req_per_query = REQ_PER_QUERY;
-UInt32 g_field_per_tuple = FIELD_PER_TUPLE;
-UInt32 g_init_parallelism = INIT_PARALLELISM;
+uint32_t g_req_per_query = REQ_PER_QUERY;
+uint32_t g_field_per_tuple = FIELD_PER_TUPLE;
+uint32_t g_init_parallelism = INIT_PARALLELISM;
 double g_remote_perc = 0.0;
-UInt32 g_remote_partitions = 0;
-UInt32 g_local_partitions = 0;
-UInt32 g_repeat = 1;
+uint32_t g_remote_partitions = 0;
+uint32_t g_local_partitions = 0;
+uint32_t g_repeat = 1;
 int32_t g_op_cost = 1;
 
-UInt32 g_num_wh = NUM_WH;
+uint32_t g_num_wh = NUM_WH;
 double g_perc_payment = PERC_PAYMENT;
 bool g_wh_update = WH_UPDATE;
 char *output_file = NULL;
 
 double g_contention_perc = CONTENTION_PERC;
-UInt32 g_pos_in_txn = POS_IN_TXN;
-UInt32 g_txn_length = REQ_PER_QUERY;
+uint32_t g_pos_in_txn = POS_IN_TXN;
+uint32_t g_txn_length = REQ_PER_QUERY;
 
 map<string, string> g_params;
 
 #if TPCC_SMALL
-UInt32 g_max_items = 10000;
-UInt32 g_cust_per_dist = 2000;
+uint32_t g_max_items = 10000;
+uint32_t g_cust_per_dist = 2000;
 #else
-UInt32 g_max_items = 100000;
-UInt32 g_cust_per_dist = 3000;
+uint32_t g_max_items = 100000;
+uint32_t g_cust_per_dist = 3000;
 #endif
 
 void print_ycsb_query(FILE *file, ycsb_query *query) {
@@ -134,3 +134,5 @@ char *g_benchmark = nullptr;
 char *g_benchmark_tag = nullptr;
 char *g_benchmark_tag2 = nullptr;
 int g_ufactor = -1;
+
+string g_data_folder("data");

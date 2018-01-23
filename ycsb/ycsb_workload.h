@@ -5,6 +5,7 @@
 
 #include "distributions.h"
 #include "generator.h"
+#include "loader.h"
 #include "thread.h"
 #include "ycsb_database.h"
 
@@ -32,45 +33,27 @@ struct YCSBWorkloadConfig {
 	uint32_t num_remote_partitions;
 };
 
-class YCSBWorkloadGenerator : public ParallelWorkloadGenerator {
+class YCSBWorkloadGenerator : public ParallelWorkloadGenerator<ycsb_params> {
 public:
   YCSBWorkloadGenerator(const YCSBWorkloadConfig &config,
 												uint32_t num_threads,
                         uint64_t num_queries_per_thread,
                         const string &folder_path);
-  BaseQueryList *get_queries_list(uint32_t thread_id) override;
-  BaseQueryMatrix *get_queries_matrix() override;
 protected:
   void per_thread_generate(uint32_t thread_id) override;
-  void per_thread_write_to_file(uint32_t thread_id, FILE *file) override;
   void gen_single_partition_requests(uint32_t thd_id, ycsb_query *query);
 	void gen_multi_partition_requests(uint32_t thd_id, ycsb_query *query);
 
-	//Data fields
-  ycsb_query **_queries;
   YCSBWorkloadConfig _config;
   ZipfianNumberGenerator _zipfian;
   RandomNumberGenerator _random;
-  ThreadLocalData * _data;
-  friend class YCSBConflictGraphPartitioner;
 };
 
-class YCSBWorkloadLoader : public ParallelWorkloadLoader {
+typedef ParallelWorkloadLoader<ycsb_params> YCSBWorkloadLoader;
+
+class YCSBExecutor : public BenchmarkExecutor<ycsb_params> {
 public:
-  void initialize(uint32_t num_threads, const char *folder_path) override;
-  BaseQueryList *get_queries_list(uint32_t thread_id) override;
-  BaseQueryMatrix *get_queries_matrix() override;
-
-protected:
-  void per_thread_load(uint32_t thread_id, FILE *file) override;
-  ycsb_query **_queries;
-  uint32_t *_array_sizes;
-};
-
-class YCSBExecutor : public BenchmarkExecutor {
-public:
-		void initialize(uint32_t num_threads, const char *path) override;
-
+		void initialize(const string & folder_path, uint32_t num_threads) override;
 protected:
 		YCSBDatabase * _db;
 		YCSBWorkloadLoader * _loader;

@@ -1,10 +1,12 @@
-#pragma once
+#ifndef __HELPER_H__
+#define __HELPER_H__
 
 #include "global.h"
 #include <cstdlib>
 #include <iostream>
 #include <stdint.h>
-
+#include <string>
+using namespace std;
 /************************************************/
 // atomic operations
 /************************************************/
@@ -252,11 +254,14 @@ inline void set_affinity(uint64_t thd_id) {
   return;
 }
 
-void get_workload_file_name(const char *folder_path, uint32_t thread_id,
-                            char *destination);
+string get_workload_file_name(const string & folder_path, uint32_t thread_id);
 
 #define DURATION(e, s) ((double)e - (double)s) / 1000.0 / 1000.0 / 1000.0
 
-char *get_benchmark_path(bool partitioned);
+string get_benchmark_path(const string & base, bool partitioned);
 
 void check_and_init_variables();
+
+void ensure_folder_exists(string folder_path);
+
+#endif

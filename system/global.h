@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __GLOBAL_H__
+#define __GLOBAL_H__
 
 #include "stdint.h"
 #include <cassert>
@@ -14,7 +15,6 @@
 #include <set>
 #include <sstream>
 #include <stdio.h>
-#include <string.h>
 #include <string>
 #include <sys/time.h>
 #include <time.h>
@@ -184,15 +184,11 @@ struct TxnDataInfo {
   idx_t id;
   uint64_t num_reads;
   uint64_t num_writes;
+  std::set<idx_t> cores;
   std::vector<idx_t> txns;
-
-  TxnDataInfo() : txns() {
-    epoch = UINT64_MAX;
-    id = -1;
-    num_reads = 0;
-    num_writes = 0;
-    txns.clear();
-  }
+  TxnDataInfo()
+      : epoch(UINT64_MAX), id(-1), num_reads(0), num_writes(0), cores(),
+        txns() {}
 };
 
 struct DataInfo {
@@ -217,3 +213,6 @@ extern char *g_benchmark;
 extern char *g_benchmark_tag;
 extern char *g_benchmark_tag2;
 extern int g_ufactor;
+
+extern string g_data_folder;
+#endif

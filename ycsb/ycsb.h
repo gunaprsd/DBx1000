@@ -20,4 +20,16 @@ struct ycsb_params {
 
 typedef Query<ycsb_params> ycsb_query;
 
+class YCSBAccessHelper {
+public:
+		static uint64_t get_max_key() {
+			return 10* 1024 * 1024;
+		}
+
+		static uint64_t get_hash(uint64_t key) {
+			return key % (10* 1024 * 1024);
+		}
+};
+typedef AccessIterator<ycsb_params> ycsb_access_iterator;
+
 #endif // YCSB_YCSB_H_

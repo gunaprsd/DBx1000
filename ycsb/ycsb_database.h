@@ -3,6 +3,7 @@
 #ifndef YCSB_YCSB_DATABASE_H_
 #define YCSB_YCSB_DATABASE_H_
 
+#include <cstring>
 #include "database.h"
 #include "txn.h"
 #include "ycsb.h"

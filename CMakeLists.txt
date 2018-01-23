@@ -81,6 +81,7 @@ SET(SRC_LIST cc/occ.h
         system/global.cpp
         system/parser.cpp
         system/main.cpp
+        tpcc/tpcc.cpp
         tpcc/tpcc_partitioner.cpp
         tpcc/tpcc_database.cpp
         tpcc/tpcc_workload.cpp
@@ -90,10 +91,11 @@ SET(SRC_LIST cc/occ.h
         workload/generator.cpp
         workload/conflict_graph_partitioner.cpp
         workload/graph_partitioner.cpp
+        ycsb/ycsb.cpp
         ycsb/ycsb_workload.cpp
         ycsb/ycsb_database.cpp
         ycsb/ycsb_partitioner.cpp
-        workload/online_partitioner.h)
+        workload/online_partitioner.h tpcc/tpcc.cpp workload/partitioner.h workload/loader.cpp workload/loader.h ycsb/ycsb.cpp workload/scheduler.cpp workload/scheduler.h)
 
 INCLUDE_DIRECTORIES(.)
 INCLUDE_DIRECTORIES(ycsb)

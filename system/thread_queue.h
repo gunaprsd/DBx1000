@@ -33,9 +33,8 @@ class ThreadQueue {
     ts_t ready_time;
     Query<T> *query;
   };
-
 public:
-  void initialize(uint32_t thread_id, QueryList<T> *query_list,
+  void initialize(uint64_t thread_id, QueryIterator<T> *query_list,
                   bool abort_buffer = true) {
     _thread_id = thread_id;
     srand48_r((_thread_id + 1) * get_sys_clock(), &_rand_buffer);
@@ -179,7 +178,7 @@ public:
 protected:
   // Other data
   drand48_data _rand_buffer;
-  uint32_t _thread_id;
+  uint64_t _thread_id;
 
   // Current status
   bool _query_not_returned;
@@ -188,7 +187,7 @@ protected:
   RC _previous_query_status;
 
   // Main Queue fields
-  QueryList<T> *_query_list;
+  QueryIterator<T> *_query_list;
 
   // Abort buffer fields
   bool _abort_buffer_enable;

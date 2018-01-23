@@ -1,7 +1,7 @@
 #include <cstring>
 #include "tpcc_helper.h"
 
-TPCCUtility::TPCCUtility(uint32_t num_threads) : random(num_threads) {
+TPCCUtility::TPCCUtility(uint64_t num_threads) : random(num_threads) {
   C_255 = (uint64_t)generateRandom(0, 255, 0);
   C_1023 = (uint64_t)generateRandom(0, 1023, 0);
   C_8191 = (uint64_t)generateRandom(0, 8191, 0);
@@ -58,7 +58,7 @@ uint64_t TPCCUtility::generateNumberString(int min, int max, char *str,
                                            uint64_t thd_id) {
 
   uint64_t cnt = generateRandom(min, max, thd_id);
-  for (UInt32 i = 0; i < cnt; i++) {
+  for (uint32_t i = 0; i < cnt; i++) {
     uint64_t r = generateRandom(0L, 9L, thd_id);
     str[i] = '0' + r;
   }

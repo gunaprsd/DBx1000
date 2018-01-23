@@ -9,7 +9,7 @@
 #include "table.h"
 #include <pthread.h>
 
-void Database::initialize(uint32_t num_threads) { _num_threads = num_threads; }
+void Database::initialize(uint64_t num_threads) { _num_threads = num_threads; }
 
 RC Database::initialize_schema(string schema_file) {
 
@@ -32,7 +32,7 @@ RC Database::initialize_schema(string schema_file) {
         getline(fin, line);
       }
       schema->init(tname.c_str(), lines.size());
-      for (UInt32 i = 0; i < lines.size(); i++) {
+      for (uint32_t i = 0; i < lines.size(); i++) {
         string line = lines[i];
         size_t pos = 0;
         string token;
@@ -130,7 +130,7 @@ void Database::load() {
   uint64_t end_time = get_server_clock();
   double duration =
       ((double)(end_time - start_time)) / 1000.0 / 1000.0 / 1000.0;
-  printf("Database Loading Completed in %lf secs using %d threads\n", duration,
+  printf("Database Loading Completed in %lf secs using %lu threads\n", duration,
          _num_threads);
 }
 

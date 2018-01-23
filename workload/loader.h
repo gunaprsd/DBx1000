@@ -7,7 +7,7 @@
  * ------------------------
  * Loads k binary files of the form <_folder_path>/core_<i>.dat that each
  * contain queries in the binary format. The loaded queries can be obtained
- * using get_queries_list.
+ * using get_query_iterator.
  */
 template <typename T> class ParallelWorkloadLoader {
 public:
@@ -40,20 +40,17 @@ public:
 			delete[] threads;
 			delete[] data;
 		}
-  virtual QueryList<T> *get_queries_list(uint32_t thread_id) {
-		auto queryList = new QueryList<T>();
-		queryList->initialize(_queries[thread_id], _array_sizes[thread_id]);
-		return queryList;
+  virtual QueryIterator<T> *get_queries_list(uint32_t thread_id) {
+		return new QueryIterator<T>(_queries[thread_id], _array_sizes[thread_id]);
 	}
   virtual QueryMatrix<T> *get_queries_matrix() {
-		uint32_t const_size = _array_sizes[0];
+		//Can create a query matrix only with equal number of elements in each array
+		uint32_t size = _array_sizes[0];
 		for (uint32_t i = 0; i < _num_threads; i++) {
-			assert(_array_sizes[i] == const_size);
+			assert(_array_sizes[i] == size);
 		}
 
-		auto qm = new QueryMatrix<T>();
-		qm->initialize(_queries, _num_threads, const_size);
-		return qm;
+		return new QueryMatrix<T>(_queries, _num_threads, size);
 	}
 
 protected:

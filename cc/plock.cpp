@@ -51,7 +51,7 @@ void PartMan::unlock(txn_man * txn) {
 			owner = NULL;
 		else {
 			owner = waiters[0];			
-			for (UInt32 i = 0; i < waiter_cnt - 1; i++) {
+			for (uint32_t i = 0; i < waiter_cnt - 1; i++) {
 				assert( waiters[i]->get_ts() < waiters[i + 1]->get_ts() );
 				waiters[i] = waiters[i + 1];
 			}
@@ -60,7 +60,7 @@ void PartMan::unlock(txn_man * txn) {
 		} 
 	} else {
 		bool find = false;
-		for (UInt32 i = 0; i < waiter_cnt; i++) {
+		for (uint32_t i = 0; i < waiter_cnt; i++) {
 			if (waiters[i] == txn) 
 				find = true;
 			if (find && i < waiter_cnt - 1) 
@@ -79,14 +79,14 @@ void PartMan::unlock(txn_man * txn) {
 
 void Plock::init() {
 	ARR_PTR(PartMan, part_mans, g_part_cnt);
-	for (UInt32 i = 0; i < g_part_cnt; i++)
+	for (uint32_t i = 0; i < g_part_cnt; i++)
 		part_mans[i]->init();
 }
 
 RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 	RC rc = RCOK;
 	ts_t starttime = get_sys_clock();
-	UInt32 i;
+	uint32_t i;
 	for (i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
 		rc = part_mans[part_id]->lock(txn);
@@ -94,7 +94,7 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 			break;
 	}
 	if (rc == Abort) {
-		for (UInt32 j = 0; j < i; j++) {
+		for (uint32_t j = 0; j < i; j++) {
 			uint64_t part_id = parts[j];
 			part_mans[part_id]->unlock(txn);
 		}
@@ -114,7 +114,7 @@ RC Plock::lock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 
 void Plock::unlock(txn_man * txn, uint64_t * parts, uint64_t part_cnt) {
 	ts_t starttime = get_sys_clock();
-	for (UInt32 i = 0; i < part_cnt; i ++) {
+	for (uint32_t i = 0; i < part_cnt; i ++) {
 		uint64_t part_id = parts[i];
 		part_mans[part_id]->unlock(txn);
 	}

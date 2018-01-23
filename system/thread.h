@@ -9,11 +9,11 @@
 
 template <typename T> class Thread {
 public:
-  void initialize(uint32_t id, Database *db, QueryList<T> *query_list,
+  void initialize(uint32_t id, Database *db, QueryIterator<T> *query_list,
                   bool abort_buffer_enable = true) {
 		this->thread_id = id;
 		this->db = db;
-		this->query_list = query_list;
+		this->query_iterator = query_list;
 	}
   RC run() {
 		stats.init(thread_id);
@@ -27,9 +27,8 @@ public:
 		uint64_t thd_txn_id = 0;
 
 		ThreadQueue<T> *query_queue = nullptr;
-		query_list->reset();
 		query_queue = new ThreadQueue<T>();
-		query_queue->initialize(thread_id, query_list, ABORT_BUFFER_ENABLE);
+		query_queue->initialize(thread_id, query_iterator, ABORT_BUFFER_ENABLE);
 		while (!query_queue->done()) {
 			ts_t start_time = get_sys_clock();
 
@@ -92,11 +91,10 @@ public:
 		delete query_queue;
 		return FINISH;
 	}
-
 private:
-  uint64_t thread_id;
-  Database *db;
-  QueryList<T> *query_list;
+	uint64_t thread_id;
+	Database *db;
+  QueryIterator<T> *query_iterator;
   ts_t _curr_ts;
   ts_t get_next_ts() {
 		if (g_ts_batch_alloc) {
@@ -116,7 +114,7 @@ private:
 
 template <typename T> class BenchmarkExecutor {
 public:
-  virtual void initialize(const string & folder_path, uint32_t num_threads)  {
+  virtual void initialize(const string & folder_path, uint64_t num_threads)  {
 		_num_threads = num_threads;
 		_folder_path = folder_path;
 		_threads = (Thread<T> *)_mm_malloc(sizeof(Thread<T>) * _num_threads, 64);
@@ -126,7 +124,7 @@ public:
 		ThreadLocalData data[_num_threads];
 
 		uint64_t start_time = get_server_clock();
-		for (uint32_t i = 0; i < _num_threads; i++) {
+		for (uint64_t i = 0; i < _num_threads; i++) {
 			data[i].fields[0] = (uint64_t)this;
 			data[i].fields[1] = (uint64_t)i;
 			pthread_create(&threads[i], nullptr, execute_helper, (void *)&data[i]);
@@ -151,12 +149,12 @@ protected:
 		// Threads must be initialize before
 		auto data = (ThreadLocalData *)ptr;
 		auto executor = (BenchmarkExecutor *)data->fields[0];
-		auto thread_id = (uint32_t)data->fields[1];
+		auto thread_id = data->fields[1];
 
 		executor->_threads[thread_id].run();
 		return nullptr;
 	}
-  uint32_t _num_threads;
+  uint64_t _num_threads;
   string _folder_path;
   Thread<T> *_threads;
 };

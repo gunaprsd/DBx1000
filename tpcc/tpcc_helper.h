@@ -10,7 +10,7 @@ class TPCCUtility {
 
 public:
   RandomNumberGenerator random;
-  TPCCUtility(uint32_t num_threads);
+  TPCCUtility(uint64_t num_threads);
   uint64_t generateRandom(uint64_t max, uint64_t thd_id);
   uint64_t generateRandom(uint64_t x, uint64_t y, uint64_t thd_id);
   uint64_t generateNonUniformRandom(uint64_t A, uint64_t x, uint64_t y,

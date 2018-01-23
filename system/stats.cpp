@@ -195,7 +195,7 @@ void Stats::print_lat_distr() {
   FILE *outf;
   if (output_file != NULL) {
     outf = fopen(output_file, "a");
-    for (UInt32 tid = 0; tid < g_thread_cnt; tid++) {
+    for (uint32_t tid = 0; tid < g_thread_cnt; tid++) {
       fprintf(outf, "[all_debug1 thd=%d] ", tid);
       for (uint32_t tnum = 0; tnum < _stats[tid]->txn_cnt; tnum++)
         fprintf(outf, "%ld,", _stats[tid]->all_debug1[tnum]);

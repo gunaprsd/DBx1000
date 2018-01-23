@@ -19,7 +19,7 @@
  */
 template <typename T> class ParallelWorkloadGenerator {
 public:
-  ParallelWorkloadGenerator(uint32_t num_threads,
+  ParallelWorkloadGenerator(uint64_t num_threads,
                             uint64_t num_queries_per_thread,
                             const string &folder_path)
       : _num_threads(num_threads),
@@ -32,18 +32,11 @@ public:
       _queries[i] = new Query<T>[_num_queries_per_thread];
     }
   }
-  QueryList<T> *get_queries_list(uint32_t thread_id) {
-    auto queryList = new QueryList<T>();
-    queryList->initialize(_queries[thread_id], _num_queries_per_thread);
-    return queryList;
+  QueryIterator<T> *get_query_iterator(uint64_t thread_id) {
+    return new QueryIterator<T>(_queries[thread_id], _num_queries_per_thread);
   }
   QueryMatrix<T> *get_queries_matrix() {
-    auto matrix = new QueryMatrix<T>();
-    matrix->initialize(_queries, _num_threads, _num_queries_per_thread);
-    return matrix;
-  }
-  virtual void release() {
-    // Implemented by derived class
+    return new QueryMatrix<T>(_queries, _num_threads, _num_queries_per_thread);
   }
   void generate() {
     auto threads = new pthread_t[_num_threads];
@@ -67,6 +60,7 @@ public:
     delete[] threads;
     delete[] data;
   }
+  virtual ~ParallelWorkloadGenerator() = default;
 protected:
   static void *generate_helper(void *ptr) {
     auto data = reinterpret_cast<ThreadLocalData *>(ptr);
@@ -92,14 +86,14 @@ protected:
 
     return nullptr;
   }
-  void per_thread_write_to_file(uint32_t thread_id, FILE *file) {
+  void per_thread_write_to_file(uint64_t thread_id, FILE *file) {
     Query<T> *thread_queries = _queries[thread_id];
     fwrite(thread_queries, sizeof(Query<T>), _num_queries_per_thread, file);
   }
-  virtual void per_thread_generate(uint32_t thread_id) = 0;
+  virtual void per_thread_generate(uint64_t thread_id) = 0;
 
 	//Data fields
-  const uint32_t _num_threads;
+  const uint64_t _num_threads;
   const uint64_t _num_queries_per_thread;
 	const string _folder_path;
 	Query<T> **_queries;

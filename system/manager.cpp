@@ -30,11 +30,11 @@ void Manager::init() {
 		all_ts[i] = (ts_t *) _mm_malloc(sizeof(ts_t), 64);
 
 	_all_txns = new txn_man * [g_thread_cnt];
-	for (UInt32 i = 0; i < g_thread_cnt; i++) {
+	for (uint32_t i = 0; i < g_thread_cnt; i++) {
 		*all_ts[i] = UINT64_MAX;
 		_all_txns[i] = NULL;
 	}
-	for (UInt32 i = 0; i < BUCKET_CNT; i++)
+	for (uint32_t i = 0; i < BUCKET_CNT; i++)
 		pthread_mutex_init( &mutexes[i], NULL );
 }
 
@@ -79,7 +79,7 @@ ts_t Manager::get_min_ts(uint64_t tid) {
 	if (tid == 0 && now - last_time > MIN_TS_INTVL)
 	{ 
 		ts_t min = UINT64_MAX;
-    	for (UInt32 i = 0; i < g_thread_cnt; i++) 
+    	for (uint32_t i = 0; i < g_thread_cnt; i++) 
 	    	if (*all_ts[i] < min)
     	    	min = *all_ts[i];
 		if (min > _min_ts)

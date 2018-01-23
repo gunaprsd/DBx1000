@@ -10,12 +10,12 @@
 
 class YCSBDatabase : public Database {
 public:
-		void initialize(uint32_t num_threads) override;
-		txn_man *get_txn_man(uint32_t thread_id) override;
-		int key_to_part(uint64_t key);
+		void initialize(uint64_t num_threads) override;
+		txn_man *get_txn_man(uint64_t thread_id) override;
+		uint64_t key_to_part(uint64_t key);
 protected:
-		void load_tables(uint32_t thread_id) override;
-		void load_main_table(uint32_t thread_id);
+		void load_tables(uint64_t thread_id) override;
+		void load_main_table(uint64_t thread_id);
 public:
 		INDEX *the_index;
 		table_t *the_table;
@@ -23,7 +23,7 @@ public:
 
 class YCSBTransactionManager : public txn_man {
 public:
-		void initialize(Database *database, uint32_t thread_id) override;
+		void initialize(Database *database, uint64_t thread_id) override;
 		RC run_txn(BaseQuery *query) override;
 		uint64_t row_cnt;
 		YCSBDatabase * db;

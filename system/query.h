@@ -1,14 +1,9 @@
-#ifndef DBX1000_QUERY_H
-#define DBX1000_QUERY_H
+#ifndef SYSTEM_QUERY_H__
+#define SYSTEM_QUERY_H__
 
 #include "global.h"
 
-enum QueryType {
-  YCSB_QUERY,
-  TPCC_PAYMENT_QUERY,
-  TPCC_NEW_ORDER_QUERY,
-  TPCC_DELIVERY_QUERY
-};
+enum QueryType { YCSB_QUERY, TPCC_PAYMENT_QUERY, TPCC_NEW_ORDER_QUERY };
 
 /*
  * All queries derive from BaseQuery.
@@ -23,80 +18,87 @@ struct BaseQuery {
  */
 template <typename T> struct Query : public BaseQuery { T params; };
 
-
 /*
  * AccessIterator is used to iterate over various data items
+ * Each query type has to implement the following functions
+ * of the access iterator.
  */
-template<typename T>
-class AccessIterator {
+template <typename T> class AccessIterator {
 public:
-    void setQuery(Query<T>* query);
-    bool getNextAccess(uint64_t & key, access_t & type);
-    static uint64_t getMaxKey();
+  void set_query(Query<T> *query);
+  bool next(uint64_t &key, access_t &type);
+  static uint64_t get_max_key();
+
 protected:
-		Query<T> *_query;
-		uint32_t _current_req_id;
+  Query<T> *_query;
+  uint32_t _current_req_id;
 };
 
-template <typename T> class QueryList {
+/*
+ * QueryIterator is an abstraction that takes in an array of
+ * queries and num_queries and provides an iterator interface over it.
+ */
+template <typename T> class QueryIterator {
 public:
-  QueryList()  {}
-  void initialize(Query<T> *queries, uint64_t num_queries) {
-    this->queries = queries;
-    this->num_queries = num_queries;
-    this->current = 0;
-  }
+  QueryIterator(Query<T> *queries, uint64_t num_queries)
+      : _queries(queries), _num_queries(num_queries), _current(0) {}
   Query<T> *next() {
-    if (current < num_queries) {
-      return &queries[current++];
+    if (_current < _num_queries) {
+      return &_queries[_current++];
     } else {
-      return NULL;
+      return nullptr;
     }
   }
-  bool done() { return (current == num_queries); }
-  void reset() { current = 0; };
+  bool done() const { return (_current == _num_queries); }
+	~QueryIterator() = default;
 protected:
-  Query<T> *queries;
-  uint64_t num_queries;
-  uint64_t current;
+  Query<T> *const _queries;
+  const uint64_t _num_queries;
+  uint64_t _current;
 };
 
+/*
+ * QueryMatrix is an abstraction used to refer to an array of
+ * queries one for each thread.
+ * num_cols = number of threads
+ * num_rows = number of queries in each thread
+ */
 template <typename T> class QueryMatrix {
 public:
-  void initialize(Query<T> **queries, uint32_t num_arrays,
-                  uint64_t num_queries_per_array) {
-    this->num_arrays = num_arrays;
-		this->num_queries_per_array = num_queries_per_array;
+  QueryMatrix(Query<T> **queries, uint64_t num_cols, uint64_t num_rows) {
+    this->num_cols = num_cols;
+    this->num_rows = num_rows;
     this->queries = queries;
   }
-  void get(uint32_t i, uint32_t j, Query<T> **query) {
-    *query = &queries[i][j];
-  }
-	uint32_t num_arrays;
-	uint64_t num_queries_per_array;
-	Query<T> **queries;
-protected:
+  ~QueryMatrix() = default;
+  uint64_t num_cols;
+  uint64_t num_rows;
+  Query<T> **queries;
 };
 
-template <typename T>
-class QueryBatch {
+/*
+ * QueryBatch is another useful abstraction. Internall we have a
+ * QueryMatrix and a QueryBatch is a frame on top of the matrix
+ * from (0, frame_start) to (n-1, frame_end). The queries
+ * are numbered in column-major format.
+ */
+template <typename T> class QueryBatch {
 public:
-		QueryBatch(QueryMatrix<T>* matrix, uint64_t frame_start, uint64_t frame_end) {
-			_matrix = matrix;
-			_frame_start = frame_start;
-			_frame_end = frame_end;
-		}
-		Query<T>* operator[](uint64_t index) {
-			auto col_index = index/_matrix->num_arrays;
-			auto row_index = index % _matrix->num_arrays;
-			return & _matrix->queries[row_index][col_index];
-		}
-		uint64_t size() {
-			return (_frame_end - _frame_start)* _matrix->num_arrays;
-		}
+  QueryBatch(QueryMatrix<T> *matrix, uint64_t frame_start, uint64_t frame_end) {
+    _matrix = matrix;
+    _frame_start = frame_start;
+    _frame_end = frame_end;
+  }
+  Query<T> *operator[](uint64_t index) {
+    auto col_index = index / _matrix->num_cols;
+    auto row_index = index % _matrix->num_cols;
+    return &_matrix->queries[row_index][col_index];
+  }
+  uint64_t size() { return (_frame_end - _frame_start) * _matrix->num_cols; }
+
 protected:
-		QueryMatrix<T>* _matrix;
-		uint64_t _frame_start, _frame_end;
+  QueryMatrix<T> *_matrix;
+  uint64_t _frame_start, _frame_end;
 };
 
-#endif // DBX1000_QUERY_H
+#endif // SYSTEM_QUERY_H__

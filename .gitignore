@@ -4,3 +4,5 @@ data_stacked/
 results_1/
 results/
 results_no_wait/
+cmake-build-debug/
+build/

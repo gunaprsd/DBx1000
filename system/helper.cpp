@@ -39,7 +39,7 @@ uint64_t key_to_part(uint64_t key) {
     return 0;
 }
 
-uint64_t merge_idx_key(UInt64 key_cnt, UInt64 *keys) {
+uint64_t merge_idx_key(uint64_t key_cnt, uint64_t *keys) {
   uint64_t len = 64 / key_cnt;
   uint64_t key = 0;
   for (uint32_t i = 0; i < len; i++) {
@@ -170,7 +170,7 @@ void check_and_init_variables() {
       g_part_cnt = g_thread_cnt * 4;
     } else if (strncmp(g_benchmark_tag2, "sp-custom-", 10) == 0) {
       g_perc_multi_part = 0;
-      g_part_cnt = static_cast<UInt32>(atoi(&g_benchmark_tag2[10]));
+      g_part_cnt = static_cast<uint32_t>(atoi(&g_benchmark_tag2[10]));
       assert(g_part_cnt > 0);
     } else {
       g_perc_multi_part = 1;
@@ -195,7 +195,7 @@ void check_and_init_variables() {
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     assert(g_benchmark_tag != nullptr);
     if (strncmp(g_benchmark_tag, "wh", 2) == 0) {
-      g_num_wh = static_cast<UInt32>(atoi(&g_benchmark_tag[2]));
+      g_num_wh = static_cast<uint32_t>(atoi(&g_benchmark_tag[2]));
     } else {
       g_num_wh = g_thread_cnt;
     }

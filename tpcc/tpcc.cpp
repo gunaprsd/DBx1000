@@ -53,7 +53,7 @@ uint64_t TPCCAccessHelper::get_max_key() {
 }
 
 template<>
-bool AccessIterator<tpcc_params>::getNextAccess(uint64_t &key, access_t &type) {
+bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type) {
 	if(_query->type == TPCC_PAYMENT_QUERY) {
 		auto payment_params = reinterpret_cast<tpcc_payment_params*>(&_query->params);
 		switch (_current_req_id) {
@@ -114,12 +114,12 @@ bool AccessIterator<tpcc_params>::getNextAccess(uint64_t &key, access_t &type) {
 }
 
 template<>
-uint64_t AccessIterator<tpcc_params>::getMaxKey() {
+uint64_t AccessIterator<tpcc_params>::get_max_key() {
 	return TPCCAccessHelper::get_max_key();
 }
 
 template<>
-void AccessIterator<tpcc_params>::setQuery(Query<tpcc_params> *query) {
+void AccessIterator<tpcc_params>::set_query(Query<tpcc_params> *query) {
 	_query = query;
 	_current_req_id = 0;
 }

@@ -3,7 +3,7 @@
 #include "row.h"
 #include "table.h"
 
-void TPCCDatabase::initialize(uint32_t num_threads) {
+void TPCCDatabase::initialize(uint64_t num_threads) {
   Database::initialize(num_threads);
 
   utility = new TPCCUtility(num_threads);
@@ -34,7 +34,7 @@ void TPCCDatabase::initialize(uint32_t num_threads) {
   i_stock = indexes["STOCK_IDX"];
 }
 
-txn_man *TPCCDatabase::get_txn_man(uint32_t thread_id) {
+txn_man *TPCCDatabase::get_txn_man(uint64_t thread_id) {
   auto manager = new TPCCTransactionManager();
   manager->initialize(this, thread_id);
   return manager;
@@ -52,7 +52,7 @@ void TPCCDatabase::load_items_table() {
   row_t *row = NULL;
   uint64_t row_id = 0;
 
-  for (UInt32 i = 1; i <= g_max_items; i++) {
+  for (uint32_t i = 1; i <= g_max_items; i++) {
     // obtain a row from the table
     t_item->get_new_row(row, 0, row_id);
 
@@ -203,7 +203,7 @@ void TPCCDatabase::load_districts_table(uint64_t wid) {
 void TPCCDatabase::load_stocks_table(uint64_t wid) {
   row_t *row = nullptr;
   uint64_t row_id = 0;
-  for (UInt32 sid = 1; sid <= g_max_items; sid++) {
+  for (uint32_t sid = 1; sid <= g_max_items; sid++) {
     // Obtain a new row from table
     t_stock->get_new_row(row, 0, row_id);
 
@@ -361,7 +361,7 @@ void TPCCDatabase::load_order_table(uint64_t did, uint64_t wid) {
   row_t *row = nullptr;
   uint64_t row_id = 0;
 
-  for (UInt32 oid = 1; oid <= g_cust_per_dist; oid++) {
+  for (uint32_t oid = 1; oid <= g_cust_per_dist; oid++) {
     // Obtain an order row from table
     t_order->get_new_row(row, 0, row_id);
 
@@ -451,7 +451,7 @@ void TPCCDatabase::initialize_permutation(uint64_t *perm_c_id, uint64_t wid) {
   }
 }
 
-void TPCCDatabase::load_tables(uint32_t thread_id) {
+void TPCCDatabase::load_tables(uint64_t thread_id) {
   // thread i loads warehouse information for wid = (i+1)
   uint32_t wid = thread_id + 1;
   utility->random.seed(thread_id, wid);
@@ -476,7 +476,7 @@ void TPCCDatabase::load_tables(uint32_t thread_id) {
 }
 
 void TPCCTransactionManager::initialize(Database *database,
-                                        uint32_t thread_id) {
+                                        uint64_t thread_id) {
   txn_man::initialize(database, thread_id);
   db = (TPCCDatabase *)database;
 }
@@ -786,7 +786,7 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
   r_new_order->set_value(NO_W_ID, w_id);
   // insert_row(r_new_order, db->t_new_order);
 
-  for (UInt32 ol_number = 0; ol_number < ol_cnt; ol_number++) {
+  for (uint32_t ol_number = 0; ol_number < ol_cnt; ol_number++) {
 
     uint64_t ol_i_id = query->items[ol_number].ol_i_id;
     uint64_t ol_supply_w_id = query->items[ol_number].ol_supply_w_id;
@@ -832,7 +832,7 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
       return finish(Abort);
     }
 
-    UInt64 s_quantity;
+    uint64_t s_quantity;
     int64_t s_remote_cnt;
     r_stock_local->get_value(S_QUANTITY, s_quantity);
 #if !TPCC_SMALL

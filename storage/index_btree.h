@@ -12,12 +12,12 @@ typedef struct bt_node {
 	bool is_leaf;
 	idx_key_t * keys;
 	bt_node * parent;
-	UInt32 num_keys;
+	uint32_t num_keys;
 	bt_node * next;
 	bool latch;
 	pthread_mutex_t locked;
 	latch_t latch_type;
-	UInt32 share_cnt;
+	uint32_t share_cnt;
 } bt_node;
 
 struct glob_param {
@@ -49,14 +49,14 @@ private:
 	RC			insert_into_leaf(glob_param params, bt_node * leaf, idx_key_t key, itemid_t * item);
 	// handle split
 	RC 			split_lf_insert(glob_param params, bt_node * leaf, idx_key_t key, itemid_t * item);
-	RC 			split_nl_insert(glob_param params, bt_node * node, UInt32 left_index, idx_key_t key, bt_node * right);
+	RC 			split_nl_insert(glob_param params, bt_node * node, uint32_t left_index, idx_key_t key, bt_node * right);
 	RC 			insert_into_parent(glob_param params, bt_node * left, idx_key_t key, bt_node * right);
 	RC 			insert_into_new_root(glob_param params, bt_node * left, idx_key_t key, bt_node * right);
 
 	int			leaf_has_key(bt_node * leaf, idx_key_t key);
 	
-	UInt32 		cut(UInt32 length);
-	UInt32	 	order; // # of keys in a node(for both leaf and non-leaf)
+	uint32_t 		cut(uint32_t length);
+	uint32_t	 	order; // # of keys in a node(for both leaf and non-leaf)
 	bt_node ** 	roots; // each compute_partitions has a different root
 	bt_node *   find_root(uint64_t part_id);
 
@@ -68,7 +68,7 @@ private:
 
 	// the leaf and the idx within the leaf that the thread last accessed.
 	bt_node *** cur_leaf_per_thd;
-	UInt32 ** 		cur_idx_per_thd;
+	uint32_t ** 		cur_idx_per_thd;
 };
 
 #endif

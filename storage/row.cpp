@@ -99,14 +99,14 @@ void row_t::set_value(const char * col_name, void * ptr) {
 SET_VALUE(uint64_t);
 SET_VALUE(int64_t);
 SET_VALUE(double);
-SET_VALUE(UInt32);
-SET_VALUE(SInt32);
+SET_VALUE(uint32_t);
+SET_VALUE(int32_t);
 
 GET_VALUE(uint64_t);
 GET_VALUE(int64_t);
 GET_VALUE(double);
-GET_VALUE(UInt32);
-GET_VALUE(SInt32);
+GET_VALUE(uint32_t);
+GET_VALUE(int32_t);
 
 char * row_t::get_value(int id) {
 	int pos = get_schema()->get_field_index(id);

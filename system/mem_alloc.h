@@ -5,7 +5,7 @@
 #include <map>
 
 const int SizeNum = 4;
-const UInt32 BlockSizes[] = {32, 64, 256, 1024};
+const uint32_t BlockSizes[] = {32, 64, 256, 1024};
 
 typedef struct free_block {
     int size;
@@ -36,7 +36,7 @@ public:
 	int get_arena_id();
 private:
     void init_thread_arena();
-	int get_size_id(UInt32 size);
+	int get_size_id(uint32_t size);
 	
 	// each thread has several arenas for different block size
 	Arena ** _arenas;

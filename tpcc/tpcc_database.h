@@ -12,8 +12,8 @@
 
 class TPCCDatabase : public Database {
 public:
-		void initialize(uint32_t num_threads) override;
-		txn_man *get_txn_man(uint32_t thread_id) override;
+		void initialize(uint64_t num_threads) override;
+		txn_man *get_txn_man(uint64_t thread_id) override;
 
 		table_t *t_warehouse;
 		table_t *t_district;
@@ -31,11 +31,9 @@ public:
 		INDEX *i_customer_id;
 		INDEX *i_customer_last;
 		INDEX *i_stock;
-
 protected:
 		TPCCUtility * utility;
-		void load_tables(uint32_t thread_id) override;
-
+		void load_tables(uint64_t thread_id) override;
 private:
 		void load_items_table();
 		void load_warehouse_table(uint32_t wid);
@@ -49,9 +47,8 @@ private:
 
 class TPCCTransactionManager : public txn_man {
 public:
-		void initialize(Database *database, uint32_t thread_id) override;
+		void initialize(Database *database, uint64_t thread_id) override;
 		RC run_txn(BaseQuery *query) override;
-
 private:
 		TPCCDatabase *db;
 		RC run_payment(tpcc_payment_params *params);

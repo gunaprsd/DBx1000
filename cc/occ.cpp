@@ -126,7 +126,7 @@ RC OptCC::central_validate(txn_man * txn) {
 		}
 	}
 
-	for (UInt32 i = 0; i < f_active_len; i++) {
+	for (uint32_t i = 0; i < f_active_len; i++) {
 		set_ent * wact = finish_active[i];
 		valid = test_valid(wact, rset);
 		if (valid) {
@@ -183,7 +183,7 @@ RC OptCC::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {
 	wset->txn = txn;
 	rset->txn = txn;
 
-	UInt32 n = 0, m = 0;
+	uint32_t n = 0, m = 0;
 	for (int i = 0; i < txn->row_cnt; i++) {
 		if (txn->accesses[i]->type == WR)
 			wset->rows[n ++] = txn->accesses[i]->orig_row;
@@ -197,8 +197,8 @@ RC OptCC::get_rw_set(txn_man * txn, set_ent * &rset, set_ent *& wset) {
 }
 
 bool OptCC::test_valid(set_ent * set1, set_ent * set2) {
-	for (UInt32 i = 0; i < set1->set_size; i++)
-		for (UInt32 j = 0; j < set2->set_size; j++) {
+	for (uint32_t i = 0; i < set1->set_size; i++)
+		for (uint32_t j = 0; j < set2->set_size; j++) {
 			if (set1->rows[i] == set2->rows[j]) {
 				return false;
 			}

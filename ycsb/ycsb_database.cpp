@@ -14,7 +14,7 @@
 #include "ycsb_workload.h"
 #include <vector>
 
-void YCSBDatabase::initialize(uint32_t num_threads) {
+void YCSBDatabase::initialize(uint64_t num_threads) {
   Database::initialize(num_threads);
   char *cpath = getenv("GRAPHITE_HOME");
   string path;
@@ -29,21 +29,21 @@ void YCSBDatabase::initialize(uint32_t num_threads) {
   the_index = indexes["MAIN_INDEX"];
 }
 
-int YCSBDatabase::key_to_part(uint64_t key) { return key % g_part_cnt; }
+uint64_t YCSBDatabase::key_to_part(uint64_t key) { return key % g_part_cnt; }
 
-txn_man *YCSBDatabase::get_txn_man(uint32_t thread_id) {
+txn_man *YCSBDatabase::get_txn_man(uint64_t thread_id) {
   auto txn_manager = new YCSBTransactionManager();
   txn_manager->initialize(this, thread_id);
   return txn_manager;
 }
 
-void YCSBDatabase::load_tables(uint32_t thread_id) {
+void YCSBDatabase::load_tables(uint64_t thread_id) {
   mem_allocator.register_thread(thread_id);
   load_main_table(thread_id);
   mem_allocator.unregister();
 }
 
-void YCSBDatabase::load_main_table(uint32_t tid) {
+void YCSBDatabase::load_main_table(uint64_t tid) {
   RC rc;
   uint64_t slice_size = g_synth_table_size / _num_threads;
   for (uint64_t key = slice_size * tid; key < slice_size * (tid + 1); key++) {
@@ -57,7 +57,7 @@ void YCSBDatabase::load_main_table(uint32_t tid) {
     new_row->set_value(0, &primary_key);
     Catalog *schema = the_table->get_schema();
 
-    for (UInt32 fid = 0; fid < schema->get_field_cnt(); fid++) {
+    for (uint32_t fid = 0; fid < schema->get_field_cnt(); fid++) {
       char value[6] = "hello";
       new_row->set_value(fid, value);
     }
@@ -76,7 +76,7 @@ void YCSBDatabase::load_main_table(uint32_t tid) {
 }
 
 void YCSBTransactionManager::initialize(Database *database,
-                                        uint32_t thread_id) {
+                                        uint64_t thread_id) {
   txn_man::initialize(database, thread_id);
   db = (YCSBDatabase *)database;
 }
@@ -92,7 +92,7 @@ RC YCSBTransactionManager::run_txn(BaseQuery *query) {
     ycsb_request *req = &m_query->requests[rid];
     int part_id = wl->key_to_part(req->key);
     bool finish_req = false;
-    UInt32 iteration = 0;
+    uint32_t iteration = 0;
     while (!finish_req) {
       if (iteration == 0) {
         m_item = index_read(db->the_index, req->key, part_id);

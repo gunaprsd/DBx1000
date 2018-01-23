@@ -36,13 +36,13 @@ struct YCSBWorkloadConfig {
 class YCSBWorkloadGenerator : public ParallelWorkloadGenerator<ycsb_params> {
 public:
   YCSBWorkloadGenerator(const YCSBWorkloadConfig &config,
-												uint32_t num_threads,
+												uint64_t num_threads,
                         uint64_t num_queries_per_thread,
                         const string &folder_path);
 protected:
-  void per_thread_generate(uint32_t thread_id) override;
-  void gen_single_partition_requests(uint32_t thd_id, ycsb_query *query);
-	void gen_multi_partition_requests(uint32_t thd_id, ycsb_query *query);
+  void per_thread_generate(uint64_t thread_id) override;
+  void gen_single_partition_requests(uint64_t thd_id, ycsb_query *query);
+	void gen_multi_partition_requests(uint64_t thd_id, ycsb_query *query);
 
   YCSBWorkloadConfig _config;
   ZipfianNumberGenerator _zipfian;
@@ -53,7 +53,7 @@ typedef ParallelWorkloadLoader<ycsb_params> YCSBWorkloadLoader;
 
 class YCSBExecutor : public BenchmarkExecutor<ycsb_params> {
 public:
-		void initialize(const string & folder_path, uint32_t num_threads) override;
+		void initialize(const string & folder_path, uint64_t num_threads) override;
 protected:
 		YCSBDatabase * _db;
 		YCSBWorkloadLoader * _loader;

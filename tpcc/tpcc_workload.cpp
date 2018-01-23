@@ -1,16 +1,18 @@
 #include "tpcc_workload.h"
 
-TPCCWorkloadGenerator::TPCCWorkloadGenerator(uint32_t num_threads,
-                                             uint64_t num_params_per_thread,
+TPCCWorkloadGenerator::TPCCWorkloadGenerator(uint64_t num_threads,
+                                             uint64_t size_per_thread,
                                              const string &folder_path)
-    : ParallelWorkloadGenerator<tpcc_params>(num_threads, num_params_per_thread,
+    : ParallelWorkloadGenerator<tpcc_params>(num_threads, size_per_thread,
                                              folder_path),
-      utility(num_threads) {}
+      utility(num_threads),
+			_random(num_threads) {}
 
-void TPCCWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
+void TPCCWorkloadGenerator::per_thread_generate(uint64_t thread_id) {
   utility.random.seed(thread_id, thread_id + 1);
-  for (uint32_t i = 0; i < _num_queries_per_thread; i++) {
-    double x = utility.random.nextDouble(thread_id);
+	_random.seed(thread_id, 2 * thread_id + 1);
+  for (uint64_t i = 0; i < _num_queries_per_thread; i++) {
+    double x = _random.nextDouble(thread_id);
     if (x < g_perc_payment) {
       _queries[thread_id][i].type = TPCC_PAYMENT_QUERY;
       gen_payment_request(
@@ -23,7 +25,7 @@ void TPCCWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
   }
 }
 
-void TPCCWorkloadGenerator::gen_payment_request(uint32_t thread_id,
+void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id,
                                                 tpcc_payment_params *params) {
   if (FIRST_PART_LOCAL) {
     params->w_id = thread_id % g_num_wh + 1;
@@ -69,7 +71,7 @@ void TPCCWorkloadGenerator::gen_payment_request(uint32_t thread_id,
 }
 
 void TPCCWorkloadGenerator::gen_new_order_request(
-    uint32_t thread_id, tpcc_new_order_params *params) {
+    uint64_t thread_id, tpcc_new_order_params *params) {
   // choose a home warehouse
   if (FIRST_PART_LOCAL) {
     params->w_id = thread_id % g_num_wh + 1;
@@ -125,7 +127,7 @@ void TPCCWorkloadGenerator::gen_new_order_request(
   }
 }
 
-void TPCCExecutor::initialize(const string & folder_path, uint32_t num_threads) {
+void TPCCExecutor::initialize(const string & folder_path, uint64_t num_threads) {
   BenchmarkExecutor::initialize(folder_path, num_threads);
 
   // Build database in parallel

@@ -102,7 +102,7 @@ public:
                                                   vwgt(), adjwgt(), xadj(), adjncy(), iteration(0), runtime_stats(),
                                                   input_stats(), output_stats()
   {
-    uint64_t size = AccessIterator<T>::getMaxKey();
+    uint64_t size = AccessIterator<T>::get_max_key();
     _info_array = new TxnDataInfo[size];
   }
   void partition(QueryBatch<T> *batch, vector<idx_t> &partitions) override {
@@ -206,8 +206,8 @@ protected:
     for (uint64_t i = 0u; i < size; i++) {
       input_stats.num_txn_nodes++;
       query = queryBatch[i];
-      iterator->setQuery(query);
-      while (iterator->getNextAccess(key, type)) {
+			iterator->set_query(query);
+      while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->epoch != iteration) {
           input_stats.num_data_nodes++;
@@ -246,11 +246,11 @@ protected:
     idx_t node_wgt = 0;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-      iterator->setQuery(query);
+			iterator->set_query(query);
 
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       node_wgt = 0;
-      while (iterator->getNextAccess(key, type)) {
+      while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->txns.empty()) {
           info->txns.reserve(info->num_writes + info->num_reads);
@@ -273,8 +273,8 @@ protected:
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-      iterator->setQuery(query);
-      while (iterator->getNextAccess(key, type)) {
+			iterator->set_query(query);
+      while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
           xadj.push_back(static_cast<idx_t>(adjncy.size()));
@@ -299,9 +299,9 @@ protected:
     access_t type;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-      iterator->setQuery(query);
+			iterator->set_query(query);
       uint64_t cross_access = 0;
-      while (iterator->getNextAccess(key, type)) {
+      while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (parts[i] != parts[info->id]) {
           cross_access++;
@@ -318,8 +318,8 @@ protected:
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-      iterator->setQuery(query);
-      while (iterator->getNextAccess(key, type)) {
+			iterator->set_query(query);
+      while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
           stats.min_data_core_degree =

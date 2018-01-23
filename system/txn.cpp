@@ -8,7 +8,7 @@
 #include "table.h"
 #include "ycsb.h"
 
-void txn_man::initialize(Database *h_wl, uint32_t thd_id) {
+void txn_man::initialize(Database *h_wl, uint64_t thd_id) {
   this->thread_id = thd_id;
   this->database = h_wl;
   pthread_mutex_init(&txn_lock, NULL);
@@ -85,7 +85,7 @@ void txn_man::cleanup(RC rc) {
   }
 
   if (rc == Abort) {
-    for (UInt32 i = 0; i < insert_cnt; i++) {
+    for (uint32_t i = 0; i < insert_cnt; i++) {
       row_t *row = insert_rows[i];
       assert(g_part_alloc == false);
 #if CC_ALG != HSTORE && CC_ALG != OCC

@@ -3,7 +3,7 @@
 #include "global.h"
 #include "helper.h"
 #include "metis.h"
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 
 #ifndef WORKLOAD_GRAPH_PARTITIONER_H_
@@ -67,7 +67,6 @@ public:
 
   friend class METISGraphPartitioner;
 };
-
 
 class METIS_CSRGraphCreator {
 public:

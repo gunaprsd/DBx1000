@@ -17,7 +17,6 @@ void parser(int argc, char **argv);
 void partition() {
   string src_folder_path = get_benchmark_path(g_data_folder, false);
   string dst_folder_path = get_benchmark_path(g_data_folder, true);
-
   if (strcmp(g_benchmark, "ycsb") == 0) {
     if (g_task_type == PARTITION_DATA) {
       OfflineScheduler<ycsb_params> scheduler(src_folder_path, g_thread_cnt, g_size, dst_folder_path);
@@ -52,12 +51,10 @@ void generate() {
     YCSBWorkloadGenerator generator(config, g_thread_cnt, g_size_per_thread,
                                     get_benchmark_path(g_data_folder, false));
     generator.generate();
-    generator.release();
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
     TPCCWorkloadGenerator generator(g_thread_cnt, g_size_per_thread,
                                     get_benchmark_path(g_data_folder, false));
     generator.generate();
-    generator.release();
   }
 }
 
@@ -96,7 +93,7 @@ int main(int argc, char **argv) {
   glob_manager->init();
 
   check_and_init_variables();
-
+  TPCCAccessHelper::initialize();
   assert(g_size == g_thread_cnt * g_size_per_thread);
   switch (g_task_type) {
   case GENERATE:

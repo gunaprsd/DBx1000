@@ -23,13 +23,14 @@ public:
     }
 
     _current_frame_offset = 0;
-    _max_frame_offset = _original_queries->num_queries_per_array;
+    _max_frame_offset = _original_queries->num_rows;
     _frame_height = _max_batch_size / _num_threads;
     assert(_max_batch_size % _num_threads == 0);
   }
-  void schedule() {
 
+  void schedule() {
     vector<idx_t> partitions;
+
     while (_current_frame_offset < _max_frame_offset) {
       uint64_t cframe_start = _current_frame_offset;
       uint64_t cframe_end =
@@ -93,7 +94,7 @@ public:
 protected:
   const string _input_folder_path;
   const string _output_folder_path;
-	const uint32_t _num_threads;
+  const uint32_t _num_threads;
   const uint64_t _max_batch_size;
   ParallelWorkloadLoader<T> _loader;
   AccessGraphPartitioner<T> _partitioner;

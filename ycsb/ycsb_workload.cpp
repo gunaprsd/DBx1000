@@ -4,7 +4,7 @@
 #include <algorithm>
 
 YCSBWorkloadGenerator::YCSBWorkloadGenerator(const YCSBWorkloadConfig &config,
-                                             uint32_t num_threads,
+                                             uint64_t num_threads,
                                              uint64_t num_queries_per_thread,
                                              const string &folder_path)
     : ParallelWorkloadGenerator<ycsb_params>(
@@ -12,15 +12,15 @@ YCSBWorkloadGenerator::YCSBWorkloadGenerator(const YCSBWorkloadConfig &config,
       _config(config), _zipfian(config.table_size / config.num_partitions,
                                 config.num_partitions, config.zipfian_theta),
       _random(num_threads) {
-  for (uint32_t i = 0; i < config.num_partitions; i++) {
+  for (uint64_t i = 0; i < config.num_partitions; i++) {
     _zipfian.seed(i, i + 1);
   }
-  for (uint32_t i = 0; i < _num_threads; i++) {
-    _random.seed(i, i + 1);
+  for (uint64_t i = 0; i < _num_threads; i++) {
+    _random.seed(i, 3 * i + 1);
   }
 }
 
-void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
+void YCSBWorkloadGenerator::per_thread_generate(uint64_t thread_id) {
   for (uint64_t i = 0; i < _num_queries_per_thread; i++) {
     if (_random.nextDouble(thread_id) < _config.multi_part_txns_percent) {
       gen_multi_partition_requests(thread_id, &(_queries[thread_id][i]));
@@ -36,7 +36,7 @@ void YCSBWorkloadGenerator::per_thread_generate(uint32_t thread_id) {
  * We first choose a partition at random. Each partition has a zipfian access
  * distribution, which is used to generate the requests for that transaction.
  */
-void YCSBWorkloadGenerator::gen_single_partition_requests(uint32_t thread_id,
+void YCSBWorkloadGenerator::gen_single_partition_requests(uint64_t thread_id,
                                                           ycsb_query *query) {
   set<uint64_t> all_keys;
   uint64_t max_row_id = _config.table_size / _config.num_partitions;
@@ -89,7 +89,7 @@ void YCSBWorkloadGenerator::gen_single_partition_requests(uint32_t thread_id,
   }
 }
 
-void YCSBWorkloadGenerator::gen_multi_partition_requests(uint32_t thread_id,
+void YCSBWorkloadGenerator::gen_multi_partition_requests(uint64_t thread_id,
                                                          ycsb_query *query) {
   vector<uint32_t> parts;
   set<uint64_t> all_keys;
@@ -158,7 +158,7 @@ void YCSBWorkloadGenerator::gen_multi_partition_requests(uint32_t thread_id,
   }
 }
 
-void YCSBExecutor::initialize(const string &folder_path, uint32_t num_threads) {
+void YCSBExecutor::initialize(const string &folder_path, uint64_t num_threads) {
   BenchmarkExecutor::initialize(folder_path, num_threads);
 
   // Build database in parallel

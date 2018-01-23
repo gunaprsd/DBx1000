@@ -39,17 +39,13 @@ SET(SRC_LIST cc/occ.h
         tpcc/tpcc.h
         tpcc/tpcc_database.h
         tpcc/tpcc_const.h
-        tpcc/tpcc_partitioner.h
         tpcc/tpcc_workload.h
-        workload/conflict_graph_partitioner.h
         workload/distributions.h
         workload/graph_partitioner.h
-        workload/access_graph_partitioner.h
         workload/generator.h
         ycsb/ycsb_workload.h
         ycsb/ycsb.h
         ycsb/ycsb_database.h
-        ycsb/ycsb_partitioner.h
         config.cpp
         cc/row_ts.cpp
         cc/vll.cpp
@@ -71,7 +67,6 @@ SET(SRC_LIST cc/occ.h
         storage/row.cpp
         storage/index_btree.cpp
         storage/catalog.cpp
-        system/thread.cpp
         system/stats.cpp
         system/txn.cpp
         system/mem_alloc.cpp
@@ -82,20 +77,19 @@ SET(SRC_LIST cc/occ.h
         system/parser.cpp
         system/main.cpp
         tpcc/tpcc.cpp
-        tpcc/tpcc_partitioner.cpp
         tpcc/tpcc_database.cpp
         tpcc/tpcc_workload.cpp
         tpcc/tpcc_txn.cpp
         tpcc/tpcc_helper.cpp
-        workload/access_graph_partitioner.cpp
-        workload/generator.cpp
-        workload/conflict_graph_partitioner.cpp
         workload/graph_partitioner.cpp
         ycsb/ycsb.cpp
         ycsb/ycsb_workload.cpp
         ycsb/ycsb_database.cpp
-        ycsb/ycsb_partitioner.cpp
-        workload/online_partitioner.h tpcc/tpcc.cpp workload/partitioner.h workload/loader.cpp workload/loader.h ycsb/ycsb.cpp workload/scheduler.cpp workload/scheduler.h)
+        tpcc/tpcc.cpp
+        workload/partitioner.h
+        workload/loader.h
+        ycsb/ycsb.cpp
+        workload/scheduler.h)
 
 INCLUDE_DIRECTORIES(.)
 INCLUDE_DIRECTORIES(ycsb)

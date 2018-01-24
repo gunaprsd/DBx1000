@@ -76,7 +76,7 @@ uint64_t TPCCUtility::findLastNameForNum(uint64_t num, char *name) {
 }
 
 
-TPCCBenchmarkConfig* TPCCUtility::config;
+TPCCBenchmarkConfig TPCCUtility::config;
 uint64_t TPCCUtility::wh_cnt;
 uint64_t TPCCUtility::wh_off;
 uint64_t TPCCUtility::district_cnt;
@@ -89,31 +89,31 @@ uint64_t TPCCUtility::stocks_cnt;
 uint64_t TPCCUtility::stocks_off;
 
 void TPCCUtility::initialize(const TPCCBenchmarkConfig & _config) {
-  config = new TPCCBenchmarkConfig(_config);
-  wh_cnt = config->num_warehouses;
+  config = _config;
+  wh_cnt = config.num_warehouses;
   wh_off = 0;
-  district_cnt = config->districts_per_warehouse * wh_cnt;
+  district_cnt = config.districts_per_warehouse * wh_cnt;
   district_off = wh_off + wh_cnt;
-  customer_cnt = district_cnt * config->customers_per_district;
+  customer_cnt = district_cnt * config.customers_per_district;
   customer_off = district_off + district_cnt;
-  items_cnt = config->items_count;
+  items_cnt = config.items_count;
   items_off = customer_off + customer_cnt;
-  stocks_cnt = config->items_count * wh_cnt;
+  stocks_cnt = config.items_count * wh_cnt;
   stocks_off = items_off + items_cnt;
 }
 
 uint64_t TPCCUtility::getDistrictKey(uint64_t d_id, uint64_t d_w_id) {
-  return d_w_id * config->districts_per_warehouse + d_id;
+  return d_w_id * config.districts_per_warehouse + d_id;
 }
 
 uint64_t TPCCUtility::getCustomerPrimaryKey(uint64_t c_id, uint64_t c_d_id,
                                             uint64_t c_w_id) {
-  return (getDistrictKey(c_d_id, c_w_id) * config->customers_per_district + c_id);
+  return (getDistrictKey(c_d_id, c_w_id) * config.customers_per_district + c_id);
 }
 
 uint64_t TPCCUtility::getOrderLineKey(uint64_t w_id, uint64_t d_id,
                                       uint64_t o_id) {
-  return getDistrictKey(d_id, w_id) * config->customers_per_district + o_id;
+  return getDistrictKey(d_id, w_id) * config.customers_per_district + o_id;
 }
 
 uint64_t TPCCUtility::getOrderPrimaryKey(uint64_t w_id, uint64_t d_id,
@@ -128,17 +128,17 @@ uint64_t TPCCUtility::getCustomerLastNameKey(char *c_last, uint64_t c_d_id,
   for (uint32_t i = 0; i < strlen(c_last); i++)
     key = (key << 2) + (c_last[i] - offset);
   key = key << 3;
-  key += c_w_id * config->districts_per_warehouse + c_d_id;
+  key += c_w_id * config.districts_per_warehouse + c_d_id;
   return key;
 }
 
 uint64_t TPCCUtility::getStockKey(uint64_t s_i_id, uint64_t s_w_id) {
-  return s_w_id * config->items_count + s_i_id;
+  return s_w_id * config.items_count + s_i_id;
 }
 
 
 int TPCCUtility::getPartition(uint64_t wid) {
-  return (int)wid % config->num_warehouses;
+  return (int)wid % config.num_warehouses;
 }
 
 
@@ -174,7 +174,7 @@ bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type) {
     switch (_current_req_id) {
       case 0:
         key = TPCCUtility::getWarehouseHashIndex(payment_params->w_id);
-        type = TPCCUtility::config->warehouse_update ? WR : RD;
+        type = TPCCUtility::config.warehouse_update ? WR : RD;
         break;
       case 1:
         key = TPCCUtility::getDistrictHashIndex(payment_params->d_w_id, payment_params->d_id);
@@ -196,7 +196,7 @@ bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type) {
     switch (_current_req_id) {
       case 0:
         key = TPCCUtility::getWarehouseHashIndex(new_order_params->w_id);
-        type = TPCCUtility::config->warehouse_update ? WR : RD;
+        type = RD;
         break;
       case 1:
         key = TPCCUtility::getDistrictHashIndex(new_order_params->w_id, new_order_params->d_id);

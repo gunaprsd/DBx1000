@@ -1,6 +1,11 @@
 #include "ycsb.h"
 
-uint64_t YCSBUtility::max_key = 10*1024*1024;
+uint64_t YCSBUtility::max_key;
+
+void YCSBUtility::initialize(YCSBBenchmarkConfig & config) {
+	max_key = config.table_size;
+}
+
 template<>
 void AccessIterator<ycsb_params>::set_query(Query<ycsb_params> *query)  {
 	_current_req_id = 0;

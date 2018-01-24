@@ -1,11 +1,11 @@
 #ifndef TPCC_TPCC_HELPER_H_
 #define TPCC_TPCC_HELPER_H_
 
+#include "tpcc.h"
 #include "distributions.h"
 #include "global.h"
 #include "helper.h"
 
-struct TPCCBenchmarkConfig;
 
 class TPCCHelper {
 		uint64_t C_255, C_1023, C_8191;
@@ -32,7 +32,7 @@ class TPCCUtility {
 		static uint64_t stocks_cnt;
 		static uint64_t stocks_off;
 public:
-	static TPCCBenchmarkConfig *config;
+	static TPCCBenchmarkConfig config;
 	// Static functions used by database and transactions
 	static void initialize(const TPCCBenchmarkConfig &config);
 	static uint64_t getDistrictKey(uint64_t d_id, uint64_t d_w_id);

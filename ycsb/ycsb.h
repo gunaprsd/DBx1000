@@ -21,18 +21,6 @@ struct ycsb_params {
 
 typedef Query<ycsb_params> ycsb_query;
 
-class YCSBUtility {
-public:
-		static uint64_t get_max_key() {
-			return max_key;
-		}
-		static uint64_t get_hash(uint64_t key) {
-			return key % max_key;
-		}
-protected:
-		static uint64_t max_key;
-};
-
 struct YCSBBenchmarkConfig {
 		// the table is expected to contain 0 -> (table_size - 1) keys
 		uint64_t table_size;
@@ -67,5 +55,19 @@ struct YCSBBenchmarkConfig {
 		// amount of compute cost performed for each key
 		uint64_t compute_cost;
 };
+
+class YCSBUtility {
+public:
+		static void initialize(YCSBBenchmarkConfig & config);
+		static uint64_t get_max_key() {
+			return max_key;
+		}
+		static uint64_t get_hash(uint64_t key) {
+			return key % max_key;
+		}
+protected:
+		static uint64_t max_key;
+};
+
 
 #endif // YCSB_YCSB_H_

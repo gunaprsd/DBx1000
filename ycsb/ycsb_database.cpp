@@ -19,7 +19,7 @@ void YCSBDatabase::initialize(uint64_t num_threads) {
   char *cpath = getenv("GRAPHITE_HOME");
   string path;
   if (cpath == NULL)
-    path = "./ycsb/schema.txt";
+    path = "../ycsb/schema.txt";
   else {
     path = string(cpath);
     path += "/tests/apps/dbms/schema.txt";

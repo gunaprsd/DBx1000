@@ -40,7 +40,7 @@ void YCSBWorkloadGenerator::gen_single_partition_requests(uint64_t thread_id,
                                                           ycsb_query *query) {
   set<uint64_t> all_keys;
   uint64_t max_row_id = config.table_size / config.num_partitions;
-  uint32_t part_id = static_cast<uint32_t>(zipfian.nextRandInt64(thread_id) %
+  uint32_t part_id = static_cast<uint32_t>(_random.nextInt64(thread_id) %
                                            config.num_partitions);
   uint64_t req_id = 0;
   for (uint32_t tmp = 0; tmp < YCSB_NUM_REQUESTS; tmp++) {

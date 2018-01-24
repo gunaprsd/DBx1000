@@ -6,12 +6,14 @@
 #include "database.h"
 #include "txn.h"
 #include "thread.h"
-#include "tpcc_helper.h"
+#include "tpcc_utility.h"
 #include "tpcc.h"
 #include <cstring>
 
+
 class TPCCDatabase : public Database {
 public:
+		TPCCDatabase(const TPCCBenchmarkConfig & _config);
 		void initialize(uint64_t num_threads) override;
 		txn_man *get_txn_man(uint64_t thread_id) override;
 
@@ -31,10 +33,10 @@ public:
 		INDEX *i_customer_id;
 		INDEX *i_customer_last;
 		INDEX *i_stock;
+		const TPCCBenchmarkConfig config;
 protected:
-		TPCCUtility * utility;
+		TPCCHelper * helper;
 		void load_tables(uint64_t thread_id) override;
-private:
 		void load_items_table();
 		void load_warehouse_table(uint32_t wid);
 		void load_districts_table(uint64_t w_id);

@@ -6,7 +6,7 @@
 void TPCCDatabase::initialize(uint64_t num_threads) {
   Database::initialize(num_threads);
 
-  utility = new TPCCUtility(num_threads);
+  helper = new TPCCHelper(num_threads);
 
   // Initialize schema from the file
   string path;
@@ -52,7 +52,7 @@ void TPCCDatabase::load_items_table() {
   row_t *row = NULL;
   uint64_t row_id = 0;
 
-  for (uint32_t i = 1; i <= g_max_items; i++) {
+  for (uint32_t i = 1; i <= TPCC_MAX_ITEMS; i++) {
     // obtain a row from the table
     t_item->get_new_row(row, 0, row_id);
 
@@ -61,18 +61,18 @@ void TPCCDatabase::load_items_table() {
 
     // set other numeric fields
     row->set_value(I_ID, i);
-    row->set_value(I_IM_ID, utility->generateRandom(1L, 10000L, 0));
-    row->set_value(I_PRICE, utility->generateRandom(1, 100, 0));
+    row->set_value(I_IM_ID, helper->generateRandom(1L, 10000L, 0));
+    row->set_value(I_PRICE, helper->generateRandom(1, 100, 0));
 
     // set name
     char name[24];
-    utility->generateAlphaString(14, 24, name, 0);
+    helper->generateAlphaString(14, 24, name, 0);
     row->set_value(I_NAME, name);
 
     // set data: 10% has 'original', rest is random
     char data[50];
-    utility->generateAlphaString(26, 50, data, 0);
-    if (utility->generateRandom(10, 0) == 0) {
+    helper->generateAlphaString(26, 50, data, 0);
+    if (helper->generateRandom(10, 0) == 0) {
       strcpy(data, "original");
     }
     row->set_value(I_DATA, data);
@@ -90,7 +90,7 @@ void TPCCDatabase::load_items_table() {
  * - ytd = 300K
  */
 void TPCCDatabase::load_warehouse_table(uint32_t wid) {
-  assert(wid >= 1 && wid <= g_num_wh);
+  assert(wid >= 1 && wid <= config.num_warehouses);
   row_t *row = nullptr;
   uint64_t row_id = 0;
 
@@ -108,13 +108,13 @@ void TPCCDatabase::load_warehouse_table(uint32_t wid) {
   char city[20];
   char state[2];
   char zip[9];
-  utility->generateAlphaString(6, 10, name, wid - 1);
-  utility->generateAlphaString(10, 20, street, wid - 1);
-  utility->generateAlphaString(10, 20, street2, wid - 1);
-  utility->generateAlphaString(10, 20, city, wid - 1);
-  utility->generateAlphaString(2, 2, state, wid - 1);
-  utility->generateNumberString(9, 9, zip, wid - 1);
-  double tax = (double)utility->generateRandom(0L, 200L, wid - 1) / 1000.0;
+  helper->generateAlphaString(6, 10, name, wid - 1);
+  helper->generateAlphaString(10, 20, street, wid - 1);
+  helper->generateAlphaString(10, 20, street2, wid - 1);
+  helper->generateAlphaString(10, 20, city, wid - 1);
+  helper->generateAlphaString(2, 2, state, wid - 1);
+  helper->generateNumberString(9, 9, zip, wid - 1);
+  double tax = (double)helper->generateRandom(0L, 200L, wid - 1) / 1000.0;
   double w_ytd = 300000.00;
 
   // Set other fields
@@ -132,7 +132,7 @@ void TPCCDatabase::load_warehouse_table(uint32_t wid) {
 }
 
 /*
- * Each warehouse has DIST_PER_WARE districts.
+ * Each warehouse has TPCC_DIST_PER_WH districts.
  *
  * Each district is created with
  * - specified warehouse id
@@ -147,7 +147,7 @@ void TPCCDatabase::load_warehouse_table(uint32_t wid) {
 void TPCCDatabase::load_districts_table(uint64_t wid) {
   row_t *row = nullptr;
   uint64_t row_id = 0;
-  for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
+  for (uint64_t did = 1; did <= TPCC_DIST_PER_WH; did++) {
     // Obtain new row from table
     t_district->get_new_row(row, 0, row_id);
 
@@ -163,13 +163,13 @@ void TPCCDatabase::load_districts_table(uint64_t wid) {
     char city[20];
     char state[2];
     char zip[9];
-    utility->generateAlphaString(6, 10, name, wid - 1);
-    utility->generateAlphaString(10, 20, street, wid - 1);
-    utility->generateAlphaString(10, 20, street2, wid - 1);
-    utility->generateAlphaString(10, 20, city, wid - 1);
-    utility->generateAlphaString(2, 2, state, wid - 1);
-    utility->generateAlphaString(9, 9, zip, wid - 1);
-    double tax = (double)utility->generateRandom(0L, 200L, wid - 1) / 1000.0;
+    helper->generateAlphaString(6, 10, name, wid - 1);
+    helper->generateAlphaString(10, 20, street, wid - 1);
+    helper->generateAlphaString(10, 20, street2, wid - 1);
+    helper->generateAlphaString(10, 20, city, wid - 1);
+    helper->generateAlphaString(2, 2, state, wid - 1);
+    helper->generateAlphaString(9, 9, zip, wid - 1);
+    double tax = (double)helper->generateRandom(0L, 200L, wid - 1) / 1000.0;
     double w_ytd = 30000.00;
 
     // Set other fields
@@ -190,7 +190,7 @@ void TPCCDatabase::load_districts_table(uint64_t wid) {
 }
 
 /*
- * Each warehouse contains g_max_items stock
+ * Each warehouse contains TPCC_MAX_ITEMS stock
  *
  * Each stock contains
  * - a serial id
@@ -203,7 +203,7 @@ void TPCCDatabase::load_districts_table(uint64_t wid) {
 void TPCCDatabase::load_stocks_table(uint64_t wid) {
   row_t *row = nullptr;
   uint64_t row_id = 0;
-  for (uint32_t sid = 1; sid <= g_max_items; sid++) {
+  for (uint32_t sid = 1; sid <= TPCC_MAX_ITEMS; sid++) {
     // Obtain a new row from table
     t_stock->get_new_row(row, 0, row_id);
 
@@ -212,7 +212,7 @@ void TPCCDatabase::load_stocks_table(uint64_t wid) {
     row->set_value(S_I_ID, sid);
     row->set_value(S_W_ID, wid);
 
-    row->set_value(S_QUANTITY, utility->generateRandom(10, 100, wid - 1));
+    row->set_value(S_QUANTITY, helper->generateRandom(10, 100, wid - 1));
     row->set_value(S_REMOTE_CNT, 0);
 
 #if !TPCC_SMALL
@@ -221,7 +221,7 @@ void TPCCDatabase::load_stocks_table(uint64_t wid) {
     int row_names[10] = {S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05,
                          S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10};
     for (int row_name : row_names) {
-      utility->generateAlphaString(24, 24, s_dist, wid - 1);
+      helper->generateAlphaString(24, 24, s_dist, wid - 1);
       row->set_value(row_name, s_dist);
     }
     row->set_value(S_YTD, 0);
@@ -230,9 +230,9 @@ void TPCCDatabase::load_stocks_table(uint64_t wid) {
     // Setting s_data to a random string in which 10% contains 'original' as
     // last 8 letters
     char s_data[50];
-    auto len = (int)utility->generateAlphaString(26, 50, s_data, wid - 1);
+    auto len = (int)helper->generateAlphaString(26, 50, s_data, wid - 1);
     if (rand() % 100 < 10) {
-      auto idx = (int)utility->generateRandom(0, (uint64_t)(len - 8), wid - 1);
+      auto idx = (int)helper->generateRandom(0, (uint64_t)(len - 8), wid - 1);
       strcpy(&s_data[idx], "original");
     }
     row->set_value(S_DATA, s_data);
@@ -244,10 +244,10 @@ void TPCCDatabase::load_stocks_table(uint64_t wid) {
 }
 
 void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
-  assert(g_cust_per_dist >= 1000);
+  assert(TPCC_CUST_PER_DIST >= 1000);
   row_t *row = nullptr;
   uint64_t row_id = 0;
-  for (uint32_t cid = 1; cid <= g_cust_per_dist; cid++) {
+  for (uint32_t cid = 1; cid <= TPCC_CUST_PER_DIST; cid++) {
     // Obtain new row
     t_customer->get_new_row(row, 0, row_id);
 
@@ -263,7 +263,7 @@ void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
       TPCCUtility::findLastNameForNum(cid - 1, c_last);
     } else {
       TPCCUtility::findLastNameForNum(
-          utility->generateNonUniformRandom(255, 0, 999, wid - 1), c_last);
+          helper->generateNonUniformRandom(255, 0, 999, wid - 1), c_last);
     }
     row->set_value(C_LAST, c_last);
 #if !TPCC_SMALL
@@ -277,15 +277,15 @@ void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
     char phone[16];
     char c_data[500];
 
-    utility->generateAlphaString(FIRSTNAME_MINLEN, sizeof(c_first), c_first,
+    helper->generateAlphaString(FIRSTNAME_MINLEN, sizeof(c_first), c_first,
                                  wid - 1);
-    utility->generateAlphaString(10, 20, street, wid - 1);
-    utility->generateAlphaString(10, 20, street2, wid - 1);
-    utility->generateAlphaString(10, 20, city, wid - 1);
-    utility->generateAlphaString(2, 2, state, wid - 1);
-    utility->generateNumberString(9, 9, zip, wid - 1);
-    utility->generateNumberString(16, 16, phone, wid - 1);
-    utility->generateAlphaString(300, 500, c_data, wid - 1);
+    helper->generateAlphaString(10, 20, street, wid - 1);
+    helper->generateAlphaString(10, 20, street2, wid - 1);
+    helper->generateAlphaString(10, 20, city, wid - 1);
+    helper->generateAlphaString(2, 2, state, wid - 1);
+    helper->generateNumberString(9, 9, zip, wid - 1);
+    helper->generateNumberString(16, 16, phone, wid - 1);
+    helper->generateAlphaString(300, 500, c_data, wid - 1);
 
     row->set_value(C_MIDDLE, tmp);
     row->set_value(C_FIRST, c_first);
@@ -301,7 +301,7 @@ void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
     row->set_value(C_DATA, c_data);
 #endif
 
-    if (utility->generateRandom(10, wid - 1) == 0) {
+    if (helper->generateRandom(10, wid - 1) == 0) {
       strcpy(tmp, "GC");
       row->set_value(C_CREDIT, tmp);
     } else {
@@ -309,7 +309,7 @@ void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
       row->set_value(C_CREDIT, tmp);
     }
     row->set_value(C_DISCOUNT,
-                   (double)utility->generateRandom(5000, wid - 1) / 10000);
+                   (double)helper->generateRandom(5000, wid - 1) / 10000);
     row->set_value(C_BALANCE, -10.0);
     row->set_value(C_YTD_PAYMENT, 10.0);
     row->set_value(C_PAYMENT_CNT, 1);
@@ -346,7 +346,7 @@ void TPCCDatabase::load_history_table(uint64_t c_id, uint64_t d_id,
   row->set_value(H_AMOUNT, 10.0);
 #if !TPCC_SMALL
   char h_data[24];
-  utility->generateAlphaString(12, 24, h_data, w_id - 1);
+  helper->generateAlphaString(12, 24, h_data, w_id - 1);
   row->set_value(H_DATA, h_data);
 #endif
 
@@ -355,13 +355,13 @@ void TPCCDatabase::load_history_table(uint64_t c_id, uint64_t d_id,
 
 void TPCCDatabase::load_order_table(uint64_t did, uint64_t wid) {
   /* initialize permutation of customer numbers */
-  uint64_t perm[g_cust_per_dist];
+  uint64_t perm[TPCC_CUST_PER_DIST];
   initialize_permutation(perm, wid);
 
   row_t *row = nullptr;
   uint64_t row_id = 0;
 
-  for (uint32_t oid = 1; oid <= g_cust_per_dist; oid++) {
+  for (uint32_t oid = 1; oid <= TPCC_CUST_PER_DIST; oid++) {
     // Obtain an order row from table
     t_order->get_new_row(row, 0, row_id);
 
@@ -379,13 +379,13 @@ void TPCCDatabase::load_order_table(uint64_t did, uint64_t wid) {
     uint64_t o_entry = 2013;
     row->set_value(O_ENTRY_D, o_entry);
     if (oid < 2101) {
-      row->set_value(O_CARRIER_ID, utility->generateRandom(1, 10, wid - 1));
+      row->set_value(O_CARRIER_ID, helper->generateRandom(1, 10, wid - 1));
     } else {
       row->set_value(O_CARRIER_ID, 0);
     }
 
     // Obtain random number of order_line and set all local
-    uint64_t o_ol_cnt = utility->generateRandom(5, 15, wid - 1);
+    uint64_t o_ol_cnt = helper->generateRandom(5, 15, wid - 1);
     row->set_value(O_OL_CNT, o_ol_cnt);
     row->set_value(O_ALL_LOCAL, 1);
 
@@ -405,7 +405,7 @@ void TPCCDatabase::load_order_table(uint64_t did, uint64_t wid) {
       ol_row->set_value(OL_SUPPLY_W_ID, wid);
 
       // set item id and quantity
-      ol_row->set_value(OL_I_ID, utility->generateRandom(1, 100000, wid - 1));
+      ol_row->set_value(OL_I_ID, helper->generateRandom(1, 100000, wid - 1));
       ol_row->set_value(OL_QUANTITY, 5);
 
       // set delivery and amount information
@@ -415,12 +415,12 @@ void TPCCDatabase::load_order_table(uint64_t did, uint64_t wid) {
       } else {
         ol_row->set_value(OL_DELIVERY_D, 0);
         ol_row->set_value(OL_AMOUNT,
-                          (double)utility->generateRandom(1, 999999, wid - 1) /
+                          (double)helper->generateRandom(1, 999999, wid - 1) /
                               100);
       }
       // set district information
       char ol_dist_info[24];
-      utility->generateAlphaString(24, 24, ol_dist_info, wid - 1);
+      helper->generateAlphaString(24, 24, ol_dist_info, wid - 1);
       ol_row->set_value(OL_DIST_INFO, ol_dist_info);
     }
 #endif
@@ -439,12 +439,13 @@ void TPCCDatabase::load_order_table(uint64_t did, uint64_t wid) {
 void TPCCDatabase::initialize_permutation(uint64_t *perm_c_id, uint64_t wid) {
   uint32_t i;
   // Init with consecutive values
-  for (i = 0; i < g_cust_per_dist; i++)
+  for (i = 0; i < TPCC_CUST_PER_DIST; i++)
     perm_c_id[i] = i + 1;
 
   // shuffle
-  for (i = 0; i < g_cust_per_dist - 1; i++) {
-    uint64_t j = utility->generateRandom(i + 1, g_cust_per_dist - 1, wid - 1);
+  for (i = 0; i < TPCC_CUST_PER_DIST - 1; i++) {
+    uint64_t j =
+        helper->generateRandom(i + 1, TPCC_CUST_PER_DIST - 1, wid - 1);
     uint64_t tmp = perm_c_id[i];
     perm_c_id[i] = perm_c_id[j];
     perm_c_id[j] = tmp;
@@ -454,26 +455,29 @@ void TPCCDatabase::initialize_permutation(uint64_t *perm_c_id, uint64_t wid) {
 void TPCCDatabase::load_tables(uint64_t thread_id) {
   // thread i loads warehouse information for wid = (i+1)
   uint32_t wid = thread_id + 1;
-  utility->random.seed(thread_id, wid);
+  helper->random.seed(thread_id, wid);
 
   // only one thread generates items table
   if (thread_id == 0) {
     load_items_table();
   }
 
-  if (wid <= g_num_wh) {
+  if (wid <= config.num_warehouses) {
     load_warehouse_table(wid);
     load_districts_table(wid);
     load_stocks_table(wid);
-    for (uint64_t did = 1; did <= DIST_PER_WARE; did++) {
+    for (uint64_t did = 1; did <= TPCC_DIST_PER_WH; did++) {
       load_customer_table(did, wid);
       load_order_table(did, wid);
-      for (uint64_t cid = 1; cid <= g_cust_per_dist; cid++) {
+      for (uint64_t cid = 1; cid <= TPCC_CUST_PER_DIST; cid++) {
         load_history_table(cid, did, wid);
       }
     }
   }
 }
+
+TPCCDatabase::TPCCDatabase(const TPCCBenchmarkConfig &_config)
+    : config(_config) {}
 
 void TPCCTransactionManager::initialize(Database *database,
                                         uint64_t thread_id) {
@@ -517,7 +521,7 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
   assert(item != nullptr);
   row_t *r_wh = ((row_t *)item->location);
   row_t *r_wh_local = nullptr;
-  if (g_wh_update) {
+  if (db->config.warehouse_update) {
     r_wh_local = get_row(r_wh, WR);
   } else {
     r_wh_local = get_row(r_wh, RD);
@@ -531,7 +535,7 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
                         WHERE w_id=:w_id;
         +====================================================*/
 
-  if (g_wh_update) {
+  if (db->config.warehouse_update) {
     double w_ytd;
     r_wh_local->get_value(W_YTD, w_ytd);
     r_wh_local->set_value(W_YTD, w_ytd + params->h_amount);

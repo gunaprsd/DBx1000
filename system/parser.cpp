@@ -1,132 +1,52 @@
 #include "global.h"
 #include "helper.h"
 
-void print_usage() {
-  printf("[usage]:\n");
-  printf("\t-pINT       ; PART_CNT\n");
-  printf("\t-vINT       ; VIRTUAL_PART_CNT\n");
-  printf("\t-tINT       ; THREAD_CNT\n");
-  printf("\t-qINT       ; QUERY_INTVL\n");
-  printf("\t-dINT       ; PRT_LAT_DISTR\n");
-  printf("\t-aINT       ; PART_ALLOC (0 or 1)\n");
-  printf("\t-mINT       ; MEM_PAD (0 or 1)\n");
-  printf("\t-GaINT      ; ABORT_PENALTY (in ms)\n");
-  printf("\t-GcINT      ; CENTRAL_MAN\n");
-  printf("\t-GtINT      ; TS_ALLOC\n");
-  printf("\t-GkINT      ; KEY_ORDER\n");
-  printf("\t-GnINT      ; NO_DL\n");
-  printf("\t-GoINT      ; TIMEOUT\n");
-  printf("\t-GlINT      ; DL_LOOP_DETECT\n");
+#include <gflags/gflags.h>
 
-  printf("\t-GbINT      ; TS_BATCH_ALLOC\n");
-  printf("\t-GuINT      ; TS_BATCH_NUM\n");
+/*
+ * YCSB Command Line Arguments
+ */
+DEFINE_uint64(ycsb_table_size, YCSB_TABLE_SIZE, "YCSB: Table size");
+DEFINE_double(ycsb_zipf_theta, YCSB_ZIPF_THETA, "YCSB: Zipfian theta for intra-partition distribution");
+DEFINE_double(ycsb_read_percent, YCSB_READ_PERCENT, "YCSB: Read percentage");
+DEFINE_uint32(ycsb_num_partitions, YCSB_PART_COUNT, "YCSB: Number of partitions");
+DEFINE_double(ycsb_multipart_txns, YCSB_MULTIPART_PERCENT, "YCSB: Percentage of multi-part txns");
+DEFINE_uint32(ycsb_num_local, YCSB_NUM_LOCAL, "YCSB: Number of local partitions");
+DEFINE_uint32(ycsb_num_remote, YCSB_NUM_REMOTE, "YCSB: Number of remote partitions");
+DEFINE_bool(ycsb_do_compute, YCSB_DO_COMPUTE, "YCSB: Do compute?");
+DEFINE_uint32(ycsb_compute_cost, YCSB_COMPUTE_COST, "YCSB: Dummy operation cost");
+DEFINE_double(ycsb_remote_percent, YCSB_REMOTE_PERCENT, "YCSB: Remote access percent");
+DEFINE_bool(ycsb_key_order, YCSB_KEY_ORDER, "YCSB: Order key access?");
 
-  printf("\t-o STRING   ; output file\n\n");
-  printf("  [YCSB]:\n");
-  printf("\t-cINT       ; PART_PER_TXN\n");
-  printf("\t-eINT       ; PERC_MULTI_PART\n");
-  printf("\t-rFLOAT     ; READ_PERC\n");
-  printf("\t-wFLOAT     ; WRITE_PERC\n");
-  printf("\t-zFLOAT     ; ZIPF_THETA\n");
-  printf("\t-sINT       ; SYNTH_TABLE_SIZE\n");
-  printf("\t-RINT       ; REQ_PER_QUERY\n");
-  printf("\t-fINT       ; FIELD_PER_TUPLE\n");
-  printf("  [TPCC]:\n");
-  printf("\t-nINT       ; NUM_WH\n");
-  printf("\t-TpFLOAT    ; PERC_PAYMENT\n");
-  printf("\t-TuINT      ; WH_UPDATE\n");
-  printf("  [TEST]:\n");
-  printf("\t-Ar         ; Test READ_WRITE\n");
-  printf("\t-Ac         ; Test CONFLICT\n");
-  printf("  [EXPERIMENT]:\n");
-  printf("\t-EcFLOAT	  ; CONTENTION_PERC\n");
-  printf("\t-EpINT	  ; POS_IN_TXN\n");
-  printf("\t-ElINT	  ; TXN_LENGTH\n");
-}
+/*
+ * TPCC Command Line Arguments
+ */
+DEFINE_uint32(tpcc_num_wh, TPCC_NUM_WH, "TPCC: Number of Warehouses");
+DEFINE_bool(tpcc_wh_update, TPCC_WH_UPDATE, "TPCC: Update warehouse on payments?");
+DEFINE_double(tpcc_perc_payment, TPCC_PERC_PAYMENT, "TPCC: Percentage of payement txns");
+DEFINE_uint64(tpcc_max_items, TPCC_MAX_ITEMS, "TPCC: Max number of items");
+DEFINE_uint64(tpcc_cust_per_dist, TPCC_CUST_PER_DIST, "TPCC: Customers per district");
+DEFINE_uint64(tpcc_dist_per_wh, TPCC_DIST_PER_WH, "TPCC: Districts per warehouse");
+/*
+ * General Command Line Arguments
+ */
+DEFINE_string(task, "generate", "Choose task type: generate, partition, execute");
+DEFINE_uint32(load_parallelism, INIT_PARALLELISM, "Parallelism for loading database");
+DEFINE_uint64(size_per_thread, 256 * 1024, "Size Per Thread");
+DEFINE_string(benchmark, "ycsb", "Benchmark to run on:ycsb, tpcc");
+DEFINE_string(tag, "foo", "Tag for the benchmark");
+DEFINE_string(input_folder, "data", "Folder to access workload from");
+DEFINE_uint32(threads, 4, "Number of threads");
+DEFINE_bool(pin_threads, true, "Pin threads?");
+DEFINE_bool(hyperthreading, false, "Enable hyper-threading?");
+DEFINE_bool(abort_buffer, true, "Use an abort buffer?");
+DEFINE_uint32(abort_buffer_size, ABORT_BUFFER_SIZE, "Size of abort buffer");
+DEFINE_uint32(abort_penalty, ABORT_PENALTY, "Penalty in mus");
 
-void parser(int argc, char **argv) {
-  g_params["abort_buffer_enable"] = ABORT_BUFFER_ENABLE ? "true" : "false";
-  g_params["write_copy_form"] = WRITE_COPY_FORM;
-  g_params["validation_lock"] = VALIDATION_LOCK;
-  g_params["pre_abort"] = PRE_ABORT;
-  g_params["atomic_timestamp"] = ATOMIC_TIMESTAMP;
+/*
+ * Partitioner/Execution Command Line Arguments
+ */
+DEFINE_string(partitioner, "access_graph", "Options: access_graph, conflict_graph");
+DEFINE_string(output_folder, "data", "Output folder for partitioner");
+DEFINE_uint32(ufactor, 5, "Load imbalance tolerance for METIS (1 + x/1000)");
 
-  for (int i = 1; i < argc; i++) {
-    assert(argv[i][0] == '-');
-
-    if (argv[i][1] == 'd')
-      g_data_folder = string(&argv[i][2]);
-    else if (argv[i][1] == 't')
-      g_thread_cnt = atoi(&argv[i][2]);
-    else if (argv[i][1] == 's')
-      g_size_factor = atoi(&argv[i][2]);
-    else if (argv[i][1] == 'o') {
-      i++;
-      output_file = argv[i];
-    } else if (argv[i][1] == 'h') {
-      print_usage();
-      exit(0);
-    } else if (argv[i][1] == '-') {
-      string line(&argv[i][2]);
-      size_t pos = line.find("=");
-      assert(pos != string::npos);
-      string name = line.substr(0, pos);
-      string value = line.substr(pos + 1, line.length());
-      assert(g_params.find(name) != g_params.end());
-      g_params[name] = value;
-    } else if (argv[i][1] == 'P') {
-
-      switch (argv[i][2]) {
-      case 'b':
-        g_benchmark = &argv[i][3];
-        break;
-      case 't':
-        if (argv[i][3] == '2') {
-          g_benchmark_tag2 = &argv[i][4];
-        } else {
-          g_benchmark_tag = &argv[i][3];
-        }
-        break;
-      case 'u':
-        g_ufactor = atoi(&argv[i][3]);
-        break;
-      case 'g':
-        g_task_type = GENERATE;
-        break;
-      case 'p':
-        switch (argv[i][3]) {
-        case 'a':
-          g_task_type = PARTITION_DATA;
-          break;
-        case 'c':
-          g_task_type = PARTITION_CONFLICT;
-          break;
-        default:
-          assert(false);
-        }
-        break;
-      case 'e':
-        switch (argv[i][3]) {
-        case 'r':
-          g_task_type = EXECUTE_RAW;
-          break;
-        case 'p':
-          g_task_type = EXECUTE_PARTITIONED;
-          break;
-        default:
-          assert(false);
-        }
-        break;
-      case 'c':
-	g_op_cost = atoi(&argv[i][3]);
-	break;
-      default:
-        assert(false);
-      }
-    } else {
-      assert(false);
-    }
-  }
-  if (g_thread_cnt < g_init_parallelism)
-    g_init_parallelism = g_thread_cnt;
-}

@@ -3,15 +3,16 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
 SET(CMAKE_C_COMPILER gcc)
 SET(CMAKE_C_COMPILER g++)
 SET(CMAKE_CXX_STANDARD 11)
+
 ADD_DEFINITIONS(-DNOGRAPHITE=1)
 SET (CMAKE_CXX_FLAGS "-Werror -Wall -std=c++0x" CACHE INTERNAL "compiler options" FORCE)
 SET (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -pg" CACHE INTERNAL "compiler options" FORCE)
 SET (CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE INTERNAL "compiler options" FORCE)
-
 IF (NOT CMAKE_BUILD_TYPE)
     SET (CMAKE_BUILD_TYPE "Release")
 ENDIF ()
 
+ADD_SUBDIRECTORY(gflags)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ycsb)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/tpcc)
@@ -20,6 +21,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/storage)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/system)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/workload)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib/include)
+
 SET(SRC_LIST cc/occ.h
         cc/plock.h
         cc/vll.h
@@ -52,7 +54,7 @@ SET(SRC_LIST cc/occ.h
         system/database.h
         system/stats.h
         system/mem_alloc.h
-        tpcc/tpcc_helper.h
+        tpcc/tpcc_utility.h
         tpcc/tpcc.h
         tpcc/tpcc_database.h
         tpcc/tpcc_const.h
@@ -93,21 +95,19 @@ SET(SRC_LIST cc/occ.h
         system/global.cpp
         system/parser.cpp
         system/main.cpp
-        tpcc/tpcc.cpp
         tpcc/tpcc_database.cpp
         tpcc/tpcc_workload.cpp
-        tpcc/tpcc_txn.cpp
-        tpcc/tpcc_helper.cpp
+        tpcc/tpcc_utility.cpp
         workload/graph_partitioner.cpp
         ycsb/ycsb.cpp
         ycsb/ycsb_workload.cpp
         ycsb/ycsb_database.cpp
-        tpcc/tpcc.cpp
         workload/partitioner.h
         workload/loader.h
         ycsb/ycsb.cpp
-        workload/scheduler.h)
+        workload/scheduler.h system/parser.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})
 TARGET_LINK_LIBRARIES(rundb rt pthread metis)
+TARGET_LINK_LIBRARIES(rundb gflags)

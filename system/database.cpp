@@ -95,7 +95,7 @@ RC Database::initialize_schema(string schema_file) {
 
       uint64_t size;
       if (tname == "MAIN_TABLE") {
-        size = g_synth_table_size * 2;
+        size = FLAGS_ycsb_table_size * 2;
       } else {
         size = static_cast<uint64_t>(stoi(items[1]) * part_cnt);
       }

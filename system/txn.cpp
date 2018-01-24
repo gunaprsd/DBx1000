@@ -22,18 +22,18 @@ void txn_man::initialize(Database *h_wl, uint64_t thd_id) {
     accesses[i] = NULL;
   num_accesses_alloc = 0;
 #if CC_ALG == TICTOC || CC_ALG == SILO
-  _pre_abort = (g_params["pre_abort"] == "true");
-  if (g_params["validation_lock"] == "no-wait")
+  _pre_abort = (PRE_ABORT == "true");
+  if (VALIDATION_LOCK == "no-wait")
     _validation_no_wait = true;
-  else if (g_params["validation_lock"] == "waiting")
+  else if (VALIDATION_LOCK == "waiting")
     _validation_no_wait = false;
   else
     assert(false);
 #endif
 #if CC_ALG == TICTOC
   _max_wts = 0;
-  _write_copy_ptr = (g_params["write_copy_form"] == "ptr");
-  _atomic_timestamp = (g_params["atomic_timestamp"] == "true");
+  _write_copy_ptr = (WRITE_COPY_FROM == "ptr");
+  _atomic_timestamp = (ATOMIC_TIMESTAMP == "true");
 #elif CC_ALG == SILO
   _cur_tid = 0;
 #endif

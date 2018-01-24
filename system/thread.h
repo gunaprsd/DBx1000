@@ -37,7 +37,7 @@ public:
 			INC_STATS(thread_id, time_query, get_sys_clock() - start_time);
 
 			// Step 2: Prepare the transaction manager
-			uint64_t global_txn_id = thread_id + thd_txn_id * g_thread_cnt;
+			uint64_t global_txn_id = thread_id + thd_txn_id * FLAGS_threads;
 			thd_txn_id++;
 			m_txn->reset(global_txn_id);
 
@@ -114,11 +114,12 @@ private:
 
 template <typename T> class BenchmarkExecutor {
 public:
-  virtual void initialize(const string & folder_path, uint64_t num_threads)  {
+  BenchmarkExecutor(const string & folder_path, uint64_t num_threads)  {
 		_num_threads = num_threads;
 		_folder_path = folder_path;
 		_threads = (Thread<T> *)_mm_malloc(sizeof(Thread<T>) * _num_threads, 64);
 	}
+
   virtual void execute() {
 		pthread_t threads[_num_threads];
 		ThreadLocalData data[_num_threads];

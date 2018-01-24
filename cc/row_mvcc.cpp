@@ -1,4 +1,5 @@
 //#include "mvcc.h"
+#include "parser.h"
 #include "txn.h"
 #include "row.h"
 #include "manager.h"
@@ -267,7 +268,7 @@ Row_mvcc::reserveRow(ts_t ts, txn_man * txn)
 	}
 	row_t * row;
 	if (idx == _his_len) { 
-		if (_his_len >= g_thread_cnt) {
+		if (_his_len >= FLAGS_threads) {
 			// all entries are taken. recycle the oldest version if _his_len is too long already
 			ts_t min_ts = UINT64_MAX; 
 			for (uint32_t i = 0; i < _his_len; i++) {

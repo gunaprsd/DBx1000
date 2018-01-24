@@ -23,7 +23,7 @@ To test the database
 Configuration
 -------------
 
-DBMS configurations can be changed in the _config.h file. Please refer to README for the meaning of each configuration. Here we only list several most important ones. 
+DBMS configurations can be changed in the _wl_config.h file. Please refer to README for the meaning of each configuration. Here we only list several most important ones. 
 
     THREAD_CNT        : Number of worker threads running in the database.
     WORKLOAD          : Supported workloads include YCSB and TPCC

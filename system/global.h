@@ -26,6 +26,7 @@
 #include "dl_detect.h"
 #include "pthread.h"
 #include "stats.h"
+#include "parser.h"
 #ifndef NOGRAPHITE
 #include "carbon_user.h"
 #endif
@@ -76,9 +77,7 @@ extern bool g_part_alloc;
 extern bool g_mem_pad;
 extern bool g_prt_lat_distr;
 extern uint32_t g_part_cnt;
-extern uint32_t g_virtual_part_cnt;
-extern uint32_t g_thread_cnt;
-extern ts_t g_abort_penalty;
+
 extern bool g_central_man;
 extern uint32_t g_ts_alloc;
 extern bool g_key_order;
@@ -88,40 +87,15 @@ extern ts_t g_dl_loop_detect;
 extern bool g_ts_batch_alloc;
 extern uint32_t g_ts_batch_num;
 
-extern map<string, string> g_params;
-
 // YCSB
 extern uint32_t g_cc_alg;
 extern ts_t g_query_intvl;
-extern uint32_t g_part_per_txn;
-extern double g_perc_multi_part;
-extern double g_read_perc;
-extern double g_write_perc;
-extern double g_zipf_theta;
-extern uint64_t g_synth_table_size;
-extern double g_remote_perc;
-extern uint32_t g_remote_partitions;
-extern uint32_t g_local_partitions;
-extern uint32_t g_size_factor;
-extern uint32_t g_repeat;
-extern int32_t g_op_cost;
 
-extern uint32_t g_req_per_query;
-extern uint32_t g_field_per_tuple;
-extern uint32_t g_init_parallelism;
-
-// EXPERIMENT
-extern double g_contention_perc;
-extern uint32_t g_pos_in_txn;
-extern uint32_t g_txn_length;
 
 // TPCC
 extern uint32_t g_num_wh;
 extern double g_perc_payment;
-extern bool g_wh_update;
 extern char *output_file;
-extern uint32_t g_max_items;
-extern uint32_t g_cust_per_dist;
 
 enum RC { RCOK, Commit, Abort, WAIT, ERROR, FINISH };
 

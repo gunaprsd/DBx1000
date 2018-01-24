@@ -29,7 +29,7 @@ void YCSBDatabase::initialize(uint64_t num_threads) {
   the_index = indexes["MAIN_INDEX"];
 }
 
-uint64_t YCSBDatabase::key_to_part(uint64_t key) { return key % g_part_cnt; }
+uint64_t YCSBDatabase::key_to_part(uint64_t key) { return key % config.num_partitions; }
 
 txn_man *YCSBDatabase::get_txn_man(uint64_t thread_id) {
   auto txn_manager = new YCSBTransactionManager();
@@ -45,7 +45,7 @@ void YCSBDatabase::load_tables(uint64_t thread_id) {
 
 void YCSBDatabase::load_main_table(uint64_t tid) {
   RC rc;
-  uint64_t slice_size = g_synth_table_size / _num_threads;
+  uint64_t slice_size = config.table_size / _num_threads;
   for (uint64_t key = slice_size * tid; key < slice_size * (tid + 1); key++) {
     row_t *new_row = NULL;
     uint64_t row_id;
@@ -74,6 +74,9 @@ void YCSBDatabase::load_main_table(uint64_t tid) {
     assert(rc == RCOK);
   }
 }
+
+YCSBDatabase::YCSBDatabase(const YCSBBenchmarkConfig &_config)
+    : config(_config), the_index(nullptr), the_table(nullptr) {}
 
 void YCSBTransactionManager::initialize(Database *database,
                                         uint64_t thread_id) {
@@ -115,22 +118,24 @@ RC YCSBTransactionManager::run_txn(BaseQuery *query) {
       }
 
       char *data = row_local->get_data();
-      float a = *(float*)data;
-      for (int i = 0; i < g_op_cost; i++) {
-        a *= a;
+      if(db->config.do_compute) {
+        float a = *(float *)data;
+        for (auto i = 0u; i < db->config.compute_cost; i++) {
+          a *= a;
+        }
+        *(float *)data = a;
       }
-      *(float*)data = a;
 
       if (m_query->request_cnt > 1) {
         if (req->rtype == RD || req->rtype == SCAN) {
           int fid = 0;
-          //char *data = row_local->get_data();
+          // char *data = row_local->get_data();
           __attribute__((unused)) uint64_t fval =
               *(uint64_t *)(&data[fid * 10]);
         } else {
           assert(req->rtype == WR);
           int fid = 0;
-          //char *data = row->get_data();
+          // char *data = row->get_data();
           *(uint64_t *)(&data[fid * 10]) = 0;
         }
       }

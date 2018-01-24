@@ -107,7 +107,7 @@ void ParMETISGraphPartitioner::compute_partitions(
 //  auto ubvec = new real_t[1];
 //  ubvec[0] = 1.0 + ((real_t)g_ufactor/1000.0);
 //  auto options = new idx_t[3];
-//  options[0] = 0;  // default _config
+//  options[0] = 0;  // default _wl_config
 //  options[1] = 0;
 //  options[2] = 123;
 //

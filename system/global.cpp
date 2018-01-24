@@ -9,6 +9,7 @@
 #include "tpcc.h"
 #include "vll.h"
 #include "ycsb.h"
+#include "parser.h"
 
 mem_alloc mem_allocator;
 Stats stats;
@@ -41,43 +42,16 @@ bool g_part_alloc = PART_ALLOC;
 bool g_mem_pad = MEM_PAD;
 uint32_t g_cc_alg = CC_ALG;
 ts_t g_query_intvl = QUERY_INTVL;
-uint32_t g_part_per_txn = PART_PER_TXN;
-double g_perc_multi_part = PERC_MULTI_PART;
-double g_read_perc = READ_PERC;
-double g_write_perc = WRITE_PERC;
-double g_zipf_theta = ZIPF_THETA;
+
 bool g_prt_lat_distr = PRT_LAT_DISTR;
 uint32_t g_part_cnt = PART_CNT;
-uint32_t g_virtual_part_cnt = VIRTUAL_PART_CNT;
-uint32_t g_thread_cnt = THREAD_CNT;
-uint64_t g_synth_table_size = SYNTH_TABLE_SIZE;
-uint32_t g_req_per_query = REQ_PER_QUERY;
-uint32_t g_field_per_tuple = FIELD_PER_TUPLE;
-uint32_t g_init_parallelism = INIT_PARALLELISM;
-double g_remote_perc = 0.0;
-uint32_t g_remote_partitions = 0;
-uint32_t g_local_partitions = 0;
-uint32_t g_repeat = 1;
-int32_t g_op_cost = 1;
 
-uint32_t g_num_wh = NUM_WH;
+uint32_t g_num_wh = TPCC_NUM_WH;
 double g_perc_payment = PERC_PAYMENT;
-bool g_wh_update = WH_UPDATE;
 char *output_file = NULL;
 
-double g_contention_perc = CONTENTION_PERC;
-uint32_t g_pos_in_txn = POS_IN_TXN;
-uint32_t g_txn_length = REQ_PER_QUERY;
 
-map<string, string> g_params;
 
-#if TPCC_SMALL
-uint32_t g_max_items = 10000;
-uint32_t g_cust_per_dist = 2000;
-#else
-uint32_t g_max_items = 100000;
-uint32_t g_cust_per_dist = 3000;
-#endif
 
 void print_ycsb_query(FILE *file, ycsb_query *query) {
   for (uint64_t k = 0; k < query->params.request_cnt; k++) {

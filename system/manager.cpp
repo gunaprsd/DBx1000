@@ -25,12 +25,12 @@ void Manager::init() {
 #endif
 
 
-	all_ts = (ts_t volatile **) _mm_malloc(sizeof(ts_t *) * g_thread_cnt, 64);
-	for (uint32_t i = 0; i < g_thread_cnt; i++) 
+	all_ts = (ts_t volatile **) _mm_malloc(sizeof(ts_t *) * FLAGS_threads, 64);
+	for (uint32_t i = 0; i < FLAGS_threads; i++) 
 		all_ts[i] = (ts_t *) _mm_malloc(sizeof(ts_t), 64);
 
-	_all_txns = new txn_man * [g_thread_cnt];
-	for (uint32_t i = 0; i < g_thread_cnt; i++) {
+	_all_txns = new txn_man * [FLAGS_threads];
+	for (uint32_t i = 0; i < FLAGS_threads; i++) {
 		*all_ts[i] = UINT64_MAX;
 		_all_txns[i] = NULL;
 	}
@@ -64,7 +64,7 @@ Manager::get_ts(uint64_t thread_id) {
 #endif
 		break;
 	case TS_CLOCK :
-		time = get_sys_clock() * g_thread_cnt + thread_id;
+		time = get_sys_clock() * FLAGS_threads + thread_id;
 		break;
 	default :
 		assert(false);
@@ -79,7 +79,7 @@ ts_t Manager::get_min_ts(uint64_t tid) {
 	if (tid == 0 && now - last_time > MIN_TS_INTVL)
 	{ 
 		ts_t min = UINT64_MAX;
-    	for (uint32_t i = 0; i < g_thread_cnt; i++) 
+    	for (uint32_t i = 0; i < FLAGS_threads; i++) 
 	    	if (*all_ts[i] < min)
     	    	min = *all_ts[i];
 		if (min > _min_ts)

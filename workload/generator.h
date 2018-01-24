@@ -13,7 +13,7 @@
 /*
  * ParallelWorkloadGenerator:
  * --------------------------
- * Generates a workload (in parallel) based on _config and command line
+ * Generates a workload (in parallel) based on _wl_config and command line
  * arguments If a _folder_path is specified, the queries are written onto k
  * binary files with the format <_folder_path>/core_<i>.dat
  */

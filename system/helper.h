@@ -258,9 +258,9 @@ string get_workload_file_name(const string & folder_path, uint32_t thread_id);
 
 #define DURATION(e, s) ((double)e - (double)s) / 1000.0 / 1000.0 / 1000.0
 
-string get_benchmark_path(const string & base, bool partitioned);
+//string get_benchmark_path(const string & base, bool partitioned);
 
-void check_and_init_variables();
+//void check_and_init_variables();
 
 void ensure_folder_exists(string folder_path);
 

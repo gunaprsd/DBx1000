@@ -11,9 +11,9 @@
  */
 template <typename T> class ParallelWorkloadLoader {
 public:
-  ParallelWorkloadLoader(string folder_path, uint32_t num_threads) {
+  ParallelWorkloadLoader(string folder_path, uint64_t num_threads) {
 		_queries = new Query<T> *[_num_threads];
-		_array_sizes = new uint32_t[_num_threads];
+		_array_sizes = new uint64_t[_num_threads];
 	}
   void release()  {
 		// Implemented by derived class
@@ -40,13 +40,13 @@ public:
 			delete[] threads;
 			delete[] data;
 		}
-  virtual QueryIterator<T> *get_queries_list(uint32_t thread_id) {
+  virtual QueryIterator<T> *get_queries_list(uint64_t thread_id) {
 		return new QueryIterator<T>(_queries[thread_id], _array_sizes[thread_id]);
 	}
   virtual QueryMatrix<T> *get_queries_matrix() {
 		//Can create a query matrix only with equal number of elements in each array
-		uint32_t size = _array_sizes[0];
-		for (uint32_t i = 0; i < _num_threads; i++) {
+		uint64_t size = _array_sizes[0];
+		for (uint64_t i = 0; i < _num_threads; i++) {
 			assert(_array_sizes[i] == size);
 		}
 
@@ -86,10 +86,10 @@ protected:
 		fclose(file);
 		return nullptr;
 	}
-  uint32_t _num_threads;
+  uint64_t _num_threads;
   string _folder_path;
   Query<T> **_queries;
-  uint32_t *_array_sizes;
+  uint64_t *_array_sizes;
 };
 
 #endif // DBX1000_LOADER_H

@@ -119,37 +119,48 @@
 #define FIRST_PART_LOCAL false
 #define MAX_TUPLE_SIZE 1024 // in bytes
 
-// === [EXPERIMENT & YCSB]
 #define INIT_PARALLELISM 64
-#define SYNTH_TABLE_SIZE (10 * 1024 * 1024)
-#define READ_PERC 0.9
-#define WRITE_PERC 0.1
-#define SCAN_PERC 0
-#define SCAN_LEN 20
+
+// === [EXPERIMENT & YCSB]
+#define YCSB_TABLE_SIZE (10 * 1024 * 1024)
+#define YCSB_READ_PERCENT 0.9
+
 
 // ==== [EXPERIMENT] ===
 #define CONTENTION_PERC 1.0
 #define POS_IN_TXN 1
 
 // ==== [YCSB] ====
-#define ZIPF_THETA 0
-#define PART_PER_TXN 1
-#define PERC_MULTI_PART 1
+#define YCSB_PART_COUNT 4
+#define YCSB_ZIPF_THETA 0
+#define YCSB_MULTIPART_PERCENT 1
+#define YCSB_NUM_REQUESTS 16
+#define YCSB_NUM_LOCAL 1
+#define YCSB_NUM_REMOTE 1
+#define YCSB_DO_COMPUTE false
+#define YCSB_COMPUTE_COST 100
+#define YCSB_REMOTE_PERCENT 0.3
+#define YCSB_KEY_ORDER false
 #define REQ_PER_QUERY 16
 #define FIELD_PER_TUPLE 10
-#define MAX_REQ_PER_QUERY 16
+
 
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
 #define TPCC_SMALL false
-// Some of the transactions read the data but never use them.
-// If TPCC_ACCESS_ALL == fales, then these parts of the transactions
-// are not modeled.
-#define TPCC_ACCESS_ALL false
-#define WH_UPDATE true
-#define NUM_WH 4
-#define MAX_NUM_ORDER_LINE 16
+#define TPCC_WH_UPDATE true
+#define TPCC_NUM_WH 4
+#define TPCC_NUM_ORDERS 16
+#define TPCC_PERC_PAYMENT 0.5
+#define TPCC_DIST_PER_WH 10
+#if TPCC_SMALL
+#define TPCC_MAX_ITEMS 10000;
+#define TPCC_CUST_PER_DIST 2000;
+#else
+#define TPCC_MAX_ITEMS 100000
+#define TPCC_CUST_PER_DIST 3000
+#endif
 
 enum TPCCTxnType {
   TPCC_ALL,
@@ -168,7 +179,7 @@ extern TPCCTxnType g_tpcc_txn_type;
 #define FIRSTNAME_LEN 16
 #define LASTNAME_LEN 16
 
-#define DIST_PER_WARE 10
+
 
 /***********************************************/
 // TODO centralized CC management.

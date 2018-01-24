@@ -2,6 +2,7 @@
 #include "global.h"
 #include "helper.h"
 #include "mem_alloc.h"
+#include "parser.h"
 
 #define BILLION 1000000000UL
 
@@ -43,8 +44,8 @@ void Stats_tmp::clear() {
 void Stats::init() {
   if (!STATS_ENABLE)
     return;
-  _stats = (Stats_thd **)_mm_malloc(sizeof(Stats_thd *) * g_thread_cnt, 64);
-  tmp_stats = (Stats_tmp **)_mm_malloc(sizeof(Stats_tmp *) * g_thread_cnt, 64);
+  _stats = (Stats_thd **)_mm_malloc(sizeof(Stats_thd *) * FLAGS_threads, 64);
+  tmp_stats = (Stats_tmp **)_mm_malloc(sizeof(Stats_tmp *) * FLAGS_threads, 64);
   dl_detect_time = 0;
   dl_wait_time = 0;
   deadlock = 0;
@@ -116,7 +117,7 @@ void Stats::print() {
   double total_latency = 0;
   double total_time_query = 0;
   double total_throughput = 0;
-  for (uint64_t tid = 0; tid < g_thread_cnt; tid++) {
+  for (uint64_t tid = 0; tid < FLAGS_threads; tid++) {
     total_txn_cnt += _stats[tid]->txn_cnt;
     total_abort_cnt += _stats[tid]->abort_cnt;
     total_run_time += _stats[tid]->run_time;
@@ -195,7 +196,7 @@ void Stats::print_lat_distr() {
   FILE *outf;
   if (output_file != NULL) {
     outf = fopen(output_file, "a");
-    for (uint32_t tid = 0; tid < g_thread_cnt; tid++) {
+    for (uint32_t tid = 0; tid < FLAGS_threads; tid++) {
       fprintf(outf, "[all_debug1 thd=%d] ", tid);
       for (uint32_t tnum = 0; tnum < _stats[tid]->txn_cnt; tnum++)
         fprintf(outf, "%ld,", _stats[tid]->all_debug1[tnum]);

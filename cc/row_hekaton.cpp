@@ -128,7 +128,7 @@ Row_hekaton::reserveRow(txn_man * txn)
 	else { 
 		// write_history is already full
 		// If _his_len is small, double it. 
-		if (_his_len < g_thread_cnt) {
+		if (_his_len < FLAGS_threads) {
 			doubleHistory();
 			idx = (_his_latest + 1) % _his_len;
 		} else {

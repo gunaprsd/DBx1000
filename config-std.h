@@ -118,14 +118,14 @@
 #define MAX_TUPLE_SIZE 1024 // in bytes
 // ==== [YCSB] ====
 #define INIT_PARALLELISM 40
-#define SYNTH_TABLE_SIZE (1024 * 40)
-#define ZIPF_THETA 0.6
-#define READ_PERC 0.9
+#define YCSB_TABLE_SIZE (1024 * 40)
+#define YCSB_ZIPF_THETA 0.6
+#define YCSB_READ_PERCENT 0.9
 #define WRITE_PERC 0.1
 #define SCAN_PERC 0
 #define SCAN_LEN 20
 #define PART_PER_TXN 1
-#define PERC_MULTI_PART 1
+#define YCSB_MULTIPART_PERCENT 1
 #define REQ_PER_QUERY 16
 #define FIELD_PER_TUPLE 10
 // ==== [TPCC] ====
@@ -136,8 +136,8 @@
 // If TPCC_ACCESS_ALL == fales, then these parts of the transactions
 // are not modeled.
 #define TPCC_ACCESS_ALL false
-#define WH_UPDATE true
-#define NUM_WH 1
+#define TPCC_WH_UPDATE true
+#define TPCC_NUM_WH 1
 //
 enum TPCCTxnType {
   TPCC_ALL,
@@ -155,7 +155,7 @@ extern TPCCTxnType g_tpcc_txn_type;
 #define FIRSTNAME_LEN 16
 #define LASTNAME_LEN 16
 
-#define DIST_PER_WARE 10
+#define TPCC_DIST_PER_WH 10
 
 /***********************************************/
 // TODO centralized CC management.

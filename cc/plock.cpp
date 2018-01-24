@@ -3,6 +3,7 @@
 #include "plock.h"
 #include "mem_alloc.h"
 #include "txn.h"
+#include "parser.h"
 
 /************************************************/
 // per-compute_partitions Manager
@@ -12,7 +13,7 @@ void PartMan::init() {
 	waiter_cnt = 0;
 	owner = NULL;
 	waiters = (txn_man **)
-		mem_allocator.alloc(sizeof(txn_man *) * g_thread_cnt, part_id);
+		mem_allocator.alloc(sizeof(txn_man *) * FLAGS_threads, part_id);
 	pthread_mutex_init( &latch, NULL );
 }
 
@@ -25,7 +26,7 @@ RC PartMan::lock(txn_man * txn) {
 		rc = RCOK;
 	} else if (owner->get_ts() < txn->get_ts()) {
 		int i;
-		assert(waiter_cnt < g_thread_cnt);
+		assert(waiter_cnt < FLAGS_threads);
 		for (i = waiter_cnt; i > 0; i--) {
 			if (txn->get_ts() > waiters[i - 1]->get_ts()) {
 				waiters[i] = txn;

@@ -1,6 +1,7 @@
 #include "mem_alloc.h"
 #include "index_btree.h"
 #include "row.h"
+#include "parser.h"
 
 RC index_btree::init(uint64_t part_cnt) {
 	this->part_cnt = part_cnt;
@@ -8,8 +9,8 @@ RC index_btree::init(uint64_t part_cnt) {
 	// these pointers can be mapped anywhere. They won't be changed
 	roots = (bt_node **) malloc(part_cnt * sizeof(bt_node *));
 	// "cur_xxx_per_thd" is only for SCAN queries.
-	ARR_PTR(bt_node *, cur_leaf_per_thd, g_thread_cnt);
-	ARR_PTR(uint32_t, cur_idx_per_thd, g_thread_cnt);
+	ARR_PTR(bt_node *, cur_leaf_per_thd, FLAGS_threads);
+	ARR_PTR(uint32_t, cur_idx_per_thd, FLAGS_threads);
 	// the index tree of each compute_partitions musted be mapped to corresponding l2 slices
 	for (uint32_t part_id = 0; part_id < part_cnt; part_id ++) {
 		RC rc;

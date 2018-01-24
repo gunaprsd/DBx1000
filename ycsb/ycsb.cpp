@@ -1,6 +1,6 @@
 #include "ycsb.h"
 
-uint64_t YCSBAccessHelper::max_key = 10*1024*1024;
+uint64_t YCSBUtility::max_key = 10*1024*1024;
 template<>
 void AccessIterator<ycsb_params>::set_query(Query<ycsb_params> *query)  {
 	_current_req_id = 0;
@@ -11,7 +11,7 @@ template<>
 bool AccessIterator<ycsb_params>::next(uint64_t &key, access_t &type)  {
 	if(_current_req_id < _query->params.request_cnt) {
 		ycsb_request* request = &_query->params.requests[_current_req_id];
-		key = YCSBAccessHelper::get_hash(request->key);
+		key = YCSBUtility::get_hash(request->key);
 		type = request->rtype;
 		_current_req_id++;
 		return true;
@@ -22,5 +22,5 @@ bool AccessIterator<ycsb_params>::next(uint64_t &key, access_t &type)  {
 
 template<>
 uint64_t AccessIterator<ycsb_params>::get_max_key() {
-	return YCSBAccessHelper::get_max_key();
+	return YCSBUtility::get_max_key();
 }

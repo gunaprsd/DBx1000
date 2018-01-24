@@ -26,7 +26,7 @@ void itemid_t::init() {
   next = NULL;
 }
 
-int get_thdid_from_txnid(uint64_t txnid) { return txnid % g_thread_cnt; }
+int get_thdid_from_txnid(uint64_t txnid) { return txnid % FLAGS_threads; }
 
 uint64_t get_part_id(void *addr) {
   return ((uint64_t)addr / PAGE_SIZE) % g_part_cnt;
@@ -110,7 +110,7 @@ string get_workload_file_name(const string & base_file_name, uint32_t thread_id)
   return output;
 }
 
-string get_benchmark_path(const string & base, bool partitioned) {
+/*string get_benchmark_path(const string & base, bool partitioned) {
   string path = base;
   path += "/";
   path += string(g_benchmark);
@@ -122,7 +122,7 @@ string get_benchmark_path(const string & base, bool partitioned) {
     path += "-";
   }
   path += "c";
-  path += to_string(g_thread_cnt);
+  path += to_string(FLAGS_threads);
   path += "-";
   if(partitioned) {
     path += "partitioner-u";
@@ -132,7 +132,9 @@ string get_benchmark_path(const string & base, bool partitioned) {
   }
   return path;
 }
+ */
 
+/*
 void check_and_init_variables() {
   assert(g_benchmark != nullptr);
   assert((g_task_type == PARTITION_DATA || g_task_type == PARTITION_CONFLICT ||
@@ -157,17 +159,17 @@ void check_and_init_variables() {
       assert(false);
     }
     g_size = g_size_factor * 1024;
-    g_size_per_thread = g_size / g_thread_cnt;
+    g_size_per_thread = g_size / FLAGS_threads;
 
     if (strcmp(g_benchmark_tag2, "sp-plc") == 0) {
       g_perc_multi_part = 0;
-      g_part_cnt = g_thread_cnt / 2;
+      g_part_cnt = FLAGS_threads / 2;
     } else if (strcmp(g_benchmark_tag2, "sp-pec") == 0) {
       g_perc_multi_part = 0;
-      g_part_cnt = g_thread_cnt;
+      g_part_cnt = FLAGS_threads;
     } else if (strcmp(g_benchmark_tag2, "sp-pgc") == 0) {
       g_perc_multi_part = 0;
-      g_part_cnt = g_thread_cnt * 4;
+      g_part_cnt = FLAGS_threads * 4;
     } else if (strncmp(g_benchmark_tag2, "sp-custom-", 10) == 0) {
       g_perc_multi_part = 0;
       g_part_cnt = static_cast<uint32_t>(atoi(&g_benchmark_tag2[10]));
@@ -189,7 +191,7 @@ void check_and_init_variables() {
       } else {
         assert(false);
       }
-      g_local_partitions = g_part_cnt / g_thread_cnt;
+      g_local_partitions = g_part_cnt / FLAGS_threads;
     }
 
   } else if (strcmp(g_benchmark, "tpcc") == 0) {
@@ -197,14 +199,14 @@ void check_and_init_variables() {
     if (strncmp(g_benchmark_tag, "wh", 2) == 0) {
       g_num_wh = static_cast<uint32_t>(atoi(&g_benchmark_tag[2]));
     } else {
-      g_num_wh = g_thread_cnt;
+      g_num_wh = FLAGS_threads;
     }
     g_size = g_size_factor * 1024;
-    g_size_per_thread = g_size / g_thread_cnt;
+    g_size_per_thread = g_size / FLAGS_threads;
   } else {
     assert(false);
   }
-}
+}*/
 
 
 void ensure_folder_exists(string folder_path) {

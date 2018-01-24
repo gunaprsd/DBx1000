@@ -5,7 +5,7 @@
 #include "row.h"
 #include "manager.h"
 #include "mem_alloc.h"
-
+#include "parser.h"
 /********************************************************/
 // The current txn aborts itself only if it holds less
 // locks than all the other txns on the loop. 
@@ -13,8 +13,8 @@
 // performs the least amount of work
 /********************************************************/
 void DL_detect::init() {
-	dependency = new DepThd[g_thread_cnt];
-	V = g_thread_cnt;
+	dependency = new DepThd[FLAGS_threads];
+	V = FLAGS_threads;
 }
 
 int

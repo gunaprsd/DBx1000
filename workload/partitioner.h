@@ -159,6 +159,7 @@ public:
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
     runtime_stats.partition_duration = duration;
+    printf("Partition completed!");
 
     // compute partition stats
     compute_partition_stats(parts, output_stats.output_cluster);
@@ -166,6 +167,7 @@ public:
     for (uint64_t i = 0; i < input_stats.num_txn_nodes; i++) {
       partitions.push_back(parts[i]);
     }
+    printf("Compute Partition Stats - 1 Completed!");
 
     // compute stats for random allotment
     for (size_t i = 0; i < total_num_vertices; i++) {
@@ -246,6 +248,7 @@ protected:
       input_stats.min_txn_degree = min(input_stats.min_txn_degree, txn_degree);
       input_stats.max_txn_degree = max(input_stats.max_txn_degree, txn_degree);
     }
+    printf("First Pass Completed!");
   }
 
   void second_pass() {
@@ -289,6 +292,8 @@ protected:
       }
       vwgt.push_back(node_wgt);
     }
+
+    printf("Second Pass Completed!");
   }
 
   void third_pass() {
@@ -317,6 +322,7 @@ protected:
 
     // final
     xadj.push_back(static_cast<idx_t>(adjncy.size()));
+    printf("Third Pass Completed!");
   }
   void compute_partition_stats(idx_t *parts, ClusterStatistics &stats) {
     stats.total_cross_access = 0;
@@ -369,18 +375,32 @@ protected:
         }
 
 #ifdef SELECTIVE_CC
-        if (info->cores.empty()) {
-          iterator->set_cc_info(0);
-        } else {
-          iterator->set_cc_info(1);
+        if (final) {
+          if (info->cores.empty()) {
+            iterator->set_cc_info(0);
+          } else {
+            iterator->set_cc_info(1);
+          }
         }
 #endif
       }
     }
-  }
-};
 
-template <typename T>
-class ConflictGraphPartitioner : public BasePartitioner<T> {};
+    // Clear out all cores for next analysis
+    idx_t next_data_id = size;
+    for (auto i = 0u; i < size; i++) {
+      query = queryBatch[i];
+      iterator->set_query(query);
+      while (iterator->next(key, type)) {
+        auto info = &_info_array[key];
+        if (info->id == next_data_id) {
+          info->cores.clear();
+        }
+      }
+    }
+  };
+
+  template <typename T>
+  class ConflictGraphPartitioner : public BasePartitioner<T> {};
 
 #endif // DBX1000_PARTITIONER_H

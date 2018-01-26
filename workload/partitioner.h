@@ -1,8 +1,8 @@
 #ifndef DBX1000_PARTITIONER_H
 #define DBX1000_PARTITIONER_H
 #include "global.h"
-#include "query.h"
 #include "graph_partitioner.h"
+#include "query.h"
 
 template <typename T> class BasePartitioner {
 public:
@@ -23,10 +23,10 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
       partition_duration = 0;
     }
     void print() {
-      printf("%-30s: %10lf\n", "First-Pass-Duration", first_pass_duration);
-      printf("%-30s: %10lf\n", "Second-Pass-Duration", second_pass_duration);
-      printf("%-30s: %10lf\n", "Third-Pass-Duration", third_pass_duration);
-      printf("%-30s: %10lf\n", "Partition-Duration", partition_duration);
+      PRINT_INFO(-10lf, "First-Pass-Duration", first_pass_duration);
+      PRINT_INFO(-10lf, "Second-Pass-Duration", second_pass_duration);
+      PRINT_INFO(-10lf, "Third-Pass-Duration", third_pass_duration);
+      PRINT_INFO(-10lf, "Partition-Duration", partition_duration);
     }
   };
   struct InputStatistics {
@@ -35,6 +35,8 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
     uint64_t num_edges;
     uint64_t min_data_degree;
     uint64_t max_data_degree;
+    uint64_t min_txn_degree;
+    uint64_t max_txn_degree;
     InputStatistics() { reset(); }
     void reset() {
       num_txn_nodes = 0;
@@ -42,13 +44,17 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
       num_edges = 0;
       min_data_degree = 0;
       max_data_degree = 0;
+      min_txn_degree = 0;
+      max_txn_degree = 0;
     }
     void print() {
-      printf("%-30s: %lu\n", "Num-Data-Nodes", num_data_nodes);
-      printf("%-30s: %lu\n", "Num-Txn-Nodes", num_txn_nodes);
-      printf("%-30s: %lu\n", "Num-Edges", num_edges);
-      printf("%-30s: %lu\n", "Min-Data-Degree", min_data_degree);
-      printf("%-30s: %lu\n", "Max-Data-Degree", max_data_degree);
+      PRINT_INFO(lu, "Num-Data-Nodes", num_data_nodes);
+      PRINT_INFO(lu, "Num-Txn-Nodes", num_txn_nodes);
+      PRINT_INFO(lu, "Num-Edges", num_edges);
+      PRINT_INFO(lu, "Min-Data-Degree", min_data_degree);
+      PRINT_INFO(lu, "Max-Data-Degree", max_data_degree);
+      PRINT_INFO(lu, "Min-Txn-Degree", min_txn_degree);
+      PRINT_INFO(lu, "Max-Txn-Degree", max_txn_degree);
     }
   };
   struct ClusterStatistics {
@@ -75,33 +81,34 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
       output_cluster.reset();
     }
     void print() {
-      printf("%-30s: %lu\n", "Rnd-Min-Data-Core-Degree",
-             random_cluster.min_data_core_degree);
-      printf("%-30s: %lu\n", "Rnd-Min-Data-Core-Degree",
-             random_cluster.max_data_core_degree);
-      printf("%-30s: %lu\n", "Rnd-Min-Txn-Cross-Access",
-             random_cluster.min_txn_cross_access);
-      printf("%-30s: %lu\n", "Rnd-Max-Txn-Cross-Access",
-             random_cluster.max_txn_cross_access);
-      printf("%-30s: %lu\n", "Rnd-Total-Txn-Cross-Access",
-             random_cluster.total_cross_access);
-      printf("%-30s: %lu\n", "Min-Data-Core-Degree",
-             output_cluster.min_data_core_degree);
-      printf("%-30s: %lu\n", "Min-Data-Core-Degree",
-             output_cluster.max_data_core_degree);
-      printf("%-30s: %lu\n", "Min-Txn-Cross-Access",
-             output_cluster.min_txn_cross_access);
-      printf("%-30s: %lu\n", "Max-Txn-Cross-Access",
-             output_cluster.max_txn_cross_access);
-      printf("%-30s: %lu\n", "Total-Txn-Cross-Access",
-             output_cluster.total_cross_access);
+      PRINT_INFO(lu, "Rnd-Min-Data-Core-Degree",
+                 random_cluster.min_data_core_degree);
+      PRINT_INFO(lu, "Rnd-Max-Data-Core-Degree",
+                 random_cluster.max_data_core_degree);
+      PRINT_INFO(lu, "Rnd-Min-Txn-Cross-Access",
+                 random_cluster.min_txn_cross_access);
+      PRINT_INFO(lu, "Rnd-Max-Txn-Cross-Access",
+                 random_cluster.max_txn_cross_access);
+      PRINT_INFO(lu, "Rnd-Total-Txn-Cross-Access",
+                 random_cluster.total_cross_access);
+      PRINT_INFO(lu, "Min-Data-Core-Degree",
+                 output_cluster.min_data_core_degree);
+      PRINT_INFO(lu, "Max-Data-Core-Degree",
+                 output_cluster.max_data_core_degree);
+      PRINT_INFO(lu, "Min-Txn-Cross-Access",
+                 output_cluster.min_txn_cross_access);
+      PRINT_INFO(lu, "Max-Txn-Cross-Access",
+                 output_cluster.max_txn_cross_access);
+      PRINT_INFO(lu, "Total-Txn-Cross-Access",
+                 output_cluster.total_cross_access);
     }
   };
+
 public:
-  AccessGraphPartitioner(uint32_t num_clusters) : _num_clusters(num_clusters), _batch(nullptr), _info_array(nullptr),
-                                                  vwgt(), adjwgt(), xadj(), adjncy(), iteration(0), runtime_stats(),
-                                                  input_stats(), output_stats()
-  {
+  AccessGraphPartitioner(uint32_t num_clusters)
+      : _num_clusters(num_clusters), _batch(nullptr), _info_array(nullptr),
+        vwgt(), adjwgt(), xadj(), adjncy(), iteration(0), runtime_stats(),
+        input_stats(), output_stats() {
     uint64_t size = AccessIterator<T>::get_max_key();
     _info_array = new TxnDataInfo[size];
   }
@@ -133,7 +140,7 @@ public:
 
     auto graph = new METIS_CSRGraph();
     uint64_t total_num_vertices =
-            input_stats.num_txn_nodes + input_stats.num_data_nodes;
+        input_stats.num_txn_nodes + input_stats.num_data_nodes;
     graph->nvtxs = total_num_vertices;
     graph->adjncy_size = 2 * input_stats.num_edges;
     graph->vwgt = vwgt.data();
@@ -174,11 +181,12 @@ public:
     adjwgt.clear();
   }
   void print_stats() {
-    printf("%-30s: %lu\n", "Iteration", iteration);
+    PRINT_INFO(lu, "Iteration", iteration);
     input_stats.print();
     runtime_stats.print();
     output_stats.print();
   }
+
 protected:
   const uint32_t _num_clusters;
   QueryBatch<T> *_batch;
@@ -193,7 +201,13 @@ protected:
   InputStatistics input_stats;
   OutputStatistics output_stats;
 
-  void first_pass()  {
+  void first_pass() {
+    input_stats.num_txn_nodes = 0;
+    input_stats.num_data_nodes = 0;
+    input_stats.num_edges = 0;
+    input_stats.min_txn_degree = UINT64_MAX;
+    input_stats.max_txn_degree = 0;
+
     Query<T> *query;
     uint64_t key;
     access_t type;
@@ -206,7 +220,8 @@ protected:
     for (uint64_t i = 0u; i < size; i++) {
       input_stats.num_txn_nodes++;
       query = queryBatch[i];
-			iterator->set_query(query);
+      iterator->set_query(query);
+      uint64_t txn_degree = 0;
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->epoch != iteration) {
@@ -225,11 +240,18 @@ protected:
           info->num_writes++;
         }
 
-        input_stats.num_edges++;
+        txn_degree++;
       }
+      input_stats.num_edges += txn_degree;
+      input_stats.min_txn_degree = min(input_stats.min_txn_degree, txn_degree);
+      input_stats.max_txn_degree = max(input_stats.max_txn_degree, txn_degree);
     }
   }
+
   void second_pass() {
+    input_stats.min_data_degree = UINT64_MAX;
+    input_stats.max_data_degree = 0;
+
     uint64_t num_nodes = input_stats.num_txn_nodes + input_stats.num_data_nodes;
     xadj.reserve(num_nodes + 1);
     vwgt.reserve(num_nodes);
@@ -246,23 +268,30 @@ protected:
     idx_t node_wgt = 0;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-			iterator->set_query(query);
+      iterator->set_query(query);
 
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       node_wgt = 0;
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->txns.empty()) {
-          info->txns.reserve(info->num_writes + info->num_reads);
+          uint64_t degree = info->num_writes + info->num_reads;
+          info->txns.reserve(degree);
+          input_stats.min_data_degree =
+              min(input_stats.min_data_degree, degree);
+          input_stats.max_data_degree =
+              max(input_stats.max_data_degree, degree);
         }
         info->txns.push_back(i);
         adjncy.push_back(info->id);
         adjwgt.push_back(1);
+	node_wgt++;
       }
       vwgt.push_back(node_wgt);
     }
   }
-  void third_pass()  {
+
+  void third_pass() {
     Query<T> *query;
     uint64_t key;
     access_t type;
@@ -273,7 +302,7 @@ protected:
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-			iterator->set_query(query);
+      iterator->set_query(query);
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
@@ -286,10 +315,16 @@ protected:
       }
     }
 
-    //final
+    // final
     xadj.push_back(static_cast<idx_t>(adjncy.size()));
   }
   void compute_partition_stats(idx_t *parts, ClusterStatistics &stats) {
+    stats.total_cross_access = 0;
+    stats.min_txn_cross_access = UINT64_MAX;
+    stats.max_txn_cross_access = 0;
+    stats.min_data_core_degree = UINT64_MAX;
+    stats.max_data_core_degree = 0;
+
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
@@ -299,38 +334,47 @@ protected:
     access_t type;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-			iterator->set_query(query);
+      iterator->set_query(query);
       uint64_t cross_access = 0;
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (parts[i] != parts[info->id]) {
           cross_access++;
-          if (info->cores.find(parts[i]) != info->cores.end()) {
+          if (info->cores.find(parts[i]) == info->cores.end()) {
             info->cores.insert(parts[i]);
           }
         }
       }
       stats.total_cross_access += cross_access;
-      stats.min_txn_cross_access = min(cross_access, stats.min_txn_cross_access);
-      stats.max_txn_cross_access = max(cross_access, stats.max_txn_cross_access);
+      stats.min_txn_cross_access =
+          min(cross_access, stats.min_txn_cross_access);
+      stats.max_txn_cross_access =
+          max(cross_access, stats.max_txn_cross_access);
     }
 
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-			iterator->set_query(query);
+      iterator->set_query(query);
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
           stats.min_data_core_degree =
-                  min(static_cast<uint64_t>(info->cores.size()),
-                      stats.min_data_core_degree);
+              min(static_cast<uint64_t>(info->cores.size()),
+                  stats.min_data_core_degree);
           stats.max_data_core_degree =
-                  max(static_cast<uint64_t>(info->cores.size()),
-                      stats.max_data_core_degree);
-          info->cores.clear();
+              max(static_cast<uint64_t>(info->cores.size()),
+                  stats.max_data_core_degree);
           next_data_id++;
         }
+
+	#if SELECTIVE_CC
+	if(!info->cores.empty()) {
+	  info->set_cc_info(0);
+	} else {
+	  info->set_cc_info(1);
+	}
+	#endif
       }
     }
   }

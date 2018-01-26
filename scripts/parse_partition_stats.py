@@ -1,7 +1,29 @@
 import re
 import sys
 
-keys = ['Num-Vertices', 'Num-Edges', 'Pre-Total-Cross-Core-Access', 'Pre-Min-Cross-Core-Access', 'Pre-Max-Cross-Core-Access', 'Post-Total-Cross-Core-Access', 'Post-Min-Cross-Core-Access', 'Post-Max-Cross-Core-Access', 'Min-Cluster-Size', 'Max-Cluster-Size', 'First-Pass-Duration', 'Second-Pass-Duration', 'Third-Pass-Duration', 'Partition-Duration']
+keys = ['Num-Data-Nodes',\
+        'Num-Txn-Nodes',\
+        'Num-Edges',\
+        'Min-Data-Degree',\
+        'Max-Data-Degree',\
+        'Min-Txn-Degree',\
+        'Max-Txn-Degree',\
+        'First-Pass-Duration',\
+        'Second-Pass-Duration',\
+        'Third-Pass-Duration',\
+        'Partition-Duration',\
+        'Rnd-Min-Data-Core-Degree',\
+        'Rnd-Max-Data-Core-Degree',\
+        'Rnd-Min-Txn-Cross-Access',\
+        'Rnd-Max-Txn-Cross-Access',\
+        'Rnd-Total-Txn-Cross-Access',\
+        'Min-Data-Core-Degree',\
+        'Max-Data-Core-Degree',\
+        'Min-Txn-Cross-Access',\
+        'Max-Txn-Cross-Access',\
+        'Total-Txn-Cross-Access',\
+        'Min-Batch-Size',\
+        'Max-Batch-Size']
 data = []
 
 def find_value_for_key(string, rgx):

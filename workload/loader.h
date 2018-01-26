@@ -35,8 +35,7 @@ public:
     }
     uint64_t end_time = get_server_clock();
     double duration = DURATION(end_time, start_time);
-    printf("Workload loading completed in %lf secs\n", duration);
-
+    PRINT_INFO(lf, "Workload-Load-Time", duration);
     delete[] threads;
     delete[] data;
   }

@@ -31,6 +31,7 @@ DECLARE_uint64(tpcc_dist_per_wh);
 /*
  * General Command Line Arguments
  */
+DECLARE_uint32(seed);
 DECLARE_string(task);
 DECLARE_uint32(load_parallelism);
 DECLARE_uint64(size_per_thread);

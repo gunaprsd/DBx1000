@@ -52,7 +52,7 @@ public:
   }
   void seed(uint64_t dist_id, uint64_t value) {
     pthread_mutex_lock(&_latches[dist_id]);
-    srand48_r((long)value, _buffers[dist_id]);
+    srand48_r((long)value + FLAGS_seed, _buffers[dist_id]);
     pthread_mutex_unlock(&_latches[dist_id]);
   }
 

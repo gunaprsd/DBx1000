@@ -1,6 +1,6 @@
-#include <cstring>
-#include "tpcc.h"
 #include "tpcc_utility.h"
+#include "tpcc.h"
+#include <cstring>
 
 TPCCHelper::TPCCHelper(uint64_t num_threads) : random(num_threads) {
   C_255 = (uint64_t)generateRandom(0, 255, 0);
@@ -17,7 +17,7 @@ uint64_t TPCCHelper::generateRandom(uint64_t x, uint64_t y, uint64_t thd_id) {
 }
 
 uint64_t TPCCHelper::generateNonUniformRandom(uint64_t A, uint64_t x,
-                                               uint64_t y, uint64_t thd_id) {
+                                              uint64_t y, uint64_t thd_id) {
   int C = 0;
   switch (A) {
   case 255:
@@ -39,7 +39,7 @@ uint64_t TPCCHelper::generateNonUniformRandom(uint64_t A, uint64_t x,
 }
 
 uint64_t TPCCHelper::generateAlphaString(int min, int max, char *str,
-                                          uint64_t thd_id) {
+                                         uint64_t thd_id) {
   char char_list[] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b',
                       'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
                       'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
@@ -56,7 +56,7 @@ uint64_t TPCCHelper::generateAlphaString(int min, int max, char *str,
 }
 
 uint64_t TPCCHelper::generateNumberString(int min, int max, char *str,
-                                           uint64_t thd_id) {
+                                          uint64_t thd_id) {
 
   uint64_t cnt = generateRandom(min, max, thd_id);
   for (uint32_t i = 0; i < cnt; i++) {
@@ -75,7 +75,6 @@ uint64_t TPCCUtility::findLastNameForNum(uint64_t num, char *name) {
   return strlen(name);
 }
 
-
 TPCCBenchmarkConfig TPCCUtility::config;
 uint64_t TPCCUtility::wh_cnt;
 uint64_t TPCCUtility::wh_off;
@@ -88,7 +87,7 @@ uint64_t TPCCUtility::items_off;
 uint64_t TPCCUtility::stocks_cnt;
 uint64_t TPCCUtility::stocks_off;
 
-void TPCCUtility::initialize(const TPCCBenchmarkConfig & _config) {
+void TPCCUtility::initialize(const TPCCBenchmarkConfig &_config) {
   config = _config;
   wh_cnt = config.num_warehouses;
   wh_off = 0;
@@ -108,7 +107,8 @@ uint64_t TPCCUtility::getDistrictKey(uint64_t d_id, uint64_t d_w_id) {
 
 uint64_t TPCCUtility::getCustomerPrimaryKey(uint64_t c_id, uint64_t c_d_id,
                                             uint64_t c_w_id) {
-  return (getDistrictKey(c_d_id, c_w_id) * config.customers_per_district + c_id);
+  return (getDistrictKey(c_d_id, c_w_id) * config.customers_per_district +
+          c_id);
 }
 
 uint64_t TPCCUtility::getOrderLineKey(uint64_t w_id, uint64_t d_id,
@@ -136,12 +136,9 @@ uint64_t TPCCUtility::getStockKey(uint64_t s_i_id, uint64_t s_w_id) {
   return s_w_id * config.items_count + s_i_id;
 }
 
-
 int TPCCUtility::getPartition(uint64_t wid) {
   return (int)wid % config.num_warehouses;
 }
-
-
 
 uint64_t TPCCUtility::getWarehouseHashIndex(uint64_t wid) {
   return wh_off + (wid % wh_cnt);
@@ -151,8 +148,10 @@ uint64_t TPCCUtility::getDistrictHashIndex(uint64_t wid, uint64_t did) {
   return district_off + (TPCCUtility::getDistrictKey(did, wid) % district_cnt);
 }
 
-uint64_t TPCCUtility::getCustomerHashIndex(uint64_t wid, uint64_t did, uint64_t cid) {
-  return customer_off + (TPCCUtility::getCustomerPrimaryKey(cid, did, wid) % customer_cnt);
+uint64_t TPCCUtility::getCustomerHashIndex(uint64_t wid, uint64_t did,
+                                           uint64_t cid) {
+  return customer_off +
+         (TPCCUtility::getCustomerPrimaryKey(cid, did, wid) % customer_cnt);
 }
 
 uint64_t TPCCUtility::getItemsHashIndex(uint64_t iid) {
@@ -163,79 +162,92 @@ uint64_t TPCCUtility::getStocksHashIndex(uint64_t wid, uint64_t iid) {
   return stocks_off + (TPCCUtility::getStockKey(iid, wid) % stocks_cnt);
 }
 
-uint64_t TPCCUtility::getHashSize() {
-  return stocks_off + stocks_cnt;
-}
+uint64_t TPCCUtility::getHashSize() { return stocks_off + stocks_cnt; }
 
-template<>
+template <>
 bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type) {
-  if(_query->type == TPCC_PAYMENT_QUERY) {
-    auto payment_params = reinterpret_cast<tpcc_payment_params*>(&_query->params);
+  if (_query->type == TPCC_PAYMENT_QUERY) {
+    auto payment_params =
+        reinterpret_cast<tpcc_payment_params *>(&_query->params);
     switch (_current_req_id) {
-      case 0:
-        key = TPCCUtility::getWarehouseHashIndex(payment_params->w_id);
-        type = TPCCUtility::config.warehouse_update ? WR : RD;
-        break;
-      case 1:
-        key = TPCCUtility::getDistrictHashIndex(payment_params->d_w_id, payment_params->d_id);
-        type = RD;
-        break;
-      case 2:
-        if(!payment_params->by_last_name) {
-          key = TPCCUtility::getCustomerHashIndex(payment_params->c_w_id, payment_params->c_d_id, payment_params->c_id);
-          type = WR;
-        } else {
-          return false;
-        }
-        break;
-      default:
-        return false;
-    }
-  } else if(_query->type == TPCC_NEW_ORDER_QUERY) {
-    auto new_order_params = reinterpret_cast<tpcc_new_order_params*>(&_query->params);
-    switch (_current_req_id) {
-      case 0:
-        key = TPCCUtility::getWarehouseHashIndex(new_order_params->w_id);
-        type = RD;
-        break;
-      case 1:
-        key = TPCCUtility::getDistrictHashIndex(new_order_params->w_id, new_order_params->d_id);
-        type = RD;
-        break;
-      case 2:
-        key = TPCCUtility::getCustomerHashIndex(new_order_params->w_id, new_order_params->d_id, new_order_params->c_id);
+    case 0:
+      key = TPCCUtility::getWarehouseHashIndex(payment_params->w_id);
+      type = TPCCUtility::config.warehouse_update ? WR : RD;
+      break;
+    case 1:
+      key = TPCCUtility::getDistrictHashIndex(payment_params->d_w_id,
+                                              payment_params->d_id);
+      type = RD;
+      break;
+    case 2:
+      if (!payment_params->by_last_name) {
+        key = TPCCUtility::getCustomerHashIndex(payment_params->c_w_id,
+                                                payment_params->c_d_id,
+                                                payment_params->c_id);
         type = WR;
-        break;
-      default:
-        if(_current_req_id > 2 && _current_req_id < 2 * new_order_params->ol_cnt + 3) {
-          int32_t index = _current_req_id - 3;
-          int32_t item = index / 2;
-          if(index % 2 == 0) {
-            // return item
-            key = TPCCUtility::getItemsHashIndex(new_order_params->items[item].ol_i_id);
-            type = RD;
-          } else {
-            // return stock
-            key = TPCCUtility::getStocksHashIndex(new_order_params->items[item].ol_supply_w_id,
-                                                  new_order_params->items[item].ol_i_id);
-            type = WR;
-          }
+      } else {
+        return false;
+      }
+      break;
+    default:
+      return false;
+    }
+  } else if (_query->type == TPCC_NEW_ORDER_QUERY) {
+    auto new_order_params =
+        reinterpret_cast<tpcc_new_order_params *>(&_query->params);
+    switch (_current_req_id) {
+    case 0:
+      key = TPCCUtility::getWarehouseHashIndex(new_order_params->w_id);
+      type = RD;
+      break;
+    case 1:
+      key = TPCCUtility::getDistrictHashIndex(new_order_params->w_id,
+                                              new_order_params->d_id);
+      type = RD;
+      break;
+    case 2:
+      key = TPCCUtility::getCustomerHashIndex(new_order_params->w_id,
+                                              new_order_params->d_id,
+                                              new_order_params->c_id);
+      type = WR;
+      break;
+    default:
+      if (_current_req_id > 2 &&
+          _current_req_id < 2 * new_order_params->ol_cnt + 3) {
+        int32_t index = _current_req_id - 3;
+        int32_t item = index / 2;
+        if (index % 2 == 0) {
+          // return item
+          key = TPCCUtility::getItemsHashIndex(
+              new_order_params->items[item].ol_i_id);
+          type = RD;
         } else {
-          return false;
+          // return stock
+          key = TPCCUtility::getStocksHashIndex(
+              new_order_params->items[item].ol_supply_w_id,
+              new_order_params->items[item].ol_i_id);
+          type = WR;
         }
+      } else {
+        return false;
+      }
     }
   }
   _current_req_id++;
   return true;
 }
 
-template<>
-uint64_t AccessIterator<tpcc_params>::get_max_key() {
+template <> uint64_t AccessIterator<tpcc_params>::get_max_key() {
   return TPCCUtility::getHashSize();
 }
 
-template<>
+template <>
 void AccessIterator<tpcc_params>::set_query(Query<tpcc_params> *query) {
   _query = query;
   _current_req_id = 0;
+}
+
+template <>
+void AccessIterator<tpcc_params>::set_cc_info(char cc_info) {
+  assert(false);
 }

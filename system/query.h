@@ -27,6 +27,7 @@ template <typename T> class AccessIterator {
 public:
   void set_query(Query<T> *query);
   bool next(uint64_t &key, access_t &type);
+  void set_cc_info(char cc_info);
   static uint64_t get_max_key();
 
 protected:

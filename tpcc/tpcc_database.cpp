@@ -10,7 +10,7 @@ void TPCCDatabase::initialize(uint64_t num_threads) {
 
   // Initialize schema from the file
   string path;
-  path = "../tpcc/schema.txt";
+  path = "./tpcc/schema.txt";
   Database::initialize_schema(path);
 
   // Allocate array to store rand buffer globally

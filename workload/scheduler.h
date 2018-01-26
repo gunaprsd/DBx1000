@@ -59,6 +59,16 @@ public:
       _current_frame_offset += _frame_height;
     }
 
+    uint64_t min_batch_size = UINT64_MAX;
+    uint64_t max_batch_size = 0;
+    for(uint32_t i = 0; i < _num_threads; i++) {
+      min_batch_size = min(min_batch_size, _temp_sizes[i]);
+      max_batch_size = max(max_batch_size, _temp_sizes[i]);
+    }
+    PRINT_INFO(lu, "Min-Batch-Size", min_batch_size);
+    PRINT_INFO(lu, "Max-Batch-Size", max_batch_size);
+
+
     // write back onto arrays
     _partitioned_queries = new Query<T> *[_num_threads];
     for (uint32_t i = 0; i < _num_threads; i++) {
@@ -73,6 +83,7 @@ public:
     }
 
     // Write back onto files
+    ensure_folder_exists(_output_folder_path);
     for (auto i = 0u; i < _num_threads; i++) {
       auto file_name = get_workload_file_name(_output_folder_path, i);
       FILE *file = fopen(file_name.c_str(), "w");

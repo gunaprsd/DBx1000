@@ -151,7 +151,7 @@
 #define TPCC_SMALL false
 #define TPCC_WH_UPDATE true
 #define TPCC_NUM_WH 4
-#define TPCC_NUM_ORDERS 16
+#define TPCC_NUM_ORDERS 20
 #define TPCC_PERC_PAYMENT 0.5
 #define TPCC_DIST_PER_WH 10
 #if TPCC_SMALL

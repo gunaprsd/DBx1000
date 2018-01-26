@@ -23,8 +23,13 @@ void METISGraphPartitioner::compute_partitions(
                         malloc(sizeof(idx_t) * METIS_NOPTIONS));
 
     METIS_SetDefaultOptions(options);
-    options[METIS_OPTION_UFACTOR] = g_ufactor;
-    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
+    options[METIS_OPTION_UFACTOR] = FLAGS_ufactor;
+    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
+    options[METIS_OPTION_SEED] = 123;
+    options[METIS_OPTION_CTYPE] = METIS_CTYPE_RM;
+    options[METIS_OPTION_RTYPE] = METIS_RTYPE_GREEDY;
+    options[METIS_OPTION_MINCONN] = 1;
+    options[METIS_OPTION_DBGLVL] = METIS_DBG_TIME;
 
     // Do the compute_partitions
     int result = METIS_PartGraphKway(& graph->nvtxs,
@@ -40,8 +45,7 @@ void METISGraphPartitioner::compute_partitions(
                                      options,
                                      & objval,
                                      parts);
-
-		printf("Partitioning objective value: %ld\n", objval);
+    PRINT_INFO(ld, "Partitioning-Obj-Value", objval);
     switch (result) {
         case METIS_ERROR_INPUT  :   printf("Error in input!\n");
         exit(0);

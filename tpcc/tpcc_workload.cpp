@@ -6,11 +6,17 @@ TPCCWorkloadGenerator::TPCCWorkloadGenerator(const TPCCBenchmarkConfig &_config,
                                              const string &folder_path)
     : ParallelWorkloadGenerator<tpcc_params>(num_threads, size_per_thread,
                                              folder_path),
-			config(_config), helper(num_threads), _random(num_threads) {}
+      config(_config), helper(_config.num_warehouses), _random(num_threads) {
+  for (uint64_t i = 0; i < _config.num_warehouses; i++) {
+    helper.random.seed(i, i + 1);
+  }
+
+  for (uint64_t i = 0; i < num_threads; i++) {
+    _random.seed(i, 2 * i + 1);
+  }
+}
 
 void TPCCWorkloadGenerator::per_thread_generate(uint64_t thread_id) {
-  helper.random.seed(thread_id, thread_id + 1);
-  _random.seed(thread_id, 2 * thread_id + 1);
   for (uint64_t i = 0; i < _num_queries_per_thread; i++) {
     double x = _random.nextDouble(thread_id);
     if (x < config.percent_payment) {
@@ -28,13 +34,14 @@ void TPCCWorkloadGenerator::per_thread_generate(uint64_t thread_id) {
 void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id,
                                                 tpcc_payment_params *params) {
   if (FIRST_PART_LOCAL) {
-    params->w_id = thread_id % config.num_warehouses + 1;
+    params->w_id = (thread_id % config.num_warehouses) + 1;
   } else {
-    params->w_id = helper.generateRandom(1, config.num_warehouses, thread_id % config.num_warehouses);
+    params->w_id = (_random.nextInt64(thread_id) % config.num_warehouses) + 1;
   }
 
   params->d_w_id = params->w_id;
-  params->d_id = helper.generateRandom(1, config.districts_per_warehouse, params->w_id - 1);
+  params->d_id = helper.generateRandom(1, config.districts_per_warehouse,
+                                       params->w_id - 1);
   params->h_amount = helper.generateRandom(1, 5000, params->w_id - 1);
 
   auto x = (int)helper.generateRandom(1, 100, params->w_id - 1);
@@ -44,12 +51,13 @@ void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id,
     params->c_w_id = params->w_id;
   } else {
     // remote warehouse
-    params->c_d_id =
-        helper.generateRandom(1, config.districts_per_warehouse, params->w_id - 1);
+    params->c_d_id = helper.generateRandom(1, config.districts_per_warehouse,
+                                           params->w_id - 1);
     if (config.num_warehouses > 1) {
       // generate something other than params->w_id
-      while ((params->c_w_id = helper.generateRandom(
-                  1, config.num_warehouses, params->w_id - 1)) == params->w_id) {
+      while ((params->c_w_id = helper.generateRandom(1, config.num_warehouses,
+                                                     params->w_id - 1)) ==
+             params->w_id) {
       }
     } else {
       params->c_w_id = params->w_id;
@@ -77,12 +85,14 @@ void TPCCWorkloadGenerator::gen_new_order_request(
   if (FIRST_PART_LOCAL) {
     params->w_id = thread_id % config.num_warehouses + 1;
   } else {
-    params->w_id = helper.generateRandom(1, config.num_warehouses, thread_id % config.num_warehouses);
+    params->w_id = helper.generateRandom(1, config.num_warehouses,
+                                         thread_id % config.num_warehouses);
   }
 
-  params->d_id = helper.generateRandom(1, config.districts_per_warehouse, params->w_id - 1);
-  params->c_id = helper.generateNonUniformRandom(1023, 1, config.customers_per_district,
-                                                   params->w_id - 1);
+  params->d_id = helper.generateRandom(1, config.districts_per_warehouse,
+                                       params->w_id - 1);
+  params->c_id = helper.generateNonUniformRandom(
+      1023, 1, config.customers_per_district, params->w_id - 1);
   params->rbk = (bool)helper.generateRandom(1, 100, params->w_id - 1);
 
   params->o_entry_d = 2013;
@@ -99,8 +109,9 @@ void TPCCWorkloadGenerator::gen_new_order_request(
     if (x > 1 || config.num_warehouses == 1) {
       params->items[oid].ol_supply_w_id = params->w_id;
     } else {
-      while ((params->items[oid].ol_supply_w_id = helper.generateRandom(
-                  1, config.num_warehouses, params->w_id - 1)) == params->w_id) {
+      while ((params->items[oid].ol_supply_w_id =
+                  helper.generateRandom(1, config.num_warehouses,
+                                        params->w_id - 1)) == params->w_id) {
       }
       params->remote = true;
       params->items[oid].ol_quantity =
@@ -129,10 +140,9 @@ void TPCCWorkloadGenerator::gen_new_order_request(
 }
 
 TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config,
-                           const string &folder_path, uint64_t num_threads) :
-  BenchmarkExecutor<tpcc_params>(folder_path, num_threads),
-	_db(config),
-	_loader(folder_path, num_threads) {
+                           const string &folder_path, uint64_t num_threads)
+    : BenchmarkExecutor<tpcc_params>(folder_path, num_threads), _db(config),
+      _loader(folder_path, num_threads) {
 
   // Build database in parallel
   _db.initialize(FLAGS_load_parallelism);

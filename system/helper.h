@@ -264,4 +264,6 @@ string get_workload_file_name(const string & folder_path, uint32_t thread_id);
 
 void ensure_folder_exists(string folder_path);
 
+#define PRINT_INFO(type, key, value) printf("%-30s: %" #type "\n", key, value)
+
 #endif

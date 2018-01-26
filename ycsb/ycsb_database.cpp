@@ -19,7 +19,7 @@ void YCSBDatabase::initialize(uint64_t num_threads) {
   char *cpath = getenv("GRAPHITE_HOME");
   string path;
   if (cpath == NULL)
-    path = "../ycsb/schema.txt";
+    path = "./ycsb/schema.txt";
   else {
     path = string(cpath);
     path += "/tests/apps/dbms/schema.txt";
@@ -29,7 +29,9 @@ void YCSBDatabase::initialize(uint64_t num_threads) {
   the_index = indexes["MAIN_INDEX"];
 }
 
-uint64_t YCSBDatabase::key_to_part(uint64_t key) { return key % config.num_partitions; }
+uint64_t YCSBDatabase::key_to_part(uint64_t key) {
+  return key % config.num_partitions;
+}
 
 txn_man *YCSBDatabase::get_txn_man(uint64_t thread_id) {
   auto txn_manager = new YCSBTransactionManager();
@@ -111,14 +113,26 @@ RC YCSBTransactionManager::run_txn(BaseQuery *query) {
       row_t *row_local;
       access_t type = req->rtype;
 
+#if SELECTIVE_CC
+      if (req->cc_info != 0) {
+        row_local = get_row(row, type);
+        if (row_local == NULL) {
+          rc = Abort;
+          goto final;
+        }
+      } else {
+	row_local = row;
+      }
+#else
       row_local = get_row(row, type);
       if (row_local == NULL) {
         rc = Abort;
         goto final;
       }
+#endif
 
       char *data = row_local->get_data();
-      if(db->config.do_compute) {
+      if (db->config.do_compute) {
         float a = *(float *)data;
         for (auto i = 0u; i < db->config.compute_cost; i++) {
           a *= a;

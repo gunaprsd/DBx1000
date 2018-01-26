@@ -30,6 +30,7 @@ DEFINE_uint64(tpcc_dist_per_wh, TPCC_DIST_PER_WH, "TPCC: Districts per warehouse
 /*
  * General Command Line Arguments
  */
+DEFINE_uint32(seed, 123, "Seed for generation");
 DEFINE_string(task, "generate", "Choose task type: generate, partition, execute");
 DEFINE_uint32(load_parallelism, INIT_PARALLELISM, "Parallelism for loading database");
 DEFINE_uint64(size_per_thread, 256 * 1024, "Size Per Thread");
@@ -49,4 +50,3 @@ DEFINE_uint32(abort_penalty, ABORT_PENALTY, "Penalty in mus");
 DEFINE_string(partitioner, "access_graph", "Options: access_graph, conflict_graph");
 DEFINE_string(output_folder, "data", "Output folder for partitioner");
 DEFINE_uint32(ufactor, 5, "Load imbalance tolerance for METIS (1 + x/1000)");
-

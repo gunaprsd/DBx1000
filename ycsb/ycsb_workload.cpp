@@ -58,6 +58,8 @@ void YCSBWorkloadGenerator::gen_single_partition_requests(uint64_t thread_id,
 
     req->key = row_id * config.num_partitions + part_id;
     req->value = static_cast<char>(zipfian.nextRandInt64(part_id) % (1 << 8));
+    req->cc_info = 1;
+
 
     // Make sure a single row is not accessed twice
     if (all_keys.find(req->key) == all_keys.end()) {

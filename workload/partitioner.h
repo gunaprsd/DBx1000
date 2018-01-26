@@ -1,9 +1,9 @@
 #ifndef DBX1000_PARTITIONER_H
 #define DBX1000_PARTITIONER_H
+#include "distributions.h"
 #include "global.h"
 #include "graph_partitioner.h"
 #include "query.h"
-#include "distributions.h"
 
 template <typename T> class BasePartitioner {
 public:
@@ -168,13 +168,13 @@ public:
     graph->adjwgt = adjwgt.data();
     graph->ncon = 1;
 
-		// Initialization
+    // Initialization
     auto parts = new idx_t[total_num_vertices];
     for (uint32_t i = 0; i < total_num_vertices; i++) {
       parts[i] = -1;
     }
 
-		compute_baseline_stats(parts, output_stats.random_cluster);
+    compute_baseline_stats(parts, output_stats.random_cluster);
     printf("Baseline stats computed\n");
 
     start_time = get_server_clock();
@@ -182,12 +182,12 @@ public:
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
     runtime_stats.partition_duration = duration;
-    printf("Clustering completed");
+    printf("Clustering completed\n");
 
     compute_partition_stats(parts, output_stats.output_cluster);
-    printf("Output stats computed");
+    printf("Output stats computed\n");
 
-		// Add resulting clustering into provided vector
+    // Add resulting clustering into provided vector
     partitions.reserve(input_stats.num_txn_nodes);
     for (uint64_t i = 0; i < input_stats.num_txn_nodes; i++) {
       partitions.push_back(parts[i]);
@@ -391,24 +391,25 @@ protected:
         }
 
 #ifdef SELECTIVE_CC
-				if (info->cores.empty()) {
-					iterator->set_cc_info(0);
-				} else {
-					iterator->set_cc_info(1);
-				}
+        if (info->cores.empty()) {
+          //iterator->set_cc_info(0);
+        } else {
+          //iterator->set_cc_info(1);
+        }
 #endif
       }
     }
   }
 
-  void compute_baseline_stats(idx_t* parts, ClusterStatistics &stats) {
-		// Computing a baseline allotment
-		uint64_t total_num_vertices = input_stats.num_txn_nodes + input_stats.num_data_nodes;
-		RandomNumberGenerator randomNumberGenerator(1);
-		randomNumberGenerator.seed(0, FLAGS_seed + 125);
-		for (size_t i = 0; i < total_num_vertices; i++) {
-			parts[i] = randomNumberGenerator.nextInt64(0) % _num_clusters;
-		}
+  void compute_baseline_stats(idx_t *parts, ClusterStatistics &stats) {
+    // Computing a baseline allotment
+    uint64_t total_num_vertices =
+        input_stats.num_txn_nodes + input_stats.num_data_nodes;
+    RandomNumberGenerator randomNumberGenerator(1);
+    randomNumberGenerator.seed(0, FLAGS_seed + 125);
+    for (size_t i = 0; i < total_num_vertices; i++) {
+      parts[i] = randomNumberGenerator.nextInt64(0) % _num_clusters;
+    }
 
     stats.total_cross_access = 0;
     stats.min_txn_cross_access = UINT64_MAX;
@@ -423,8 +424,8 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
-		// This pass lets you initiate the cores set for each data item
-		// Also, it computes min and max cross access for each transaction
+    // This pass lets you initiate the cores set for each data item
+    // Also, it computes min and max cross access for each transaction
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
@@ -445,8 +446,8 @@ protected:
           max(cross_access, stats.max_txn_cross_access);
     }
 
-		// In this pass, we compute the min and max core degree for
-		// each data item
+    // In this pass, we compute the min and max core degree for
+    // each data item
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
@@ -460,16 +461,15 @@ protected:
           stats.max_data_core_degree =
               max(static_cast<uint64_t>(info->cores.size()),
                   stats.max_data_core_degree);
-					info->cores.clear();
+          info->cores.clear();
           next_data_id++;
         }
-			}
+      }
     }
   }
 };
 
 template <typename T>
-class ConflictGraphPartitioner : public BasePartitioner<T> {
-};
+class ConflictGraphPartitioner : public BasePartitioner<T> {};
 
 #endif // DBX1000_PARTITIONER_H

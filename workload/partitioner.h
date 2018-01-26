@@ -368,11 +368,11 @@ protected:
           next_data_id++;
         }
 
-	#if SELECTIVE_CC
-	if(!info->cores.empty()) {
-	  info->set_cc_info(0);
+	#ifdef SELECTIVE_CC
+	if(info->cores.empty()) {
+	  iterator->set_cc_info(0);
 	} else {
-	  info->set_cc_info(1);
+	  iterator->set_cc_info(1);
 	}
 	#endif
       }

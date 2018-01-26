@@ -113,7 +113,7 @@ RC YCSBTransactionManager::run_txn(BaseQuery *query) {
       row_t *row_local;
       access_t type = req->rtype;
 
-#if SELECTIVE_CC
+#ifdef SELECTIVE_CC
       if (req->cc_info != 0) {
         row_local = get_row(row, type);
         if (row_local == NULL) {
@@ -121,7 +121,7 @@ RC YCSBTransactionManager::run_txn(BaseQuery *query) {
           goto final;
         }
       } else {
-	row_local = row;
+        row_local = row;
       }
 #else
       row_local = get_row(row, type);

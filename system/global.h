@@ -31,6 +31,7 @@
 #include "carbon_user.h"
 #endif
 
+#define SELECTIVE_CC
 using namespace std;
 
 class mem_alloc;

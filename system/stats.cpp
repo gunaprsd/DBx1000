@@ -9,9 +9,9 @@
 void Stats_thd::init(uint64_t thd_id) {
   clear();
   all_debug1 =
-      (uint64_t *)_mm_malloc(sizeof(uint64_t) * g_size_per_thread, 64);
+      (uint64_t *)_mm_malloc(sizeof(uint64_t) * FLAGS_size_per_thread, 64);
   all_debug2 =
-      (uint64_t *)_mm_malloc(sizeof(uint64_t) * g_size_per_thread, 64);
+      (uint64_t *)_mm_malloc(sizeof(uint64_t) * FLAGS_size_per_thread, 64);
 }
 
 void Stats_thd::clear() {

@@ -1,4 +1,5 @@
 
+
 #include "global.h"
 #include "dl_detect.h"
 #include "manager.h"
@@ -32,7 +33,6 @@ carbon_barrier_t enable_barrier;
 ts_t g_abort_penalty = ABORT_PENALTY;
 bool g_central_man = CENTRAL_MAN;
 uint32_t g_ts_alloc = TS_ALLOC;
-bool g_key_order = KEY_ORDER;
 bool g_no_dl = NO_DL;
 ts_t g_timeout = TIMEOUT;
 ts_t g_dl_loop_detect = DL_LOOP_DETECT;
@@ -41,14 +41,10 @@ uint32_t g_ts_batch_num = TS_BATCH_NUM;
 
 bool g_part_alloc = PART_ALLOC;
 bool g_mem_pad = MEM_PAD;
-uint32_t g_cc_alg = CC_ALG;
-ts_t g_query_intvl = QUERY_INTVL;
 
 bool g_prt_lat_distr = PRT_LAT_DISTR;
 uint32_t g_part_cnt = PART_CNT;
 
-uint32_t g_num_wh = TPCC_NUM_WH;
-double g_perc_payment = PERC_PAYMENT;
 char *output_file = NULL;
 
 
@@ -104,14 +100,3 @@ void print_query(FILE *file, BaseQuery *query) {
     assert(false);
   }
 }
-
-uint64_t g_size_per_thread = MAX_TXN_PER_PART;
-uint64_t g_size = MAX_NODES_FOR_CLUSTERING;
-uint32_t g_size_factor = 1024;
-TaskType g_task_type = GENERATE;
-char *g_benchmark = nullptr;
-char *g_benchmark_tag = nullptr;
-char *g_benchmark_tag2 = nullptr;
-int g_ufactor = -1;
-
-string g_data_folder("data");

@@ -164,7 +164,6 @@ YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config,
       _loader(folder_path, num_threads) {
 
   // Build database in parallel
-
   _db.initialize(FLAGS_load_parallelism);
   _db.load();
 

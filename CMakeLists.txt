@@ -8,7 +8,7 @@ ADD_DEFINITIONS(-DNOGRAPHITE=1)
 SET (CMAKE_CXX_FLAGS "-Werror -Wall -std=c++0x" CACHE INTERNAL "compiler options" FORCE)
 SET (CMAKE_CXX_FLAGS_DEBUG "-O0 -g -pg" CACHE INTERNAL "compiler options" FORCE)
 SET (CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE INTERNAL "compiler options" FORCE)
-# SET (CMAKE_BUILD_TYPE "Release")
+SET (CMAKE_BUILD_TYPE "Release")
 IF (NOT CMAKE_BUILD_TYPE)
     SET (CMAKE_BUILD_TYPE "Debug")
 ENDIF ()
@@ -66,7 +66,6 @@ SET(SRC_LIST cc/occ.h
         ycsb/ycsb_workload.h
         ycsb/ycsb.h
         ycsb/ycsb_database.h
-        config.cpp
         cc/row_ts.cpp
         cc/vll.cpp
         cc/row_hekaton.cpp

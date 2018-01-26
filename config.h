@@ -162,19 +162,6 @@
 #define TPCC_CUST_PER_DIST 3000
 #endif
 
-enum TPCCTxnType {
-  TPCC_ALL,
-  TPCC_PAYMENT,
-  TPCC_NEW_ORDER,
-  TPCC_ORDER_STATUS,
-  TPCC_DELIVERY,
-  TPCC_STOCK_LEVEL
-};
-
-extern TPCCTxnType g_tpcc_txn_type;
-
-//#define TXN_TYPE					TPCC_ALL
-#define PERC_PAYMENT 0.5
 #define FIRSTNAME_MINLEN 8
 #define FIRSTNAME_LEN 16
 #define LASTNAME_LEN 16

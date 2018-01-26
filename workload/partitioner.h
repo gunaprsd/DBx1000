@@ -285,7 +285,7 @@ protected:
         info->txns.push_back(i);
         adjncy.push_back(info->id);
         adjwgt.push_back(1);
-	node_wgt++;
+        node_wgt++;
       }
       vwgt.push_back(node_wgt);
     }
@@ -368,13 +368,13 @@ protected:
           next_data_id++;
         }
 
-	#ifdef SELECTIVE_CC
-	if(info->cores.empty()) {
-	  iterator->set_cc_info(0);
-	} else {
-	  iterator->set_cc_info(1);
-	}
-	#endif
+#ifdef SELECTIVE_CC
+        if (info->cores.empty()) {
+          iterator->set_cc_info(0);
+        } else {
+          iterator->set_cc_info(1);
+        }
+#endif
       }
     }
   }

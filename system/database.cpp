@@ -12,7 +12,6 @@
 void Database::initialize(uint64_t num_threads) { _num_threads = num_threads; }
 
 RC Database::initialize_schema(string schema_file) {
-
   assert(sizeof(uint64_t) == 8);
   assert(sizeof(double) == 8);
   string line;
@@ -88,15 +87,18 @@ RC Database::initialize_schema(string schema_file) {
       string tname(items[0]);
       INDEX *index = (INDEX *)_mm_malloc(sizeof(INDEX), 64);
       new (index) INDEX();
-      int part_cnt = (CENTRAL_INDEX) ? 1 : g_part_cnt;
-      if (tname == "ITEM") {
-        part_cnt = 1;
-      }
 
+      int part_cnt = 1;
       uint64_t size;
       if (tname == "MAIN_TABLE") {
         size = FLAGS_ycsb_table_size * 2;
+        part_cnt = FLAGS_ycsb_num_partitions;
       } else {
+        if (tname == "ITEM") {
+          part_cnt = 1;
+        } else {
+          part_cnt = FLAGS_tpcc_num_wh;
+        }
         size = static_cast<uint64_t>(stoi(items[1]) * part_cnt);
       }
 

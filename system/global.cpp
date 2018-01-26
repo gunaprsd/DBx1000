@@ -1,3 +1,4 @@
+
 #include "global.h"
 #include "dl_detect.h"
 #include "manager.h"
@@ -55,8 +56,12 @@ char *output_file = NULL;
 
 void print_ycsb_query(FILE *file, ycsb_query *query) {
   for (uint64_t k = 0; k < query->params.request_cnt; k++) {
-    fprintf(file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
+    fprintf(file, "Sno\t:%lu", k);
+    fprintf(file, "\tKey\t:%ld", (long int)query->params.requests[k].key);
+    fprintf(file, "\tPartition\t:%ld", query->params.requests[k].key % FLAGS_ycsb_num_partitions);
+    fprintf(file, "\tCC_Info\t:%c\n", query->params.requests[k].cc_info);
   }
+  fprintf(file, "\n");
 }
 
 void print_tpcc_query(FILE *file, tpcc_query *query) {

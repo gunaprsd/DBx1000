@@ -1,3 +1,4 @@
+
 // Copyright[2017] <Guna Prasaad>
 
 #include "global.h"
@@ -9,6 +10,8 @@
 
 #ifndef WORKLOAD_GENERATOR_H_
 #define WORKLOAD_GENERATOR_H_
+
+//#define HUMAN_PRINT_WORKLOAD_DEBUG
 
 /*
  * ParallelWorkloadGenerator:
@@ -57,10 +60,30 @@ public:
     double duration = DURATION(end_time, start_time);
     printf("Workload Generation Completed in %lf secs\n", duration);
 
+#ifdef HUMAN_PRINT_WORKLOAD_DEBUG
+    for (uint64_t i = 0; i < _num_threads; i++) {
+      string file_name = get_workload_file_name(_folder_path, i);
+      int pos = file_name.find(".");
+      auto hfile_name = file_name.substr(0, pos);
+      hfile_name += ".txt";
+      FILE *file = fopen(hfile_name.c_str(), "w");
+      if (file == nullptr) {
+        printf("Error opening file: %s\n", file_name.c_str());
+        exit(0);
+      }
+      for (uint64_t j = 0; j < _num_queries_per_thread; j++) {
+	print_query(file, &_queries[i][j]);
+      }
+      fflush(file);
+      fclose(file);
+    }
+#endif
+
     delete[] threads;
     delete[] data;
   }
   virtual ~ParallelWorkloadGenerator() = default;
+
 protected:
   static void *generate_helper(void *ptr) {
     auto data = reinterpret_cast<ThreadLocalData *>(ptr);
@@ -77,10 +100,7 @@ protected:
       printf("Error opening file: %s\n", file_name.c_str());
       exit(0);
     }
-
-    // Write to file: implemented by derived class
     loader->per_thread_write_to_file(thread_id, file);
-
     fflush(file);
     fclose(file);
 
@@ -92,11 +112,11 @@ protected:
   }
   virtual void per_thread_generate(uint64_t thread_id) = 0;
 
-	//Data fields
+  // Data fields
   const uint64_t _num_threads;
   const uint64_t _num_queries_per_thread;
-	const string _folder_path;
-	Query<T> **_queries;
+  const string _folder_path;
+  Query<T> **_queries;
 };
 
 #endif // WORKLOAD_GENERATOR_H_

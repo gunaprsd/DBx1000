@@ -3,6 +3,7 @@
 #include "global.h"
 #include "graph_partitioner.h"
 #include "query.h"
+#include "distributions.h"
 
 template <typename T> class BasePartitioner {
 public:
@@ -15,13 +16,16 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
     double second_pass_duration;
     double third_pass_duration;
     double partition_duration;
+
     RuntimeStatistics() { reset(); }
+
     void reset() {
       first_pass_duration = 0;
       second_pass_duration = 0;
       third_pass_duration = 0;
       partition_duration = 0;
     }
+
     void print() {
       PRINT_INFO(-10lf, "First-Pass-Duration", first_pass_duration);
       PRINT_INFO(-10lf, "Second-Pass-Duration", second_pass_duration);
@@ -29,6 +33,7 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
       PRINT_INFO(-10lf, "Partition-Duration", partition_duration);
     }
   };
+
   struct InputStatistics {
     uint64_t num_txn_nodes;
     uint64_t num_data_nodes;
@@ -37,7 +42,9 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
     uint64_t max_data_degree;
     uint64_t min_txn_degree;
     uint64_t max_txn_degree;
+
     InputStatistics() { reset(); }
+
     void reset() {
       num_txn_nodes = 0;
       num_data_nodes = 0;
@@ -47,6 +54,7 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
       min_txn_degree = 0;
       max_txn_degree = 0;
     }
+
     void print() {
       PRINT_INFO(lu, "Num-Data-Nodes", num_data_nodes);
       PRINT_INFO(lu, "Num-Txn-Nodes", num_txn_nodes);
@@ -57,13 +65,16 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
       PRINT_INFO(lu, "Max-Txn-Degree", max_txn_degree);
     }
   };
+
   struct ClusterStatistics {
     uint64_t min_data_core_degree;
     uint64_t max_data_core_degree;
     uint64_t min_txn_cross_access;
     uint64_t max_txn_cross_access;
     uint64_t total_cross_access;
+
     ClusterStatistics() { reset(); }
+
     void reset() {
       min_data_core_degree = 0;
       max_data_core_degree = 0;
@@ -72,14 +83,18 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
       total_cross_access = 0;
     }
   };
+
   struct OutputStatistics {
     ClusterStatistics random_cluster;
     ClusterStatistics output_cluster;
+
     OutputStatistics() : random_cluster(), output_cluster() {}
+
     void reset() {
       random_cluster.reset();
       output_cluster.reset();
     }
+
     void print() {
       PRINT_INFO(lu, "Rnd-Min-Data-Core-Degree",
                  random_cluster.min_data_core_degree);
@@ -112,6 +127,7 @@ public:
     uint64_t size = AccessIterator<T>::get_max_key();
     _info_array = new TxnDataInfo[size];
   }
+
   void partition(QueryBatch<T> *batch, vector<idx_t> &partitions) override {
     _batch = batch;
     iteration++;
@@ -125,18 +141,21 @@ public:
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
     runtime_stats.first_pass_duration = duration;
+    printf("First pass completed\n");
 
     start_time = get_server_clock();
     second_pass();
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
     runtime_stats.second_pass_duration = duration;
+    printf("Second pass completed\n");
 
     start_time = get_server_clock();
     third_pass();
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
     runtime_stats.third_pass_duration = duration;
+    printf("Third pass completed\n");
 
     auto graph = new METIS_CSRGraph();
     uint64_t total_num_vertices =
@@ -149,31 +168,30 @@ public:
     graph->adjwgt = adjwgt.data();
     graph->ncon = 1;
 
+		// Initialization
     auto parts = new idx_t[total_num_vertices];
     for (uint32_t i = 0; i < total_num_vertices; i++) {
       parts[i] = -1;
     }
+
+		compute_baseline_stats(parts, output_stats.random_cluster);
+    printf("Baseline stats computed\n");
 
     start_time = get_server_clock();
     METISGraphPartitioner::compute_partitions(graph, _num_clusters, parts);
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
     runtime_stats.partition_duration = duration;
-    printf("Partition completed!");
+    printf("Clustering completed");
 
-    // compute partition stats
     compute_partition_stats(parts, output_stats.output_cluster);
+    printf("Output stats computed");
+
+		// Add resulting clustering into provided vector
     partitions.reserve(input_stats.num_txn_nodes);
     for (uint64_t i = 0; i < input_stats.num_txn_nodes; i++) {
       partitions.push_back(parts[i]);
     }
-    printf("Compute Partition Stats - 1 Completed!");
-
-    // compute stats for random allotment
-    for (size_t i = 0; i < total_num_vertices; i++) {
-      parts[i] = rand() % _num_clusters;
-    }
-    compute_partition_stats(parts, output_stats.random_cluster);
 
     delete graph;
     delete[] parts;
@@ -182,6 +200,7 @@ public:
     adjncy.clear();
     adjwgt.clear();
   }
+
   void print_stats() {
     PRINT_INFO(lu, "Iteration", iteration);
     input_stats.print();
@@ -248,7 +267,6 @@ protected:
       input_stats.min_txn_degree = min(input_stats.min_txn_degree, txn_degree);
       input_stats.max_txn_degree = max(input_stats.max_txn_degree, txn_degree);
     }
-    printf("First Pass Completed!");
   }
 
   void second_pass() {
@@ -292,8 +310,6 @@ protected:
       }
       vwgt.push_back(node_wgt);
     }
-
-    printf("Second Pass Completed!");
   }
 
   void third_pass() {
@@ -322,8 +338,8 @@ protected:
 
     // final
     xadj.push_back(static_cast<idx_t>(adjncy.size()));
-    printf("Third Pass Completed!");
   }
+
   void compute_partition_stats(idx_t *parts, ClusterStatistics &stats) {
     stats.total_cross_access = 0;
     stats.min_txn_cross_access = UINT64_MAX;
@@ -375,18 +391,62 @@ protected:
         }
 
 #ifdef SELECTIVE_CC
-        if (final) {
-          if (info->cores.empty()) {
-            iterator->set_cc_info(0);
-          } else {
-            iterator->set_cc_info(1);
-          }
-        }
+				if (info->cores.empty()) {
+					iterator->set_cc_info(0);
+				} else {
+					iterator->set_cc_info(1);
+				}
 #endif
       }
     }
+  }
 
-    // Clear out all cores for next analysis
+  void compute_baseline_stats(idx_t* parts, ClusterStatistics &stats) {
+		// Computing a baseline allotment
+		uint64_t total_num_vertices = input_stats.num_txn_nodes + input_stats.num_data_nodes;
+		RandomNumberGenerator randomNumberGenerator(1);
+		randomNumberGenerator.seed(0, FLAGS_seed + 125);
+		for (size_t i = 0; i < total_num_vertices; i++) {
+			parts[i] = randomNumberGenerator.nextInt64(0) % _num_clusters;
+		}
+
+    stats.total_cross_access = 0;
+    stats.min_txn_cross_access = UINT64_MAX;
+    stats.max_txn_cross_access = 0;
+    stats.min_data_core_degree = UINT64_MAX;
+    stats.max_data_core_degree = 0;
+
+    AccessIterator<T> *iterator = new AccessIterator<T>();
+    QueryBatch<T> &queryBatch = *_batch;
+    uint64_t size = queryBatch.size();
+
+    Query<T> *query;
+    uint64_t key;
+    access_t type;
+		// This pass lets you initiate the cores set for each data item
+		// Also, it computes min and max cross access for each transaction
+    for (auto i = 0u; i < size; i++) {
+      query = queryBatch[i];
+      iterator->set_query(query);
+      uint64_t cross_access = 0;
+      while (iterator->next(key, type)) {
+        auto info = &_info_array[key];
+        if (parts[i] != parts[info->id]) {
+          cross_access++;
+          if (info->cores.find(parts[i]) == info->cores.end()) {
+            info->cores.insert(parts[i]);
+          }
+        }
+      }
+      stats.total_cross_access += cross_access;
+      stats.min_txn_cross_access =
+          min(cross_access, stats.min_txn_cross_access);
+      stats.max_txn_cross_access =
+          max(cross_access, stats.max_txn_cross_access);
+    }
+
+		// In this pass, we compute the min and max core degree for
+		// each data item
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
@@ -394,13 +454,22 @@ protected:
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
-          info->cores.clear();
+          stats.min_data_core_degree =
+              min(static_cast<uint64_t>(info->cores.size()),
+                  stats.min_data_core_degree);
+          stats.max_data_core_degree =
+              max(static_cast<uint64_t>(info->cores.size()),
+                  stats.max_data_core_degree);
+					info->cores.clear();
+          next_data_id++;
         }
-      }
+			}
     }
-  };
+  }
+};
 
-  template <typename T>
-  class ConflictGraphPartitioner : public BasePartitioner<T> {};
+template <typename T>
+class ConflictGraphPartitioner : public BasePartitioner<T> {
+};
 
 #endif // DBX1000_PARTITIONER_H

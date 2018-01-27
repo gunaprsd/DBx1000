@@ -42,8 +42,6 @@ public:
     delete data;
   }
 
-  ~OfflineScheduler() {}
-
 protected:
   void do_schedule() {
     vector<idx_t> partitions;
@@ -128,15 +126,15 @@ protected:
       }
       fflush(txt_file);
       fclose(txt_file);
-    }
 #endif
+    }
   }
 
   static void *schedule_helper(void *ptr) {
     set_affinity(1);
     auto data = reinterpret_cast<ThreadLocalData *>(ptr);
     auto scheduler = reinterpret_cast<OfflineScheduler *>(data->fields[0]);
-    auto thread_id = (uint32_t)((uint64_t)data->fields[1]);
+    //auto thread_id = (uint32_t)((uint64_t)data->fields[1]);
     scheduler->do_schedule();
     return nullptr;
   }

@@ -31,8 +31,8 @@
 #include "carbon_user.h"
 #endif
 
-#define SELECTIVE_CC
-#define PRINT_CLUSTERED_FILE
+// #define SELECTIVE_CC
+//#define PRINT_CLUSTERED_FILE
 using namespace std;
 
 class mem_alloc;

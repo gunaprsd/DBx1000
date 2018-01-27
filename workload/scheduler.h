@@ -29,6 +29,23 @@ public:
   }
 
   void schedule() {
+    auto thread = new pthread_t();
+    auto data = new ThreadLocalData();
+
+    data->fields[0] = (uint64_t)this;
+    data->fields[1] = (uint64_t)0;
+    pthread_create(thread, nullptr, schedule_helper,
+                   reinterpret_cast<void *>(data));
+    pthread_join(*thread, nullptr);
+
+    delete thread;
+    delete data;
+  }
+
+  ~OfflineScheduler() {}
+
+protected:
+  void do_schedule() {
     vector<idx_t> partitions;
 
     while (_current_frame_offset < _max_frame_offset) {
@@ -98,13 +115,13 @@ public:
       fclose(file);
 
 #ifdef PRINT_CLUSTERED_FILE
-			auto txt_file_name = file_name.substr(0, file_name.length() - 4);
-			txt_file_name += ".txt";
-			FILE *txt_file = fopen(txt_file_name.c_str(), "w");
-			if (txt_file == nullptr) {
-				printf("Unable to open file %s\n", txt_file_name.c_str());
-				exit(0);
-			}
+      auto txt_file_name = file_name.substr(0, file_name.length() - 4);
+      txt_file_name += ".txt";
+      FILE *txt_file = fopen(txt_file_name.c_str(), "w");
+      if (txt_file == nullptr) {
+        printf("Unable to open file %s\n", txt_file_name.c_str());
+        exit(0);
+      }
 
       for (uint64_t j = 0; j < _temp_sizes[i]; j++) {
         print_query(txt_file, &_partitioned_queries[i][j]);
@@ -113,11 +130,17 @@ public:
       fclose(txt_file);
     }
 #endif
-
   }
-  ~OfflineScheduler() {}
 
-protected:
+  static void *schedule_helper(void *ptr) {
+    set_affinity(1);
+    auto data = reinterpret_cast<ThreadLocalData *>(ptr);
+    auto scheduler = reinterpret_cast<OfflineScheduler *>(data->fields[0]);
+    auto thread_id = (uint32_t)((uint64_t)data->fields[1]);
+    scheduler->do_schedule();
+    return nullptr;
+  }
+
   const string _input_folder_path;
   const string _output_folder_path;
   const uint32_t _num_threads;

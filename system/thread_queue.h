@@ -8,8 +8,8 @@
  * Each thread has a ThreadQueue that is responsible for picking up the next
  * query to process. Whenever a thread gets a query using the next_query
  * function, it must return the status before obtaining the next query. The
- * logic of obtaining the nextZipfInt64 query depends on whether the abort buffer is
- * enabled or not.
+ * logic of obtaining the nextZipfInt64 query depends on whether the abort
+ * buffer is enabled or not.
  *
  * Abort Buffer Enabled:
  * ---------------------
@@ -27,12 +27,12 @@
  * before retrying.
  */
 
-template<typename T>
-class ThreadQueue {
+template <typename T> class ThreadQueue {
   struct AbortBufferEntry {
     ts_t ready_time;
     Query<T> *query;
   };
+
 public:
   void initialize(uint64_t thread_id, QueryIterator<T> *query_list,
                   bool abort_buffer = true) {
@@ -48,10 +48,15 @@ public:
 
     _abort_buffer_enable = abort_buffer;
     if (_abort_buffer_enable) {
-      _abort_buffer_size = ABORT_BUFFER_SIZE;
-      _abort_buffer_empty_slots = ABORT_BUFFER_SIZE;
+      _abort_buffer_size = FLAGS_abort_buffer_size;
+      _abort_buffer_empty_slots = FLAGS_abort_buffer_size;
       _abort_buffer = (AbortBufferEntry *)_mm_malloc(
           sizeof(AbortBufferEntry) * _abort_buffer_size, 64);
+      ts_t init_time = get_sys_clock();
+      for (uint32_t i = 0; i < _abort_buffer_size; i++) {
+	_abort_buffer[i].ready_time = init_time;
+        _abort_buffer[i].query = nullptr;
+      }
     }
   }
 
@@ -61,8 +66,13 @@ public:
     _previous_query = NULL;
     _previous_query_status = RCOK;
     if (_abort_buffer_enable) {
-      _abort_buffer_size = ABORT_BUFFER_SIZE;
-      _abort_buffer_empty_slots = ABORT_BUFFER_SIZE;
+      _abort_buffer_size = FLAGS_abort_buffer_size;
+      _abort_buffer_empty_slots = FLAGS_abort_buffer_size;
+      ts_t init_time = get_sys_clock();
+      for (uint32_t i = 0; i < _abort_buffer_size; i++) {
+	_abort_buffer[i].ready_time = init_time;
+        _abort_buffer[i].query = nullptr;
+      }
     }
     _query_list->reset();
   }
@@ -153,22 +163,22 @@ public:
       if (ABORT_PENALTY != 0) {
         double r;
         drand48_r(&_rand_buffer, &r);
-        penalty = r * ABORT_PENALTY;
+        penalty = r * FLAGS_abort_penalty;
       }
 
       if (_abort_buffer_enable) {
         assert(_abort_buffer_empty_slots > 0);
-        //        bool added = false;
+        bool added = false;
         for (uint32_t i = 0; i < _abort_buffer_size; i++) {
           if (_abort_buffer[i].query == nullptr) {
             _abort_buffer[i].query = _previous_query;
             _abort_buffer[i].ready_time = get_sys_clock() + penalty;
             _abort_buffer_empty_slots--;
-            //  added = true;
+            added = true;
             break;
           }
         }
-        //        assert(added);
+        assert(added);
       } else {
         usleep(penalty / 1000);
       }

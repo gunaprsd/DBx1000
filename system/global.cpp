@@ -56,7 +56,7 @@ void print_ycsb_query(FILE *file, ycsb_query *query) {
     fprintf(file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
     fprintf(file, "\tPartition-Key\t:%ld\n", query->params.requests[k].key / FLAGS_ycsb_num_partitions);
     fprintf(file, "\tPartition\t:%ld\n", query->params.requests[k].key % FLAGS_ycsb_num_partitions);
-    fprintf(file, "\tCC_Info\t:%c\n", query->params.requests[k].cc_info);
+    fprintf(file, "\tCC_Info\t:%d\n", (int)query->params.requests[k].cc_info);
   }
   fprintf(file, "\n");
 }

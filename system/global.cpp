@@ -52,9 +52,10 @@ char *output_file = NULL;
 
 void print_ycsb_query(FILE *file, ycsb_query *query) {
   for (uint64_t k = 0; k < query->params.request_cnt; k++) {
-    fprintf(file, "Sno\t:%lu", k);
-    fprintf(file, "\tKey\t:%ld", (long int)query->params.requests[k].key);
-    fprintf(file, "\tPartition\t:%ld", query->params.requests[k].key % FLAGS_ycsb_num_partitions);
+    fprintf(file, "Sno\t:%lu\n", k);
+    fprintf(file, "\tKey\t:%ld\n", (long int)query->params.requests[k].key);
+    fprintf(file, "\tPartition-Key\t:%ld\n", query->params.requests[k].key / FLAGS_ycsb_num_partitions);
+    fprintf(file, "\tPartition\t:%ld\n", query->params.requests[k].key % FLAGS_ycsb_num_partitions);
     fprintf(file, "\tCC_Info\t:%c\n", query->params.requests[k].cc_info);
   }
   fprintf(file, "\n");

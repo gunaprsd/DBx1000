@@ -28,7 +28,7 @@ public:
 
 		ThreadQueue<T> *query_queue = nullptr;
 		query_queue = new ThreadQueue<T>();
-		query_queue->initialize(thread_id, query_iterator, ABORT_BUFFER_ENABLE);
+		query_queue->initialize(thread_id, query_iterator, FLAGS_abort_buffer_enable);
 		while (!query_queue->done()) {
 			ts_t start_time = get_sys_clock();
 

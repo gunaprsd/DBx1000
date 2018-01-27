@@ -61,13 +61,12 @@ public:
 
     uint64_t min_batch_size = UINT64_MAX;
     uint64_t max_batch_size = 0;
-    for(uint32_t i = 0; i < _num_threads; i++) {
+    for (uint32_t i = 0; i < _num_threads; i++) {
       min_batch_size = min(min_batch_size, _temp_sizes[i]);
       max_batch_size = max(max_batch_size, _temp_sizes[i]);
     }
     PRINT_INFO(lu, "Min-Batch-Size", min_batch_size);
     PRINT_INFO(lu, "Max-Batch-Size", max_batch_size);
-
 
     // write back onto arrays
     _partitioned_queries = new Query<T> *[_num_threads];
@@ -95,10 +94,26 @@ public:
       Query<T> *thread_queries = _partitioned_queries[i];
       auto size = _temp_sizes[i];
       fwrite(thread_queries, sizeof(Query<T>), size, file);
-
       fflush(file);
       fclose(file);
+
+#ifdef PRINT_CLUSTERED_FILE
+			auto txt_file_name = file_name.substr(0, file_name.length() - 4);
+			txt_file_name += ".txt";
+			FILE *txt_file = fopen(txt_file_name.c_str(), "w");
+			if (txt_file == nullptr) {
+				printf("Unable to open file %s\n", txt_file_name.c_str());
+				exit(0);
+			}
+
+      for (uint64_t j = 0; j < _temp_sizes[i]; j++) {
+        print_query(txt_file, &_partitioned_queries[i][j]);
+      }
+      fflush(txt_file);
+      fclose(txt_file);
     }
+#endif
+
   }
   ~OfflineScheduler() {}
 

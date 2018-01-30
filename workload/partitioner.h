@@ -67,20 +67,29 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
   };
 
   struct ClusterStatistics {
+    uint64_t num_single_core_data;
     uint64_t min_data_core_degree;
     uint64_t max_data_core_degree;
-    uint64_t min_txn_cross_access;
-    uint64_t max_txn_cross_access;
-    uint64_t total_cross_access;
+    uint64_t min_txn_cross_access_read;
+    uint64_t max_txn_cross_access_read;
+    uint64_t total_cross_access_read;
+
+    uint64_t min_txn_cross_access_write;
+    uint64_t max_txn_cross_access_write;
+    uint64_t total_cross_access_write;
 
     ClusterStatistics() { reset(); }
 
     void reset() {
-      min_data_core_degree = 0;
-      max_data_core_degree = 0;
-      min_txn_cross_access = 0;
-      max_txn_cross_access = 0;
-      total_cross_access = 0;
+      num_single_core_data = 0;
+      min_data_core_degree = 1;
+      max_data_core_degree = 1;
+      min_txn_cross_access_read = 0;
+      max_txn_cross_access_read = 0;
+      total_cross_access_read = 0;
+      min_txn_cross_access_write = 0;
+      max_txn_cross_access_write = 0;
+      total_cross_access_write = 0;
     }
   };
 
@@ -96,26 +105,43 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
     }
 
     void print() {
+      PRINT_INFO(lu, "Rnd-Num-Single-Core-Data",
+                 random_cluster.num_single_core_data);
       PRINT_INFO(lu, "Rnd-Min-Data-Core-Degree",
                  random_cluster.min_data_core_degree);
       PRINT_INFO(lu, "Rnd-Max-Data-Core-Degree",
                  random_cluster.max_data_core_degree);
-      PRINT_INFO(lu, "Rnd-Min-Txn-Cross-Access",
-                 random_cluster.min_txn_cross_access);
-      PRINT_INFO(lu, "Rnd-Max-Txn-Cross-Access",
-                 random_cluster.max_txn_cross_access);
-      PRINT_INFO(lu, "Rnd-Total-Txn-Cross-Access",
-                 random_cluster.total_cross_access);
+      PRINT_INFO(lu, "Rnd-Min-Txn-Cross-Access-Read",
+                 random_cluster.min_txn_cross_access_read);
+      PRINT_INFO(lu, "Rnd-Max-Txn-Cross-Access-Read",
+                 random_cluster.max_txn_cross_access_read);
+      PRINT_INFO(lu, "Rnd-Total-Txn-Cross-Access-Read",
+                 random_cluster.total_cross_access_read);
+      PRINT_INFO(lu, "Rnd-Min-Txn-Cross-Access-Write",
+                 random_cluster.min_txn_cross_access_write);
+      PRINT_INFO(lu, "Rnd-Max-Txn-Cross-Access-Write",
+                 random_cluster.max_txn_cross_access_write);
+      PRINT_INFO(lu, "Rnd-Total-Txn-Cross-Access-Write",
+                 random_cluster.total_cross_access_write);
+
+      PRINT_INFO(lu, "Num-Single-Core-Data",
+                 output_cluster.num_single_core_data);
       PRINT_INFO(lu, "Min-Data-Core-Degree",
                  output_cluster.min_data_core_degree);
       PRINT_INFO(lu, "Max-Data-Core-Degree",
                  output_cluster.max_data_core_degree);
-      PRINT_INFO(lu, "Min-Txn-Cross-Access",
-                 output_cluster.min_txn_cross_access);
-      PRINT_INFO(lu, "Max-Txn-Cross-Access",
-                 output_cluster.max_txn_cross_access);
-      PRINT_INFO(lu, "Total-Txn-Cross-Access",
-                 output_cluster.total_cross_access);
+      PRINT_INFO(lu, "Min-Txn-Cross-Access-Read",
+                 output_cluster.min_txn_cross_access_read);
+      PRINT_INFO(lu, "Max-Txn-Cross-Access-Read",
+                 output_cluster.max_txn_cross_access_read);
+      PRINT_INFO(lu, "Total-Txn-Cross-Access-Read",
+                 output_cluster.total_cross_access_read);
+      PRINT_INFO(lu, "Min-Txn-Cross-Access-Write",
+                 output_cluster.min_txn_cross_access_write);
+      PRINT_INFO(lu, "Max-Txn-Cross-Access-Write",
+                 output_cluster.max_txn_cross_access_write);
+      PRINT_INFO(lu, "Total-Txn-Cross-Access-Write",
+                 output_cluster.total_cross_access_write);
     }
   };
 
@@ -341,11 +367,14 @@ protected:
   }
 
   void compute_partition_stats(idx_t *parts, ClusterStatistics &stats) {
-    stats.total_cross_access = 0;
-    stats.min_txn_cross_access = UINT64_MAX;
-    stats.max_txn_cross_access = 0;
+    stats.total_cross_access_read = 0;
+    stats.min_txn_cross_access_read = UINT64_MAX;
+    stats.max_txn_cross_access_read = 0;
     stats.min_data_core_degree = UINT64_MAX;
-    stats.max_data_core_degree = 0;
+    stats.max_data_core_degree = 1;
+    stats.total_cross_access_write = 0;
+    stats.min_txn_cross_access_write = UINT64_MAX;
+    stats.max_txn_cross_access_write = 0;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -357,21 +386,33 @@ protected:
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
-      uint64_t cross_access = 0;
+      uint64_t cross_access_read = 0;
+      uint64_t cross_access_write = 0;
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (parts[i] != parts[info->id]) {
-          cross_access++;
+          if (type == RD) {
+            cross_access_read++;
+          } else if (type == WR) {
+            cross_access_write++;
+          }
+
           if (info->cores.find(parts[i]) == info->cores.end()) {
             info->cores.insert(parts[i]);
           }
         }
       }
-      stats.total_cross_access += cross_access;
-      stats.min_txn_cross_access =
-          min(cross_access, stats.min_txn_cross_access);
-      stats.max_txn_cross_access =
-          max(cross_access, stats.max_txn_cross_access);
+      stats.total_cross_access_read += cross_access_read;
+      stats.min_txn_cross_access_read =
+          min(cross_access_read, stats.min_txn_cross_access_read);
+      stats.max_txn_cross_access_read =
+          max(cross_access_read, stats.max_txn_cross_access_read);
+
+      stats.total_cross_access_write += cross_access_write;
+      stats.min_txn_cross_access_write =
+          min(cross_access_write, stats.min_txn_cross_access_write);
+      stats.max_txn_cross_access_write =
+          max(cross_access_write, stats.max_txn_cross_access_write);
     }
 
     idx_t next_data_id = size;
@@ -381,6 +422,7 @@ protected:
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
+
           stats.min_data_core_degree =
               min(static_cast<uint64_t>(info->cores.size()),
                   stats.min_data_core_degree);
@@ -389,6 +431,10 @@ protected:
                   stats.max_data_core_degree);
           next_data_id++;
         }
+
+				if(info->cores.empty()) {
+					stats.num_single_core_data++;
+				}
 
 #ifdef SELECTIVE_CC
         if (info->cores.empty()) {
@@ -411,11 +457,14 @@ protected:
       parts[i] = randomNumberGenerator.nextInt64(0) % _num_clusters;
     }
 
-    stats.total_cross_access = 0;
-    stats.min_txn_cross_access = UINT64_MAX;
-    stats.max_txn_cross_access = 0;
+    stats.total_cross_access_read = 0;
+    stats.min_txn_cross_access_read = UINT64_MAX;
+    stats.max_txn_cross_access_read = 0;
     stats.min_data_core_degree = UINT64_MAX;
-    stats.max_data_core_degree = 0;
+    stats.max_data_core_degree = 1;
+    stats.total_cross_access_write = 0;
+    stats.min_txn_cross_access_write = UINT64_MAX;
+    stats.max_txn_cross_access_write = 0;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -429,21 +478,33 @@ protected:
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
-      uint64_t cross_access = 0;
+      uint64_t cross_access_read = 0;
+      uint64_t cross_access_write = 0;
       while (iterator->next(key, type)) {
         auto info = &_info_array[key];
         if (parts[i] != parts[info->id]) {
-          cross_access++;
+          if (type == RD) {
+            cross_access_read++;
+          } else if (type == WR) {
+            cross_access_write++;
+          }
+
           if (info->cores.find(parts[i]) == info->cores.end()) {
             info->cores.insert(parts[i]);
           }
         }
       }
-      stats.total_cross_access += cross_access;
-      stats.min_txn_cross_access =
-          min(cross_access, stats.min_txn_cross_access);
-      stats.max_txn_cross_access =
-          max(cross_access, stats.max_txn_cross_access);
+      stats.total_cross_access_read += cross_access_read;
+      stats.min_txn_cross_access_read =
+          min(cross_access_read, stats.min_txn_cross_access_read);
+      stats.max_txn_cross_access_read =
+          max(cross_access_read, stats.max_txn_cross_access_read);
+
+      stats.total_cross_access_write += cross_access_write;
+      stats.min_txn_cross_access_write =
+          min(cross_access_write, stats.min_txn_cross_access_write);
+      stats.max_txn_cross_access_write =
+          max(cross_access_write, stats.max_txn_cross_access_write);
     }
 
     // In this pass, we compute the min and max core degree for
@@ -464,7 +525,10 @@ protected:
           info->cores.clear();
           next_data_id++;
         }
-      }
+				if(info->cores.empty()) {
+					stats.num_single_core_data++;
+				}
+			}
     }
   }
 };

@@ -65,7 +65,7 @@ void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id,
   }
 
   auto y = (int)helper.generateRandom(1, 100, params->w_id - 1);
-  if (y <= 60) {
+  if (y <= 100 * FLAGS_tpcc_by_last_name_percent) {
     // by last name
     params->by_last_name = true;
     TPCCUtility::findLastNameForNum(
@@ -96,7 +96,11 @@ void TPCCWorkloadGenerator::gen_new_order_request(
   params->rbk = (bool)helper.generateRandom(1, 100, params->w_id - 1);
 
   params->o_entry_d = 2013;
-  params->ol_cnt = helper.generateRandom(5, 15, params->w_id - 1);
+  if (TPCC_NUM_ORDERS_RANDOM) {
+    params->ol_cnt = helper.generateRandom(5, 15, params->w_id - 1);
+  } else {
+    params->ol_cnt = TPCC_MAX_NUM_ORDERS;
+  }
 
   params->remote = false;
   for (uint32_t oid = 0; oid < params->ol_cnt; oid++) {

@@ -27,6 +27,7 @@ DEFINE_double(tpcc_perc_payment, TPCC_PERC_PAYMENT, "TPCC: Percentage of payemen
 DEFINE_uint64(tpcc_max_items, TPCC_MAX_ITEMS, "TPCC: Max number of items");
 DEFINE_uint64(tpcc_cust_per_dist, TPCC_CUST_PER_DIST, "TPCC: Customers per district");
 DEFINE_uint64(tpcc_dist_per_wh, TPCC_DIST_PER_WH, "TPCC: Districts per warehouse");
+DEFINE_double(tpcc_by_last_name_percent, TPCC_BY_LAST_NAME_PERC, "TPCC: Percent of payment txns with query by last name");
 /*
  * General Command Line Arguments
  */

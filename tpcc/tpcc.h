@@ -28,7 +28,7 @@ struct tpcc_new_order_params {
   uint64_t w_id;
   uint64_t d_id;
   uint64_t c_id;
-  ol_item items[TPCC_NUM_ORDERS];
+  ol_item items[TPCC_MAX_NUM_ORDERS];
   bool rbk;
   bool remote;
   uint64_t ol_cnt;

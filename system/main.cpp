@@ -1,4 +1,3 @@
-// Copyright [2017] <Guna Prasaad>
 
 #include "config.h"
 #include "global.h"

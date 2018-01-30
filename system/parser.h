@@ -27,7 +27,7 @@ DECLARE_double(tpcc_perc_payment);
 DECLARE_uint64(tpcc_max_items);
 DECLARE_uint64(tpcc_cust_per_dist);
 DECLARE_uint64(tpcc_dist_per_wh);
-
+DECLARE_double(tpcc_by_last_name_percent);
 /*
  * General Command Line Arguments
  */

@@ -14,6 +14,12 @@ TPCCWorkloadGenerator::TPCCWorkloadGenerator(const TPCCBenchmarkConfig &_config,
   for (uint64_t i = 0; i < num_threads; i++) {
     _random.seed(i, 2 * i + 1);
   }
+	num_orders = new uint64_t[num_threads];
+	num_order_txns = new uint64_t[num_threads];
+	for(uint64_t i = 0; i < num_threads; i++) {
+		num_orders[i] = 0;
+		num_order_txns[i] = 0;
+	}
 }
 
 void TPCCWorkloadGenerator::per_thread_generate(uint64_t thread_id) {
@@ -29,6 +35,8 @@ void TPCCWorkloadGenerator::per_thread_generate(uint64_t thread_id) {
           thread_id, (tpcc_new_order_params *)&(_queries[thread_id][i].params));
     }
   }
+	double avg = ((double)num_orders[thread_id])/((double)num_order_txns[thread_id]);
+	printf("Thread : %lu, Num-Order-Txns: %lu, Avg-Orders-Per-Txn: %lf\n", thread_id, num_order_txns[thread_id], avg);
 }
 
 void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id,
@@ -123,26 +131,29 @@ void TPCCWorkloadGenerator::gen_new_order_request(
       params->items[oid].ol_quantity =
           helper.generateRandom(1, 10, params->w_id - 1);
     }
-
-    // Remove duplicate items
-    for (uint32_t i = 0; i < params->ol_cnt; i++) {
-      for (uint32_t j = 0; j < i; j++) {
-        if (params->items[i].ol_i_id == params->items[j].ol_i_id) {
-          for (uint32_t k = i; k < params->ol_cnt - 1; k++) {
-            params->items[k] = params->items[k + 1];
-          }
-          params->ol_cnt--;
-          i--;
-        }
-      }
-    }
-
-    for (uint32_t i = 0; i < params->ol_cnt; i++) {
-      for (uint32_t j = 0; j < i; j++) {
-        assert(params->items[(int)i].ol_i_id != params->items[(int)j].ol_i_id);
-      }
-    }
   }
+
+	// Remove duplicate items
+	for (uint32_t i = 0; i < params->ol_cnt; i++) {
+		for (uint32_t j = 0; j < i; j++) {
+			if (params->items[i].ol_i_id == params->items[j].ol_i_id) {
+				for (uint32_t k = i; k < params->ol_cnt - 1; k++) {
+					params->items[k] = params->items[k + 1];
+				}
+				params->ol_cnt--;
+				i--;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < params->ol_cnt; i++) {
+		for (uint32_t j = 0; j < i; j++) {
+			assert(params->items[(int)i].ol_i_id != params->items[(int)j].ol_i_id);
+		}
+	}
+
+	num_orders[thread_id] += params->ol_cnt;
+	num_order_txns[thread_id] += 1;
 }
 
 TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config,

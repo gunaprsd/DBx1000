@@ -23,6 +23,8 @@ protected:
   TPCCBenchmarkConfig config;
   TPCCHelper helper;
   RandomNumberGenerator _random;
+	uint64_t* num_orders;
+	uint64_t* num_order_txns;
 };
 
 typedef ParallelWorkloadLoader<tpcc_params> TPCCWorkloadLoader;

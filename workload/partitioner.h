@@ -429,20 +429,19 @@ protected:
           stats.max_data_core_degree =
               max(static_cast<uint64_t>(info->cores.size()),
                   stats.max_data_core_degree);
-          next_data_id++;
-        }
-
-				if(info->cores.empty()) {
-					stats.num_single_core_data++;
-				}
+          if (info->cores.empty()) {
+            stats.num_single_core_data++;
+          }
 
 #ifdef SELECTIVE_CC
-        if (info->cores.empty()) {
-          iterator->set_cc_info(0);
-        } else {
-          iterator->set_cc_info(1);
-        }
+          if (info->cores.empty()) {
+            iterator->set_cc_info(0);
+          } else {
+            iterator->set_cc_info(1);
+          }
 #endif
+          next_data_id++;
+        }
       }
     }
   }
@@ -522,13 +521,13 @@ protected:
           stats.max_data_core_degree =
               max(static_cast<uint64_t>(info->cores.size()),
                   stats.max_data_core_degree);
+          if (info->cores.empty()) {
+            stats.num_single_core_data++;
+          }
           info->cores.clear();
           next_data_id++;
         }
-				if(info->cores.empty()) {
-					stats.num_single_core_data++;
-				}
-			}
+      }
     }
   }
 };

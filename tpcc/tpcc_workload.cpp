@@ -45,7 +45,7 @@ void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id,
   params->h_amount = helper.generateRandom(1, 5000, params->w_id - 1);
 
   auto x = (int)helper.generateRandom(1, 100, params->w_id - 1);
-  if (x <= 85) {
+  if (x > FLAGS_tpcc_remote_payment_percent) {
     // home warehouse
     params->c_d_id = params->d_id;
     params->c_w_id = params->w_id;
@@ -105,8 +105,10 @@ void TPCCWorkloadGenerator::gen_new_order_request(
   params->remote = false;
   for (uint32_t oid = 0; oid < params->ol_cnt; oid++) {
     // choose a random item
-    params->items[oid].ol_i_id = helper.generateNonUniformRandom(
-        8191, 1, config.items_count, params->w_id - 1);
+    //    params->items[oid].ol_i_id = helper.generateNonUniformRandom(
+    // 8191, 1, config.items_count, params->w_id - 1);
+    params->items[oid].ol_i_id =
+        helper.generateRandom(1, config.items_count, params->w_id - 1);
 
     // 1% of ol items go remote
     auto x = (uint32_t)helper.generateRandom(1, 100, params->w_id - 1);

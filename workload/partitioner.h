@@ -34,6 +34,30 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
     }
   };
 
+		struct TableInfo {
+				uint64_t num_total_accesses;
+        uint64_t num_cross_accesses;
+        uint64_t num_accessed_data;
+        uint64_t num_single_core_data;
+
+        TableInfo() {
+          reset();
+        }
+
+        void reset() {
+          num_total_accesses = 0;
+          num_cross_accesses = 0;
+          num_accessed_data = 0;
+          num_single_core_data = 0;
+        }
+
+        void print() {
+          PRINT_INFO(lu, "Num-Total-Accesses", num_total_accesses);
+          PRINT_INFO(lu, "Num-Cross-Accesses", num_cross_accesses);
+          PRINT_INFO(lu, "Num-Accessed-Data", num_accessed_data);
+          PRINT_INFO(lu, "Num-Single-Core-Data", num_single_core_data);
+        }
+		};
   struct InputStatistics {
     uint64_t num_txn_nodes;
     uint64_t num_data_nodes;
@@ -153,9 +177,9 @@ public:
     uint64_t size = AccessIterator<T>::get_max_key();
     _info_array = new TxnDataInfo[size];
     auto num_tables = AccessIterator<T>::get_num_tables();
-    _partition_table_info = new uint64_t[num_tables];
+    _partition_table_info = new TableInfo[num_tables];
     for(uint64_t i = 0; i < num_tables; i++) {
-      _partition_table_info[i] = 0;
+      _partition_table_info[i].reset();
     }
   }
 
@@ -239,7 +263,8 @@ public:
     output_stats.print();
     auto num_tables = AccessIterator<T>::get_num_tables();
     for(uint32_t i = 0; i < num_tables; i++) {
-      printf("%-28s-%u: %lu\n", "Single-Core-Items-Table", i, _partition_table_info[i]);
+      PRINT_INFO(u, "Table-Id", i);
+      _partition_table_info[i].print();
     }
   }
 
@@ -247,7 +272,7 @@ protected:
   const uint32_t _num_clusters;
   QueryBatch<T> *_batch;
   TxnDataInfo *_info_array;
-  uint64_t* _partition_table_info;
+  TableInfo* _partition_table_info;
   vector<idx_t> vwgt;
   vector<idx_t> adjwgt;
   vector<idx_t> xadj;
@@ -478,7 +503,7 @@ protected:
     stats.min_txn_cross_access_read = UINT64_MAX;
     stats.max_txn_cross_access_read = 0;
     stats.min_data_core_degree = UINT64_MAX;
-    stats.max_data_core_degree = 1;
+    stats.max_data_core_degree = 0;
     stats.total_cross_access_write = 0;
     stats.min_txn_cross_access_write = UINT64_MAX;
     stats.max_txn_cross_access_write = 0;
@@ -510,7 +535,9 @@ protected:
           if (info->cores.find(parts[i]) == info->cores.end()) {
             info->cores.insert(parts[i]);
           }
+          _partition_table_info[table_id].num_cross_accesses++;
         }
+        _partition_table_info[table_id].num_total_accesses++;
       }
       stats.total_cross_access_read += cross_access_read;
       stats.min_txn_cross_access_read =
@@ -542,10 +569,11 @@ protected:
                   stats.max_data_core_degree);
           if (info->cores.empty()) {
             stats.num_single_core_data++;
-            _partition_table_info[table_id]++;
+            _partition_table_info[table_id].num_single_core_data++;
           }
           info->cores.clear();
           next_data_id++;
+          _partition_table_info[table_id].num_accessed_data++;
         }
       }
     }

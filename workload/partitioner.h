@@ -171,8 +171,8 @@ protected:
         txn_degree++;
       }
       input_stats.num_edges += txn_degree;
-      input_stats.min_txn_degree = min(input_stats.min_txn_degree, txn_degree);
-      input_stats.max_txn_degree = max(input_stats.max_txn_degree, txn_degree);
+      ACCUMULATE_MIN(input_stats.min_txn_degree, txn_degree);
+      ACCUMULATE_MAX(input_stats.max_txn_degree, txn_degree);
     }
   }
 
@@ -261,6 +261,9 @@ protected:
           vwgt.push_back(0);
           vsize.push_back(1);
 
+					auto data_degree = info->num_reads + info->num_writes;
+					ACCUMULATE_MIN(input_stats.min_data_degree, data_degree);
+					ACCUMULATE_MAX(input_stats.max_data_degree, data_degree);
           next_data_id++;
         }
       }

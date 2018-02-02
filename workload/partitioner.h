@@ -34,30 +34,28 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
     }
   };
 
-		struct TableInfo {
-				uint64_t num_total_accesses;
-        uint64_t num_cross_accesses;
-        uint64_t num_accessed_data;
-        uint64_t num_single_core_data;
+  struct TableInfo {
+    uint64_t num_total_accesses;
+    uint64_t num_cross_accesses;
+    uint64_t num_accessed_data;
+    uint64_t num_single_core_data;
 
-        TableInfo() {
-          reset();
-        }
+    TableInfo() { reset(); }
 
-        void reset() {
-          num_total_accesses = 0;
-          num_cross_accesses = 0;
-          num_accessed_data = 0;
-          num_single_core_data = 0;
-        }
+    void reset() {
+      num_total_accesses = 0;
+      num_cross_accesses = 0;
+      num_accessed_data = 0;
+      num_single_core_data = 0;
+    }
 
-        void print() {
-          PRINT_INFO(lu, "Num-Total-Accesses", num_total_accesses);
-          PRINT_INFO(lu, "Num-Cross-Accesses", num_cross_accesses);
-          PRINT_INFO(lu, "Num-Accessed-Data", num_accessed_data);
-          PRINT_INFO(lu, "Num-Single-Core-Data", num_single_core_data);
-        }
-		};
+    void print() {
+      PRINT_INFO(lu, "Num-Total-Accesses", num_total_accesses);
+      PRINT_INFO(lu, "Num-Cross-Accesses", num_cross_accesses);
+      PRINT_INFO(lu, "Num-Accessed-Data", num_accessed_data);
+      PRINT_INFO(lu, "Num-Single-Core-Data", num_single_core_data);
+    }
+  };
   struct InputStatistics {
     uint64_t num_txn_nodes;
     uint64_t num_data_nodes;
@@ -178,7 +176,7 @@ public:
     _info_array = new TxnDataInfo[size];
     auto num_tables = AccessIterator<T>::get_num_tables();
     _partition_table_info = new TableInfo[num_tables];
-    for(uint64_t i = 0; i < num_tables; i++) {
+    for (uint64_t i = 0; i < num_tables; i++) {
       _partition_table_info[i].reset();
     }
   }
@@ -262,7 +260,7 @@ public:
     runtime_stats.print();
     output_stats.print();
     auto num_tables = AccessIterator<T>::get_num_tables();
-    for(uint32_t i = 0; i < num_tables; i++) {
+    for (uint32_t i = 0; i < num_tables; i++) {
       PRINT_INFO(u, "Table-Id", i);
       _partition_table_info[i].print();
     }
@@ -272,7 +270,7 @@ protected:
   const uint32_t _num_clusters;
   QueryBatch<T> *_batch;
   TxnDataInfo *_info_array;
-  TableInfo* _partition_table_info;
+  TableInfo *_partition_table_info;
   vector<idx_t> vwgt;
   vector<idx_t> adjwgt;
   vector<idx_t> xadj;
@@ -293,7 +291,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
-		uint32_t table_id;
+    uint32_t table_id;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -344,7 +342,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
-		uint32_t table_id;
+    uint32_t table_id;
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
@@ -357,8 +355,8 @@ protected:
       node_wgt = 0;
       while (iterator->next(key, type, table_id)) {
         auto info = &_info_array[key];
+        auto degree = info->num_writes + info->num_reads;
         if (info->txns.empty()) {
-          uint64_t degree = info->num_writes + info->num_reads;
           info->txns.reserve(degree);
           input_stats.min_data_degree =
               min(input_stats.min_data_degree, degree);
@@ -367,7 +365,10 @@ protected:
         }
         info->txns.push_back(i);
         adjncy.push_back(info->id);
-        adjwgt.push_back(1);
+        // double weight = 1.0;
+        double weight =
+            ((double)degree * 1000.0) / (double)input_stats.num_edges;
+        adjwgt.push_back((idx_t)weight);
         node_wgt++;
       }
       vwgt.push_back(node_wgt);
@@ -378,7 +379,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
-		uint32_t table_id;
+    uint32_t table_id;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -393,7 +394,10 @@ protected:
           xadj.push_back(static_cast<idx_t>(adjncy.size()));
           vwgt.push_back(0);
           adjncy.insert(adjncy.end(), info->txns.begin(), info->txns.end());
-          adjwgt.insert(adjwgt.end(), info->txns.size(), 1);
+          auto degree = info->num_reads + info->num_writes;
+          double weight =
+              ((double)degree * 1000.0) / (double)input_stats.num_edges;
+          adjwgt.insert(adjwgt.end(), info->txns.size(), (idx_t)weight);
           next_data_id++;
         }
       }
@@ -420,7 +424,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
-		uint32_t table_id;
+    uint32_t table_id;
 
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
@@ -486,7 +490,6 @@ protected:
 
     stats.min_data_core_degree += 1;
     stats.max_data_core_degree += 1;
-
   }
 
   void compute_baseline_stats(idx_t *parts, ClusterStatistics &stats) {
@@ -515,7 +518,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
-		uint32_t table_id;
+    uint32_t table_id;
     // This pass lets you initiate the cores set for each data item
     // Also, it computes min and max cross access for each transaction
     for (auto i = 0u; i < size; i++) {

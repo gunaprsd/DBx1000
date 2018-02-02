@@ -23,6 +23,7 @@ struct METIS_CSRGraph {
   idx_t *adjncy;
   idx_t *adjwgt;
   idx_t *vwgt;
+  idx_t *vsize;
 
   METIS_CSRGraph() {
     nvtxs = -1;
@@ -32,6 +33,7 @@ struct METIS_CSRGraph {
     adjncy = nullptr;
     vwgt = nullptr;
     adjwgt = nullptr;
+    vsize = nullptr;
   }
 
   void release() {
@@ -39,6 +41,7 @@ struct METIS_CSRGraph {
     delete adjncy;
     delete vwgt;
     delete adjwgt;
+    delete vsize;
   }
 };
 

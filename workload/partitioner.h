@@ -170,7 +170,7 @@ template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
 public:
   AccessGraphPartitioner(uint32_t num_clusters)
       : _num_clusters(num_clusters), _batch(nullptr), _info_array(nullptr),
-        vwgt(), adjwgt(), xadj(), adjncy(), iteration(0), runtime_stats(),
+        vwgt(), adjwgt(), xadj(), adjncy(), vsize(), iteration(0), runtime_stats(),
         input_stats(), output_stats() {
     uint64_t size = AccessIterator<T>::get_max_key();
     _info_array = new TxnDataInfo[size];
@@ -219,6 +219,7 @@ public:
     graph->xadj = xadj.data();
     graph->adjncy = adjncy.data();
     graph->adjwgt = adjwgt.data();
+		graph->vsize = vsize.data();
     graph->ncon = 1;
 
     // Initialization
@@ -275,6 +276,7 @@ protected:
   vector<idx_t> adjwgt;
   vector<idx_t> xadj;
   vector<idx_t> adjncy;
+	vector<idx_t> vsize;
 
   uint64_t iteration;
   RuntimeStatistics runtime_stats;
@@ -336,6 +338,7 @@ protected:
     uint64_t num_nodes = input_stats.num_txn_nodes + input_stats.num_data_nodes;
     xadj.reserve(num_nodes + 1);
     vwgt.reserve(num_nodes);
+		vsize.reserve(num_nodes);
     adjncy.reserve(2 * input_stats.num_edges);
     adjwgt.reserve(2 * input_stats.num_edges);
 
@@ -372,6 +375,7 @@ protected:
         node_wgt++;
       }
       vwgt.push_back(node_wgt);
+			vsize.push_back(0);
     }
   }
 
@@ -397,6 +401,7 @@ protected:
           auto degree = info->num_reads + info->num_writes;
           double weight =
               ((double)degree * 1000.0) / (double)input_stats.num_edges;
+					vsize.push_back((idx_t)weight);
           adjwgt.insert(adjwgt.end(), info->txns.size(), (idx_t)weight);
           next_data_id++;
         }

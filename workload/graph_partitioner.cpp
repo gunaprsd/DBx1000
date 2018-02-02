@@ -2,64 +2,63 @@
 #include "graph_partitioner.h"
 #include <cstring>
 
-void METISGraphPartitioner::compute_partitions(
-                              METIS_CSRGraph * graph,
-                              idx_t nparts,
-                              idx_t * parts) {
-    assert(graph != nullptr);
-    assert(graph->nvtxs != -1);
-    assert(graph->adjncy_size != -1);
-    assert(graph->xadj != nullptr);
-    assert(graph->adjncy != nullptr);
-    assert(graph->vwgt != nullptr);
-    assert(graph->adjwgt != nullptr);
+void METISGraphPartitioner::compute_partitions(METIS_CSRGraph *graph,
+                                               idx_t nparts, idx_t *parts) {
+  assert(graph != nullptr);
+  assert(graph->nvtxs != -1);
+  assert(graph->adjncy_size != -1);
+  assert(graph->xadj != nullptr);
+  assert(graph->adjncy != nullptr);
+  assert(graph->vwgt != nullptr);
+  assert(graph->adjwgt != nullptr);
 
-    // Create result locations
-    idx_t objval = 0;
-    for (uint32_t i = 0; i < graph->nvtxs; i++) { parts[i] = -1; }
+  // Create result locations
+  idx_t objval = 0;
+  for (uint32_t i = 0; i < graph->nvtxs; i++) {
+    parts[i] = -1;
+  }
 
-    // Create options
-    auto options  = reinterpret_cast<idx_t *>(
-                        malloc(sizeof(idx_t) * METIS_NOPTIONS));
+  // Create options
+  auto options =
+      reinterpret_cast<idx_t *>(malloc(sizeof(idx_t) * METIS_NOPTIONS));
 
-    METIS_SetDefaultOptions(options);
-    options[METIS_OPTION_UFACTOR] = FLAGS_ufactor;
-    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
-    options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
-    options[METIS_OPTION_RTYPE] = METIS_RTYPE_FM;
-    options[METIS_OPTION_SEED] = FLAGS_seed;
-    options[METIS_OPTION_DBGLVL] = METIS_DBG_TIME;
+  METIS_SetDefaultOptions(options);
+  options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY;
+	if(FLAGS_objtype == "edge_cut") {
+		options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
+	} else if(FLAGS_objtype == "communication_volume") {
+		options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
+	}
+  options[METIS_OPTION_CTYPE] = METIS_CTYPE_RM;
+  options[METIS_OPTION_RTYPE] = METIS_RTYPE_GREEDY;
+  options[METIS_OPTION_UFACTOR] = FLAGS_ufactor;
+  options[METIS_OPTION_SEED] = FLAGS_seed;
+  options[METIS_OPTION_DBGLVL] = METIS_DBG_TIME;
+	options[METIS_OPTION_MINCONN] = 1;
 
-    // Do the compute_partitions
-    int result = METIS_PartGraphKway(& graph->nvtxs,
-                                     & graph->ncon,
-                                     graph->xadj,
-                                     graph->adjncy,
-                                     graph->vwgt,
-                                     graph->vsize,
-                                     graph->adjwgt,
-                                     & nparts,
-                                     nullptr,
-                                     nullptr,
-                                     options,
-                                     & objval,
-                                     parts);
-    PRINT_INFO(ld, "Partitioning-Obj-Value", objval);
-    switch (result) {
-        case METIS_ERROR_INPUT  :   printf("Error in input!\n");
-        exit(0);
-        case METIS_ERROR_MEMORY :   printf("Memory issue!\n");
-        exit(0);
-        case METIS_ERROR        :   printf("Unknown error\n");
-        exit(0);
-        default                 :   break;
-    }
+  // Do the compute_partitions
+  int result = METIS_PartGraphKway(&graph->nvtxs, &graph->ncon, graph->xadj,
+                                   graph->adjncy, graph->vwgt, graph->vsize,
+                                   graph->adjwgt, &nparts, nullptr, nullptr,
+                                   options, &objval, parts);
+  PRINT_INFO(ld, "Partitioning-Obj-Value", objval);
+  switch (result) {
+  case METIS_ERROR_INPUT:
+    printf("Error in input!\n");
+    exit(0);
+  case METIS_ERROR_MEMORY:
+    printf("Memory issue!\n");
+    exit(0);
+  case METIS_ERROR:
+    printf("Unknown error\n");
+    exit(0);
+  default:
+    break;
+  }
 }
 
-void ParMETISGraphPartitioner::compute_partitions(
-                                     ParMETIS_CSRGraph * parGraph,
-                                     idx_t nparts,
-                                     idx_t * parts) {
+void ParMETISGraphPartitioner::compute_partitions(ParMETIS_CSRGraph *parGraph,
+                                                  idx_t nparts, idx_t *parts) {
   // Convert to a serial format and use METIS
   auto graph = METIS_CSRGraphCreator::convert_METIS_CSRGraph(parGraph);
   METISGraphPartitioner::compute_partitions(graph, nparts, parts);
@@ -72,14 +71,12 @@ void ParMETISGraphPartitioner::compute_partitions(
   auto data = new ThreadLocalData[num_threads];
   auto current_ptr = parts;
   for (uint32_t i = 0; i < num_threads; i++) {
-    data[i].fields[0] = (uint64_t) i;
-    data[i].fields[1] = (uint64_t) parGraph;
-    data[i].fields[2] = (uint64_t) nparts;
-    data[i].fields[3] = (uint64_t) current_ptr;
-    pthread_create(& threads[i],
-                   nullptr,
-                   partition_helper,
-                   reinterpret_cast<void *>(& data[i]));
+    data[i].fields[0] = (uint64_t)i;
+    data[i].fields[1] = (uint64_t)parGraph;
+    data[i].fields[2] = (uint64_t)nparts;
+    data[i].fields[3] = (uint64_t)current_ptr;
+    pthread_create(&threads[i], nullptr, partition_helper,
+                   reinterpret_cast<void *>(&data[i]));
     current_ptr += parGraph->nvtxs_per_graph;
   }
 
@@ -91,7 +88,7 @@ void ParMETISGraphPartitioner::compute_partitions(
   delete[] data;
 }
 
-//void *ParMETISGraphPartitioner::partition_helper(void *data) {
+// void *ParMETISGraphPartitioner::partition_helper(void *data) {
 //  auto threadLocalData = reinterpret_cast<ThreadLocalData *>(data);
 //  auto thread_id = (uint32_t)threadLocalData->fields[0];
 //  auto parGraph = reinterpret_cast<ParMETIS_CSRGraph *>(
@@ -135,7 +132,8 @@ void ParMETISGraphPartitioner::compute_partitions(
 //  switch (result) {
 //    case METIS_ERROR_INPUT  :   printf("Error in input!\n");
 //      exit(0);
-//    case METIS_ERROR_MEMORY :   printf("Could not allocate required memory!\n");
+//    case METIS_ERROR_MEMORY :   printf("Could not allocate required
+//    memory!\n");
 //      exit(0);
 //    case METIS_ERROR        :   printf("Unknown error\n");
 //      exit(0);
@@ -151,8 +149,7 @@ void ParMETISGraphPartitioner::compute_partitions(
 //}
 
 METIS_CSRGraph *
-METIS_CSRGraphCreator::convert_METIS_CSRGraph(
-                             ParMETIS_CSRGraph *parGraph) {
+METIS_CSRGraphCreator::convert_METIS_CSRGraph(ParMETIS_CSRGraph *parGraph) {
   // Compute adjacency list size
   uint64_t num_vtxs = 0;
   uint64_t adjncy_size = 0;
@@ -164,38 +161,33 @@ METIS_CSRGraphCreator::convert_METIS_CSRGraph(
 
   // Initialize the parGraph
   auto graph = new METIS_CSRGraph();
-  graph->ncon      = 1;
-  graph->nvtxs     = num_vtxs;
+  graph->ncon = 1;
+  graph->nvtxs = num_vtxs;
   graph->adjncy_size = adjncy_size;
 
-  graph->xadj = reinterpret_cast<idx_t *>(
-                  malloc(sizeof(idx_t) * (graph->nvtxs + 1)));
-  graph->vwgt = reinterpret_cast<idx_t *>(
-                  malloc(sizeof(idx_t) * graph->nvtxs));
-  graph->adjncy = reinterpret_cast<idx_t *>(
-                    malloc(sizeof(idx_t) * graph->adjncy_size));
-  graph->adjwgt = reinterpret_cast<idx_t *>(
-                    malloc(sizeof(idx_t) * graph->adjncy_size));
+  graph->xadj =
+      reinterpret_cast<idx_t *>(malloc(sizeof(idx_t) * (graph->nvtxs + 1)));
+  graph->vwgt = reinterpret_cast<idx_t *>(malloc(sizeof(idx_t) * graph->nvtxs));
+  graph->adjncy =
+      reinterpret_cast<idx_t *>(malloc(sizeof(idx_t) * graph->adjncy_size));
+  graph->adjwgt =
+      reinterpret_cast<idx_t *>(malloc(sizeof(idx_t) * graph->adjncy_size));
 
   int vtx_array_offset = 0;
   int adj_array_offset = 0;
   for (uint32_t i = 0; i < _parallelism; i++) {
-    METIS_CSRGraph * sgraph = parGraph->graphs[i];
+    METIS_CSRGraph *sgraph = parGraph->graphs[i];
 
     // Copy arrays that don't change
-    memcpy(& graph->vwgt[vtx_array_offset],
-           sgraph->vwgt,
+    memcpy(&graph->vwgt[vtx_array_offset], sgraph->vwgt,
            sizeof(idx_t) * sgraph->nvtxs);
-    memcpy(& graph->adjncy[adj_array_offset],
-           sgraph->adjncy,
+    memcpy(&graph->adjncy[adj_array_offset], sgraph->adjncy,
            sizeof(idx_t) * sgraph->adjncy_size);
-    memcpy(& graph->adjwgt[adj_array_offset],
-           sgraph->adjwgt,
+    memcpy(&graph->adjwgt[adj_array_offset], sgraph->adjwgt,
            sizeof(idx_t) * sgraph->adjncy_size);
 
     // Copy and adjust xadj array
-    memcpy(& graph->xadj[vtx_array_offset],
-           sgraph->xadj,
+    memcpy(&graph->xadj[vtx_array_offset], sgraph->xadj,
            sizeof(idx_t) * sgraph->nvtxs);
     for (uint32_t j = 0; j < sgraph->nvtxs; j++) {
       graph->xadj[j + vtx_array_offset] += adj_array_offset;

@@ -50,6 +50,7 @@ DECLARE_uint32(abort_penalty);
 /*
  * Partitioner/Execution Command Line Arguments
  */
+DECLARE_string(objtype);
 DECLARE_string(partitioner);
 DECLARE_string(output_folder);
 DECLARE_uint32(ufactor);

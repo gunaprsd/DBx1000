@@ -14,12 +14,12 @@ TPCCWorkloadGenerator::TPCCWorkloadGenerator(const TPCCBenchmarkConfig &_config,
   for (uint64_t i = 0; i < num_threads; i++) {
     _random.seed(i, 2 * i + 1);
   }
-	num_orders = new uint64_t[num_threads];
-	num_order_txns = new uint64_t[num_threads];
-	for(uint64_t i = 0; i < num_threads; i++) {
-		num_orders[i] = 0;
-		num_order_txns[i] = 0;
-	}
+  num_orders = new uint64_t[num_threads];
+  num_order_txns = new uint64_t[num_threads];
+  for (uint64_t i = 0; i < num_threads; i++) {
+    num_orders[i] = 0;
+    num_order_txns[i] = 0;
+  }
 }
 
 void TPCCWorkloadGenerator::per_thread_generate(uint64_t thread_id) {
@@ -35,8 +35,10 @@ void TPCCWorkloadGenerator::per_thread_generate(uint64_t thread_id) {
           thread_id, (tpcc_new_order_params *)&(_queries[thread_id][i].params));
     }
   }
-	double avg = ((double)num_orders[thread_id])/((double)num_order_txns[thread_id]);
-	printf("Thread : %lu, Num-Order-Txns: %lu, Avg-Orders-Per-Txn: %lf\n", thread_id, num_order_txns[thread_id], avg);
+  double avg =
+      ((double)num_orders[thread_id]) / ((double)num_order_txns[thread_id]);
+  printf("Thread : %lu, Num-Order-Txns: %lu, Avg-Orders-Per-Txn: %lf\n",
+         thread_id, num_order_txns[thread_id], avg);
 }
 
 void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id,
@@ -105,18 +107,29 @@ void TPCCWorkloadGenerator::gen_new_order_request(
 
   params->o_entry_d = 2013;
   if (TPCC_NUM_ORDERS_RANDOM) {
-    params->ol_cnt = helper.generateRandom(5, 15, params->w_id - 1);
+    params->ol_cnt = helper.generateRandom(6, 10, params->w_id - 1);
   } else {
     params->ol_cnt = TPCC_MAX_NUM_ORDERS;
   }
 
   params->remote = false;
+  // Generate
   for (uint32_t oid = 0; oid < params->ol_cnt; oid++) {
-    // choose a random item
-    //    params->items[oid].ol_i_id = helper.generateNonUniformRandom(
-    // 8191, 1, config.items_count, params->w_id - 1);
-    params->items[oid].ol_i_id =
-        helper.generateRandom(1, config.items_count, params->w_id - 1);
+    // choose a unique random item
+    bool unique;
+    do {
+      params->items[oid].ol_i_id = helper.generateNonUniformRandom(
+          8191, 1, config.items_count, params->w_id - 1);
+      //    params->items[oid].ol_i_id =
+      //    helper.generateRandom(1, config.items_count, params->w_id - 1);
+      unique = true;
+      for (uint32_t i = 0; i < oid; i++) {
+        if (params->items[i].ol_i_id == params->items[oid].ol_i_id) {
+          unique = false;
+          break;
+        }
+      }
+    } while (!unique);
 
     // 1% of ol items go remote
     auto x = (uint32_t)helper.generateRandom(1, 100, params->w_id - 1);
@@ -133,27 +146,14 @@ void TPCCWorkloadGenerator::gen_new_order_request(
     }
   }
 
-	// Remove duplicate items
-	for (uint32_t i = 0; i < params->ol_cnt; i++) {
-		for (uint32_t j = 0; j < i; j++) {
-			if (params->items[i].ol_i_id == params->items[j].ol_i_id) {
-				for (uint32_t k = i; k < params->ol_cnt - 1; k++) {
-					params->items[k] = params->items[k + 1];
-				}
-				params->ol_cnt--;
-				i--;
-			}
-		}
-	}
+  for (uint32_t i = 0; i < params->ol_cnt; i++) {
+    for (uint32_t j = 0; j < i; j++) {
+      assert(params->items[(int)i].ol_i_id != params->items[(int)j].ol_i_id);
+    }
+  }
 
-	for (uint32_t i = 0; i < params->ol_cnt; i++) {
-		for (uint32_t j = 0; j < i; j++) {
-			assert(params->items[(int)i].ol_i_id != params->items[(int)j].ol_i_id);
-		}
-	}
-
-	num_orders[thread_id] += params->ol_cnt;
-	num_order_txns[thread_id] += 1;
+  num_orders[thread_id] += params->ol_cnt;
+  num_order_txns[thread_id] += 1;
 }
 
 TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config,

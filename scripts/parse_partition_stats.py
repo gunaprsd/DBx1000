@@ -12,16 +12,24 @@ keys = ['Num-Data-Nodes',\
         'Second-Pass-Duration',\
         'Third-Pass-Duration',\
         'Partition-Duration',\
+        'Rnd-Num-Single-Core-Data',\
         'Rnd-Min-Data-Core-Degree',\
         'Rnd-Max-Data-Core-Degree',\
-        'Rnd-Min-Txn-Cross-Access',\
-        'Rnd-Max-Txn-Cross-Access',\
-        'Rnd-Total-Txn-Cross-Access',\
+        'Rnd-Min-Txn-Cross-Access-Read',\
+        'Rnd-Max-Txn-Cross-Access-Read',\
+        'Rnd-Total-Txn-Cross-Access-Read',\
+        'Rnd-Min-Txn-Cross-Access-Write',\
+        'Rnd-Max-Txn-Cross-Access-Write',\
+        'Rnd-Total-Txn-Cross-Access-Write',\
+        'Num-Single-Core-Data',\
         'Min-Data-Core-Degree',\
         'Max-Data-Core-Degree',\
-        'Min-Txn-Cross-Access',\
-        'Max-Txn-Cross-Access',\
-        'Total-Txn-Cross-Access',\
+        'Min-Txn-Cross-Access-Read',\
+        'Max-Txn-Cross-Access-Read',\
+        'Total-Txn-Cross-Access-Read',\
+        'Min-Txn-Cross-Access-Write',\
+        'Max-Txn-Cross-Access-Write',\
+        'Total-Txn-Cross-Access-Write',\
         'Min-Batch-Size',\
         'Max-Batch-Size']
 data = []
@@ -54,6 +62,7 @@ def parse(fname):
         data.append(col)
     pretty_print()
 
+#print keys
 if __name__ == "__main__":
     filename = sys.argv[1]
     parse(filename)

@@ -5,9 +5,9 @@ executable = "./build/rundb"
 data_folder = "data"
 start_num = 4
 num_runs = 5
-configs = {}
-for cores in [15, 30]:
-    for wh in [4, 8, 15, 30, 60]:
+configs = []
+for cores in [15]:
+    for wh in [60, 30, 15, 8, 4]:
         if wh <= 2 * cores:
             config = ' -benchmark="tpcc"'
             config += ' -tpcc_num_wh=' + str(wh)
@@ -16,15 +16,17 @@ for cores in [15, 30]:
             tag = 'tpcc'
             tag += '_wh' + str(wh)
             tag += '_c' + str(cores)
-            configs[tag] = config
+            configs.append({'tag':tag, 'config':config})
 
 
 def generate(start, end):
     log_file = "tpcc_generation.txt"
-    for tag in configs.keys():
+    for pr in configs:
+        tag = pr['tag']
+        config = pr['config']
         for num in xrange(start, end):
             command = executable
-            command += configs[tag]
+            command += config
             seed_tag = tag + '_s' + str(num)
             command += ' -tag="' + seed_tag + '"'
             command += ' -output_folder="' + data_folder + "/" + seed_tag + '_raw"'
@@ -37,10 +39,12 @@ def generate(start, end):
 
 def partition(start, end):
     log_file = "tpcc_partition_" + str(start) + "_" + str(end) + ".txt"
-    for tag in configs.keys():
+    for pr in configs:
+        tag = pr['tag']
+        config = pr['config']
         for num in xrange(start, end):
             command = executable
-            command += configs[tag]
+            command += config
             seed_tag = tag + '_s' + str(num)
             command += ' -tag="' + seed_tag + '"'
             command += ' -input_folder="' + data_folder + "/" + seed_tag + '_raw"'

@@ -28,8 +28,9 @@ public:
   void set_query(Query<T> *query);
   bool next(uint64_t &key, access_t &type);
   void set_cc_info(char cc_info);
+  int get_current_table_id();
   static uint64_t get_max_key();
-
+  static int get_num_tables();
 protected:
   Query<T> *_query;
   uint32_t _current_req_id;

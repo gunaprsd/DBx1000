@@ -152,6 +152,8 @@ public:
         input_stats(), output_stats() {
     uint64_t size = AccessIterator<T>::get_max_key();
     _info_array = new TxnDataInfo[size];
+
+
   }
 
   void partition(QueryBatch<T> *batch, vector<idx_t> &partitions) override {
@@ -238,6 +240,7 @@ protected:
   const uint32_t _num_clusters;
   QueryBatch<T> *_batch;
   TxnDataInfo *_info_array;
+  uint64_t* _partition_table_info;
   vector<idx_t> vwgt;
   vector<idx_t> adjwgt;
   vector<idx_t> xadj;
@@ -371,7 +374,7 @@ protected:
     stats.min_txn_cross_access_read = UINT64_MAX;
     stats.max_txn_cross_access_read = 0;
     stats.min_data_core_degree = UINT64_MAX;
-    stats.max_data_core_degree = 1;
+    stats.max_data_core_degree = 0;
     stats.total_cross_access_write = 0;
     stats.min_txn_cross_access_write = UINT64_MAX;
     stats.max_txn_cross_access_write = 0;
@@ -444,6 +447,10 @@ protected:
         }
       }
     }
+
+    stats.min_data_core_degree += 1;
+    stats.max_data_core_degree += 1;
+
   }
 
   void compute_baseline_stats(idx_t *parts, ClusterStatistics &stats) {
@@ -529,6 +536,9 @@ protected:
         }
       }
     }
+
+    stats.min_data_core_degree += 1;
+    stats.max_data_core_degree += 1;
   }
 };
 

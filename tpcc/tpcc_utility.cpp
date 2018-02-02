@@ -241,6 +241,50 @@ template <> uint64_t AccessIterator<tpcc_params>::get_max_key() {
   return TPCCUtility::getHashSize();
 }
 
+
+template <> int AccessIterator<tpcc_params>::get_table_id() {
+  auto id = _current_req_id - 1;
+  if (_query->type == TPCC_PAYMENT_QUERY) {
+    auto payment_params =
+        reinterpret_cast<tpcc_payment_params *>(&_query->params);
+    switch (id) {
+    case 0:
+      return 0;
+    case 1:
+      return 1;
+    case 2:
+      return 2;
+    default:
+      return -1;
+    }
+  } else if (_query->type == TPCC_NEW_ORDER_QUERY) {
+    auto new_order_params =
+        reinterpret_cast<tpcc_new_order_params *>(&_query->params);
+    switch (id) {
+    case 0:
+      return 0;
+    case 1:
+      return 1;
+    case 2:
+      return 2;
+    default:
+      if (_current_req_id > 2 &&
+          _current_req_id < 2 * new_order_params->ol_cnt + 3) {
+        int32_t index = _current_req_id - 3;
+        int32_t item = index / 2;
+        if (index % 2 == 0) {
+	  return 3;
+        } else {
+          // return stock
+	  return 4;
+        }
+      } else {
+        return -1;
+      }
+    }
+  }
+}
+
 template <>
 void AccessIterator<tpcc_params>::set_query(Query<tpcc_params> *query) {
   _query = query;

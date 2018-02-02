@@ -29,6 +29,11 @@ template <> uint64_t AccessIterator<ycsb_params>::get_max_key() {
   return YCSBUtility::get_max_key();
 }
 
+
+template <> int AccessIterator<ycsb_params>::get_table_id() {
+  return 0;
+}
+
 template <> void AccessIterator<ycsb_params>::set_cc_info(char cc_info) {
   if(_current_req_id < 0 || _current_req_id > _query->params.request_cnt) {
     assert(false);

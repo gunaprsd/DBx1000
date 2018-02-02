@@ -8,7 +8,7 @@
 #include "parser.h"
 /********************************************************/
 // The current txn aborts itself only if it holds less
-// locks than all the other txns on the loop. 
+// locks than all the other read_txns on the loop.
 // In other words, the victim should be the txn that 
 // performs the least amount of work
 /********************************************************/

@@ -155,23 +155,6 @@ struct ThreadLocalData {
 class BaseQuery;
 void print_query(FILE *file, BaseQuery *query);
 
-struct TxnDataInfo {
-  uint64_t epoch;
-  idx_t id;
-  uint64_t num_reads;
-  uint64_t num_writes;
-  std::set<idx_t> cores;
-  std::vector<idx_t> txns;
-  TxnDataInfo()
-      : epoch(UINT64_MAX), id(-1), num_reads(0), num_writes(0), cores(),
-        txns() {}
-};
-
-struct DataInfo {
-  uint64_t epoch;
-  uint64_t num_writes;
-  uint64_t num_reads;
-};
 
 /* PRE_PROCESSING */
 enum TaskType {
@@ -191,4 +174,8 @@ extern char *g_benchmark_tag2;
 extern int g_ufactor;
 
 extern string g_data_folder;
+
+template <typename T>
+string get_table_name(uint32_t id);
+
 #endif

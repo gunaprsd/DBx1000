@@ -101,3 +101,27 @@ void print_query(FILE *file, BaseQuery *query) {
     assert(false);
   }
 }
+
+template <>
+string get_table_name<ycsb_params>(uint32_t id) {
+  return string("Main");
+}
+
+template <>
+string get_table_name<tpcc_params>(uint32_t id) {
+  switch (id) {
+    case 0:
+      return string("Warehouse");
+    case 1:
+      return string("District");
+    case 2:
+      return string("Customer");
+    case 3:
+      return string("Items");
+    case 4:
+      return string("Stocks");
+    default:
+      assert(false);
+  }
+}
+

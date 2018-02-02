@@ -15,7 +15,7 @@ void METISGraphPartitioner::compute_partitions(
     assert(graph->adjwgt != nullptr);
 
     // Create result locations
-    idx_t objval   = 0;
+    idx_t objval = 0;
     for (uint32_t i = 0; i < graph->nvtxs; i++) { parts[i] = -1; }
 
     // Create options
@@ -27,7 +27,7 @@ void METISGraphPartitioner::compute_partitions(
     options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
     options[METIS_OPTION_CTYPE] = METIS_CTYPE_RM;
     options[METIS_OPTION_RTYPE] = METIS_RTYPE_GREEDY;
-    options[METIS_OPTION_SEED] = 123;
+    options[METIS_OPTION_SEED] = FLAGS_seed;
     options[METIS_OPTION_DBGLVL] = METIS_DBG_TIME;
 
     // Do the compute_partitions

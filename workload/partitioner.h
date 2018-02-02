@@ -3,6 +3,7 @@
 #include "distributions.h"
 #include "global.h"
 #include "graph_partitioner.h"
+#include "partitioned_helper.h"
 #include "query.h"
 
 template <typename T> class BasePartitioner {
@@ -11,173 +12,18 @@ public:
 };
 
 template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
-  struct RuntimeStatistics {
-    double first_pass_duration;
-    double second_pass_duration;
-    double third_pass_duration;
-    double partition_duration;
-
-    RuntimeStatistics() { reset(); }
-
-    void reset() {
-      first_pass_duration = 0;
-      second_pass_duration = 0;
-      third_pass_duration = 0;
-      partition_duration = 0;
-    }
-
-    void print() {
-      PRINT_INFO(-10lf, "First-Pass-Duration", first_pass_duration);
-      PRINT_INFO(-10lf, "Second-Pass-Duration", second_pass_duration);
-      PRINT_INFO(-10lf, "Third-Pass-Duration", third_pass_duration);
-      PRINT_INFO(-10lf, "Partition-Duration", partition_duration);
-    }
-  };
-
-  struct TableInfo {
-    uint64_t num_total_accesses;
-    uint64_t num_cross_accesses;
-    uint64_t num_accessed_data;
-    uint64_t num_single_core_data;
-
-    TableInfo() { reset(); }
-
-    void reset() {
-      num_total_accesses = 0;
-      num_cross_accesses = 0;
-      num_accessed_data = 0;
-      num_single_core_data = 0;
-    }
-
-    void print() {
-      PRINT_INFO(lu, "Num-Total-Accesses", num_total_accesses);
-      PRINT_INFO(lu, "Num-Cross-Accesses", num_cross_accesses);
-      PRINT_INFO(lu, "Num-Accessed-Data", num_accessed_data);
-      PRINT_INFO(lu, "Num-Single-Core-Data", num_single_core_data);
-    }
-  };
-  struct InputStatistics {
-    uint64_t num_txn_nodes;
-    uint64_t num_data_nodes;
-    uint64_t num_edges;
-    uint64_t min_data_degree;
-    uint64_t max_data_degree;
-    uint64_t min_txn_degree;
-    uint64_t max_txn_degree;
-
-    InputStatistics() { reset(); }
-
-    void reset() {
-      num_txn_nodes = 0;
-      num_data_nodes = 0;
-      num_edges = 0;
-      min_data_degree = 0;
-      max_data_degree = 0;
-      min_txn_degree = 0;
-      max_txn_degree = 0;
-    }
-
-    void print() {
-      PRINT_INFO(lu, "Num-Data-Nodes", num_data_nodes);
-      PRINT_INFO(lu, "Num-Txn-Nodes", num_txn_nodes);
-      PRINT_INFO(lu, "Num-Edges", num_edges);
-      PRINT_INFO(lu, "Min-Data-Degree", min_data_degree);
-      PRINT_INFO(lu, "Max-Data-Degree", max_data_degree);
-      PRINT_INFO(lu, "Min-Txn-Degree", min_txn_degree);
-      PRINT_INFO(lu, "Max-Txn-Degree", max_txn_degree);
-    }
-  };
-
-  struct ClusterStatistics {
-    uint64_t num_single_core_data;
-    uint64_t min_data_core_degree;
-    uint64_t max_data_core_degree;
-    uint64_t min_txn_cross_access_read;
-    uint64_t max_txn_cross_access_read;
-    uint64_t total_cross_access_read;
-
-    uint64_t min_txn_cross_access_write;
-    uint64_t max_txn_cross_access_write;
-    uint64_t total_cross_access_write;
-
-    ClusterStatistics() { reset(); }
-
-    void reset() {
-      num_single_core_data = 0;
-      min_data_core_degree = 1;
-      max_data_core_degree = 1;
-      min_txn_cross_access_read = 0;
-      max_txn_cross_access_read = 0;
-      total_cross_access_read = 0;
-      min_txn_cross_access_write = 0;
-      max_txn_cross_access_write = 0;
-      total_cross_access_write = 0;
-    }
-  };
-
-  struct OutputStatistics {
-    ClusterStatistics random_cluster;
-    ClusterStatistics output_cluster;
-
-    OutputStatistics() : random_cluster(), output_cluster() {}
-
-    void reset() {
-      random_cluster.reset();
-      output_cluster.reset();
-    }
-
-    void print() {
-      PRINT_INFO(lu, "Rnd-Num-Single-Core-Data",
-                 random_cluster.num_single_core_data);
-      PRINT_INFO(lu, "Rnd-Min-Data-Core-Degree",
-                 random_cluster.min_data_core_degree);
-      PRINT_INFO(lu, "Rnd-Max-Data-Core-Degree",
-                 random_cluster.max_data_core_degree);
-      PRINT_INFO(lu, "Rnd-Min-Txn-Cross-Access-Read",
-                 random_cluster.min_txn_cross_access_read);
-      PRINT_INFO(lu, "Rnd-Max-Txn-Cross-Access-Read",
-                 random_cluster.max_txn_cross_access_read);
-      PRINT_INFO(lu, "Rnd-Total-Txn-Cross-Access-Read",
-                 random_cluster.total_cross_access_read);
-      PRINT_INFO(lu, "Rnd-Min-Txn-Cross-Access-Write",
-                 random_cluster.min_txn_cross_access_write);
-      PRINT_INFO(lu, "Rnd-Max-Txn-Cross-Access-Write",
-                 random_cluster.max_txn_cross_access_write);
-      PRINT_INFO(lu, "Rnd-Total-Txn-Cross-Access-Write",
-                 random_cluster.total_cross_access_write);
-
-      PRINT_INFO(lu, "Num-Single-Core-Data",
-                 output_cluster.num_single_core_data);
-      PRINT_INFO(lu, "Min-Data-Core-Degree",
-                 output_cluster.min_data_core_degree);
-      PRINT_INFO(lu, "Max-Data-Core-Degree",
-                 output_cluster.max_data_core_degree);
-      PRINT_INFO(lu, "Min-Txn-Cross-Access-Read",
-                 output_cluster.min_txn_cross_access_read);
-      PRINT_INFO(lu, "Max-Txn-Cross-Access-Read",
-                 output_cluster.max_txn_cross_access_read);
-      PRINT_INFO(lu, "Total-Txn-Cross-Access-Read",
-                 output_cluster.total_cross_access_read);
-      PRINT_INFO(lu, "Min-Txn-Cross-Access-Write",
-                 output_cluster.min_txn_cross_access_write);
-      PRINT_INFO(lu, "Max-Txn-Cross-Access-Write",
-                 output_cluster.max_txn_cross_access_write);
-      PRINT_INFO(lu, "Total-Txn-Cross-Access-Write",
-                 output_cluster.total_cross_access_write);
-    }
-  };
 
 public:
   AccessGraphPartitioner(uint32_t num_clusters)
-      : _num_clusters(num_clusters), _batch(nullptr), _info_array(nullptr),
-        vwgt(), adjwgt(), xadj(), adjncy(), vsize(), iteration(0), runtime_stats(),
-        input_stats(), output_stats() {
+      : _num_clusters(num_clusters), _batch(nullptr), _data_info(nullptr),
+        _table_info(nullptr), vwgt(), adjwgt(), xadj(), adjncy(), vsize(),
+        iteration(0), runtime_stats(), input_stats(), output_stats() {
     uint64_t size = AccessIterator<T>::get_max_key();
-    _info_array = new TxnDataInfo[size];
+    _data_info = new DataNodeInfo[size];
     auto num_tables = AccessIterator<T>::get_num_tables();
-    _partition_table_info = new TableInfo[num_tables];
+    _table_info = new TableInfo[num_tables];
     for (uint64_t i = 0; i < num_tables; i++) {
-      _partition_table_info[i].reset();
+      _table_info[i].reset();
     }
   }
 
@@ -219,7 +65,7 @@ public:
     graph->xadj = xadj.data();
     graph->adjncy = adjncy.data();
     graph->adjwgt = adjwgt.data();
-		graph->vsize = vsize.data();
+    graph->vsize = vsize.data();
     graph->ncon = 1;
 
     // Initialization
@@ -262,21 +108,20 @@ public:
     output_stats.print();
     auto num_tables = AccessIterator<T>::get_num_tables();
     for (uint32_t i = 0; i < num_tables; i++) {
-      PRINT_INFO(u, "Table-Id", i);
-      _partition_table_info[i].print();
+      _table_info[i].print(get_table_name<T>(i));
     }
   }
 
 protected:
   const uint32_t _num_clusters;
   QueryBatch<T> *_batch;
-  TxnDataInfo *_info_array;
-  TableInfo *_partition_table_info;
+  DataNodeInfo *_data_info;
+  TableInfo *_table_info;
   vector<idx_t> vwgt;
   vector<idx_t> adjwgt;
   vector<idx_t> xadj;
   vector<idx_t> adjncy;
-	vector<idx_t> vsize;
+  vector<idx_t> vsize;
 
   uint64_t iteration;
   RuntimeStatistics runtime_stats;
@@ -306,14 +151,14 @@ protected:
       iterator->set_query(query);
       uint64_t txn_degree = 0;
       while (iterator->next(key, type, table_id)) {
-        auto info = &_info_array[key];
+        auto info = &_data_info[key];
         if (info->epoch != iteration) {
           input_stats.num_data_nodes++;
           info->id = data_id++;
           info->epoch = iteration;
           info->num_reads = 0;
           info->num_writes = 0;
-          info->txns.clear();
+          info->read_txns.clear();
           info->cores.clear();
         }
 
@@ -338,44 +183,48 @@ protected:
     uint64_t num_nodes = input_stats.num_txn_nodes + input_stats.num_data_nodes;
     xadj.reserve(num_nodes + 1);
     vwgt.reserve(num_nodes);
-		vsize.reserve(num_nodes);
+    vsize.reserve(num_nodes);
     adjncy.reserve(2 * input_stats.num_edges);
     adjwgt.reserve(2 * input_stats.num_edges);
+
+    xadj.push_back(0);
 
     Query<T> *query;
     uint64_t key;
     access_t type;
     uint32_t table_id;
+
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
-    idx_t node_wgt = 0;
+
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
 
-      xadj.push_back(static_cast<idx_t>(adjncy.size()));
-      node_wgt = 0;
+      idx_t node_wgt = 0;
       while (iterator->next(key, type, table_id)) {
-        auto info = &_info_array[key];
-        auto degree = info->num_writes + info->num_reads;
-        if (info->txns.empty()) {
-          info->txns.reserve(degree);
-          input_stats.min_data_degree =
-              min(input_stats.min_data_degree, degree);
-          input_stats.max_data_degree =
-              max(input_stats.max_data_degree, degree);
+        auto info = &_data_info[key];
+
+        if (info->read_txns.empty() && info->write_txns.empty()) {
+          info->read_txns.reserve(info->num_reads);
+          info->write_txns.reserve(info->num_writes);
         }
-        info->txns.push_back(i);
+
+        if (type == RD) {
+          info->read_txns.push_back(i);
+        } else if (type == WR) {
+          info->write_txns.push_back(i);
+        }
+
         adjncy.push_back(info->id);
-        // double weight = 1.0;
-        double weight =
-            ((double)degree * 1000.0) / (double)input_stats.num_edges;
-        adjwgt.push_back((idx_t)weight);
+        adjwgt.push_back(1);
         node_wgt++;
       }
+
+      xadj.push_back(static_cast<idx_t>(adjncy.size()));
       vwgt.push_back(node_wgt);
-			vsize.push_back(0);
+      vsize.push_back(0);
     }
   }
 
@@ -388,113 +237,34 @@ protected:
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
+
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
+
       while (iterator->next(key, type, table_id)) {
-        auto info = &_info_array[key];
+        auto info = &_data_info[key];
         if (info->id == next_data_id) {
+          // insert txn edges
+          adjncy.insert(adjncy.end(), info->read_txns.begin(),
+                        info->read_txns.end());
+          adjncy.insert(adjncy.end(), info->write_txns.begin(),
+                        info->write_txns.end());
+
+          // insert edge weights
+          adjwgt.insert(adjwgt.end(), info->read_txns.size(), 1);
+          adjwgt.insert(adjwgt.end(), info->write_txns.size(), 1);
+
+          // insert node details
           xadj.push_back(static_cast<idx_t>(adjncy.size()));
           vwgt.push_back(0);
-          adjncy.insert(adjncy.end(), info->txns.begin(), info->txns.end());
-          auto degree = info->num_reads + info->num_writes;
-          double weight =
-              ((double)degree * 1000.0) / (double)input_stats.num_edges;
-					vsize.push_back((idx_t)weight);
-          adjwgt.insert(adjwgt.end(), info->txns.size(), (idx_t)weight);
+          vsize.push_back(1);
+
           next_data_id++;
         }
       }
     }
-
-    // final
-    xadj.push_back(static_cast<idx_t>(adjncy.size()));
-  }
-
-  void compute_partition_stats(idx_t *parts, ClusterStatistics &stats) {
-    stats.total_cross_access_read = 0;
-    stats.min_txn_cross_access_read = UINT64_MAX;
-    stats.max_txn_cross_access_read = 0;
-    stats.min_data_core_degree = UINT64_MAX;
-    stats.max_data_core_degree = 0;
-    stats.total_cross_access_write = 0;
-    stats.min_txn_cross_access_write = UINT64_MAX;
-    stats.max_txn_cross_access_write = 0;
-
-    AccessIterator<T> *iterator = new AccessIterator<T>();
-    QueryBatch<T> &queryBatch = *_batch;
-    uint64_t size = queryBatch.size();
-
-    Query<T> *query;
-    uint64_t key;
-    access_t type;
-    uint32_t table_id;
-
-    for (auto i = 0u; i < size; i++) {
-      query = queryBatch[i];
-      iterator->set_query(query);
-      uint64_t cross_access_read = 0;
-      uint64_t cross_access_write = 0;
-      while (iterator->next(key, type, table_id)) {
-        auto info = &_info_array[key];
-        if (parts[i] != parts[info->id]) {
-          if (type == RD) {
-            cross_access_read++;
-          } else if (type == WR) {
-            cross_access_write++;
-          }
-
-          if (info->cores.find(parts[i]) == info->cores.end()) {
-            info->cores.insert(parts[i]);
-          }
-        }
-      }
-      stats.total_cross_access_read += cross_access_read;
-      stats.min_txn_cross_access_read =
-          min(cross_access_read, stats.min_txn_cross_access_read);
-      stats.max_txn_cross_access_read =
-          max(cross_access_read, stats.max_txn_cross_access_read);
-
-      stats.total_cross_access_write += cross_access_write;
-      stats.min_txn_cross_access_write =
-          min(cross_access_write, stats.min_txn_cross_access_write);
-      stats.max_txn_cross_access_write =
-          max(cross_access_write, stats.max_txn_cross_access_write);
-    }
-
-    idx_t next_data_id = size;
-    for (auto i = 0u; i < size; i++) {
-      query = queryBatch[i];
-      iterator->set_query(query);
-      while (iterator->next(key, type, table_id)) {
-        auto info = &_info_array[key];
-        if (info->id == next_data_id) {
-
-          stats.min_data_core_degree =
-              min(static_cast<uint64_t>(info->cores.size()),
-                  stats.min_data_core_degree);
-          stats.max_data_core_degree =
-              max(static_cast<uint64_t>(info->cores.size()),
-                  stats.max_data_core_degree);
-          if (info->cores.empty()) {
-            stats.num_single_core_data++;
-          }
-
-#ifdef SELECTIVE_CC
-          if (info->cores.empty()) {
-            iterator->set_cc_info(0);
-          } else {
-            iterator->set_cc_info(1);
-          }
-#endif
-          next_data_id++;
-        }
-      }
-    }
-
-    stats.min_data_core_degree += 1;
-    stats.max_data_core_degree += 1;
   }
 
   void compute_baseline_stats(idx_t *parts, ClusterStatistics &stats) {
@@ -507,14 +277,14 @@ protected:
       parts[i] = randomNumberGenerator.nextInt64(0) % _num_clusters;
     }
 
-    stats.total_cross_access_read = 0;
-    stats.min_txn_cross_access_read = UINT64_MAX;
-    stats.max_txn_cross_access_read = 0;
+    stats.tot_cross_access_read = 0;
+    stats.min_cross_access_read = UINT64_MAX;
+    stats.max_cross_access_read = 0;
     stats.min_data_core_degree = UINT64_MAX;
     stats.max_data_core_degree = 0;
-    stats.total_cross_access_write = 0;
-    stats.min_txn_cross_access_write = UINT64_MAX;
-    stats.max_txn_cross_access_write = 0;
+    stats.tot_cross_access_write = 0;
+    stats.min_cross_access_write = UINT64_MAX;
+    stats.max_cross_access_write = 0;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -532,32 +302,26 @@ protected:
       uint64_t cross_access_read = 0;
       uint64_t cross_access_write = 0;
       while (iterator->next(key, type, table_id)) {
-        auto info = &_info_array[key];
+        auto info = &_data_info[key];
         if (parts[i] != parts[info->id]) {
           if (type == RD) {
             cross_access_read++;
           } else if (type == WR) {
             cross_access_write++;
           }
-
-          if (info->cores.find(parts[i]) == info->cores.end()) {
-            info->cores.insert(parts[i]);
-          }
-          _partition_table_info[table_id].num_cross_accesses++;
         }
-        _partition_table_info[table_id].num_total_accesses++;
+        if (info->cores.find(parts[i]) == info->cores.end()) {
+          info->cores.insert(parts[i]);
+        }
       }
-      stats.total_cross_access_read += cross_access_read;
-      stats.min_txn_cross_access_read =
-          min(cross_access_read, stats.min_txn_cross_access_read);
-      stats.max_txn_cross_access_read =
-          max(cross_access_read, stats.max_txn_cross_access_read);
 
-      stats.total_cross_access_write += cross_access_write;
-      stats.min_txn_cross_access_write =
-          min(cross_access_write, stats.min_txn_cross_access_write);
-      stats.max_txn_cross_access_write =
-          max(cross_access_write, stats.max_txn_cross_access_write);
+      ACCUMULATE_SUM(stats.tot_cross_access_read, cross_access_read);
+      ACCUMULATE_MIN(stats.min_cross_access_read, cross_access_read);
+      ACCUMULATE_MAX(stats.max_cross_access_read, cross_access_read);
+
+      ACCUMULATE_SUM(stats.tot_cross_access_write, cross_access_write);
+      ACCUMULATE_MIN(stats.min_cross_access_write, cross_access_write);
+      ACCUMULATE_MAX(stats.max_cross_access_write, cross_access_write);
     }
 
     // In this pass, we compute the min and max core degree for
@@ -567,27 +331,98 @@ protected:
       query = queryBatch[i];
       iterator->set_query(query);
       while (iterator->next(key, type, table_id)) {
-        auto info = &_info_array[key];
+        auto info = &_data_info[key];
         if (info->id == next_data_id) {
-          stats.min_data_core_degree =
-              min(static_cast<uint64_t>(info->cores.size()),
-                  stats.min_data_core_degree);
-          stats.max_data_core_degree =
-              max(static_cast<uint64_t>(info->cores.size()),
-                  stats.max_data_core_degree);
-          if (info->cores.empty()) {
+          auto num_cores = info->cores.size();
+          ACCUMULATE_MIN(stats.min_data_core_degree, num_cores);
+          ACCUMULATE_MAX(stats.max_data_core_degree, num_cores);
+          if (num_cores == 1) {
             stats.num_single_core_data++;
-            _partition_table_info[table_id].num_single_core_data++;
           }
           info->cores.clear();
           next_data_id++;
-          _partition_table_info[table_id].num_accessed_data++;
         }
       }
     }
+  }
 
-    stats.min_data_core_degree += 1;
-    stats.max_data_core_degree += 1;
+  void compute_partition_stats(idx_t *parts, ClusterStatistics &stats) {
+    stats.tot_cross_access_read = 0;
+    stats.min_cross_access_read = UINT64_MAX;
+    stats.max_cross_access_read = 0;
+    stats.min_data_core_degree = UINT64_MAX;
+    stats.max_data_core_degree = 0;
+    stats.tot_cross_access_write = 0;
+    stats.min_cross_access_write = UINT64_MAX;
+    stats.max_cross_access_write = 0;
+
+    AccessIterator<T> *iterator = new AccessIterator<T>();
+    QueryBatch<T> &queryBatch = *_batch;
+    uint64_t size = queryBatch.size();
+
+    Query<T> *query;
+    uint64_t key;
+    access_t type;
+    uint32_t table_id;
+
+    for (auto i = 0u; i < size; i++) {
+      query = queryBatch[i];
+      iterator->set_query(query);
+      uint64_t cross_access_read = 0;
+      uint64_t cross_access_write = 0;
+      while (iterator->next(key, type, table_id)) {
+        auto info = &_data_info[key];
+        if (parts[i] != parts[info->id]) {
+          if (type == RD) {
+            cross_access_read++;
+          } else if (type == WR) {
+            cross_access_write++;
+          }
+          _table_info[table_id].num_cross_accesses++;
+        }
+        if (info->cores.find(parts[i]) == info->cores.end()) {
+          info->cores.insert(parts[i]);
+        }
+        _table_info[table_id].num_total_accesses++;
+      }
+
+      ACCUMULATE_SUM(stats.tot_cross_access_read, cross_access_read);
+      ACCUMULATE_MIN(stats.min_cross_access_read, cross_access_read);
+      ACCUMULATE_MAX(stats.max_cross_access_read, cross_access_read);
+
+      ACCUMULATE_SUM(stats.tot_cross_access_write, cross_access_write);
+      ACCUMULATE_MIN(stats.min_cross_access_write, cross_access_write);
+      ACCUMULATE_MAX(stats.max_cross_access_write, cross_access_write);
+    }
+
+    idx_t next_data_id = size;
+    for (auto i = 0u; i < size; i++) {
+      query = queryBatch[i];
+      iterator->set_query(query);
+      while (iterator->next(key, type, table_id)) {
+        auto info = &_data_info[key];
+        if (info->id == next_data_id) {
+          auto num_cores = info->cores.size();
+          ACCUMULATE_MIN(stats.min_data_core_degree, num_cores);
+          ACCUMULATE_MAX(stats.max_data_core_degree, num_cores);
+          ACCUMULATE_MAX(_table_info[table_id].max_data_core_degree, num_cores);
+          if (num_cores == 1) {
+            stats.num_single_core_data++;
+            _table_info[table_id].num_single_core_data++;
+          }
+
+#ifdef SELECTIVE_CC
+          if (info->cores.empty()) {
+            iterator->set_cc_info(0);
+          } else {
+            iterator->set_cc_info(1);
+          }
+#endif
+          next_data_id++;
+          _table_info[table_id].num_accessed_data++;
+        }
+      }
+    }
   }
 };
 

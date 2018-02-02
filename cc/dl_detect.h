@@ -36,7 +36,7 @@ public:
 	// 	0: no deadlocks
 	//  1: deadlock exists
 	int detect_cycle(uint64_t txnid);
-	// txn1 (txn_id) dependes on txns (containing cnt txns)
+	// txn1 (txn_id) dependes on read_txns (containing cnt read_txns)
 	// return values:
 	//	0: succeed.
 	//	16: cannot get lock

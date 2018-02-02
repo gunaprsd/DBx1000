@@ -13,7 +13,7 @@ for cores in [15]:
             config = ' -benchmark="tpcc"'
             config += ' -tpcc_num_wh=' + str(wh)
             config += ' -tpcc_wh_update'
-            config += ' -tpcc_perc_payment=0'
+            config += ' -tpcc_perc_payment=0.9'
             config += ' -threads=' + str(cores)
             config += ' -size_per_thread=' + str(size_per_thread)
             tag = 'tpcc'
@@ -53,7 +53,7 @@ def partition(start, end):
             command += ' -input_folder="' + data_folder + "/" + seed_tag + '_raw"'
             command += ' -output_folder="' + data_folder + "/" + seed_tag + '_partitioned"'
             command += ' -task="partition"'
-            command += ' -ufactor=5'
+            command += ' -ufactor=100'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)

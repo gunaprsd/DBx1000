@@ -25,8 +25,8 @@ void METISGraphPartitioner::compute_partitions(
     METIS_SetDefaultOptions(options);
     options[METIS_OPTION_UFACTOR] = FLAGS_ufactor;
     options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
-    options[METIS_OPTION_CTYPE] = METIS_CTYPE_RM;
-    options[METIS_OPTION_RTYPE] = METIS_RTYPE_GREEDY;
+    options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
+    options[METIS_OPTION_RTYPE] = METIS_RTYPE_FM;
     options[METIS_OPTION_SEED] = FLAGS_seed;
     options[METIS_OPTION_DBGLVL] = METIS_DBG_TIME;
 

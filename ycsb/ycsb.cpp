@@ -13,11 +13,12 @@ void AccessIterator<ycsb_params>::set_query(Query<ycsb_params> *query) {
 }
 
 template <>
-bool AccessIterator<ycsb_params>::next(uint64_t &key, access_t &type) {
+bool AccessIterator<ycsb_params>::next(uint64_t &key, access_t &type, uint32_t & table_id) {
   if (_current_req_id < _query->params.request_cnt) {
     ycsb_request *request = &_query->params.requests[_current_req_id];
     key = YCSBUtility::get_hash(request->key);
     type = request->rtype;
+    table_id = 0;
     _current_req_id++;
     return true;
   } else {
@@ -29,9 +30,8 @@ template <> uint64_t AccessIterator<ycsb_params>::get_max_key() {
   return YCSBUtility::get_max_key();
 }
 
-
-template <> int AccessIterator<ycsb_params>::get_table_id() {
-  return 0;
+template <> uint32_t AccessIterator<ycsb_params>::get_num_tables() {
+  return 1;
 }
 
 template <> void AccessIterator<ycsb_params>::set_cc_info(char cc_info) {

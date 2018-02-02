@@ -26,11 +26,10 @@ template <typename T> struct Query : public BaseQuery { T params; };
 template <typename T> class AccessIterator {
 public:
   void set_query(Query<T> *query);
-  bool next(uint64_t &key, access_t &type);
+  bool next(uint64_t &key, access_t &type, uint32_t & table_id);
   void set_cc_info(char cc_info);
-  int get_current_table_id();
   static uint64_t get_max_key();
-  static int get_num_tables();
+  static uint32_t get_num_tables();
 protected:
   Query<T> *_query;
   uint32_t _current_req_id;

@@ -152,8 +152,11 @@ public:
         input_stats(), output_stats() {
     uint64_t size = AccessIterator<T>::get_max_key();
     _info_array = new TxnDataInfo[size];
-
-
+    auto num_tables = AccessIterator<T>::get_num_tables();
+    _partition_table_info = new uint64_t[num_tables];
+    for(uint64_t i = 0; i < num_tables; i++) {
+      _partition_table_info[i] = 0;
+    }
   }
 
   void partition(QueryBatch<T> *batch, vector<idx_t> &partitions) override {
@@ -234,6 +237,10 @@ public:
     input_stats.print();
     runtime_stats.print();
     output_stats.print();
+    auto num_tables = AccessIterator<T>::get_num_tables();
+    for(uint32_t i = 0; i < num_tables; i++) {
+      printf("%-28s-%u: %lu\n", "Single-Core-Items-Table", i, _partition_table_info[i]);
+    }
   }
 
 protected:
@@ -261,6 +268,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
+		uint32_t table_id;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -272,7 +280,7 @@ protected:
       query = queryBatch[i];
       iterator->set_query(query);
       uint64_t txn_degree = 0;
-      while (iterator->next(key, type)) {
+      while (iterator->next(key, type, table_id)) {
         auto info = &_info_array[key];
         if (info->epoch != iteration) {
           input_stats.num_data_nodes++;
@@ -311,7 +319,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
-
+		uint32_t table_id;
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
@@ -322,7 +330,7 @@ protected:
 
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       node_wgt = 0;
-      while (iterator->next(key, type)) {
+      while (iterator->next(key, type, table_id)) {
         auto info = &_info_array[key];
         if (info->txns.empty()) {
           uint64_t degree = info->num_writes + info->num_reads;
@@ -345,6 +353,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
+		uint32_t table_id;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -353,7 +362,7 @@ protected:
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
-      while (iterator->next(key, type)) {
+      while (iterator->next(key, type, table_id)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
           xadj.push_back(static_cast<idx_t>(adjncy.size()));
@@ -386,12 +395,14 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
+		uint32_t table_id;
+
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
       uint64_t cross_access_read = 0;
       uint64_t cross_access_write = 0;
-      while (iterator->next(key, type)) {
+      while (iterator->next(key, type, table_id)) {
         auto info = &_info_array[key];
         if (parts[i] != parts[info->id]) {
           if (type == RD) {
@@ -422,7 +433,7 @@ protected:
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
-      while (iterator->next(key, type)) {
+      while (iterator->next(key, type, table_id)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
 
@@ -479,6 +490,7 @@ protected:
     Query<T> *query;
     uint64_t key;
     access_t type;
+		uint32_t table_id;
     // This pass lets you initiate the cores set for each data item
     // Also, it computes min and max cross access for each transaction
     for (auto i = 0u; i < size; i++) {
@@ -486,7 +498,7 @@ protected:
       iterator->set_query(query);
       uint64_t cross_access_read = 0;
       uint64_t cross_access_write = 0;
-      while (iterator->next(key, type)) {
+      while (iterator->next(key, type, table_id)) {
         auto info = &_info_array[key];
         if (parts[i] != parts[info->id]) {
           if (type == RD) {
@@ -519,7 +531,7 @@ protected:
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
-      while (iterator->next(key, type)) {
+      while (iterator->next(key, type, table_id)) {
         auto info = &_info_array[key];
         if (info->id == next_data_id) {
           stats.min_data_core_degree =
@@ -530,6 +542,7 @@ protected:
                   stats.max_data_core_degree);
           if (info->cores.empty()) {
             stats.num_single_core_data++;
+            _partition_table_info[table_id]++;
           }
           info->cores.clear();
           next_data_id++;

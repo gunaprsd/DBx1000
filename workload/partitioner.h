@@ -261,9 +261,9 @@ protected:
           vwgt.push_back(0);
           vsize.push_back(1);
 
-					auto data_degree = info->num_reads + info->num_writes;
-					ACCUMULATE_MIN(input_stats.min_data_degree, data_degree);
-					ACCUMULATE_MAX(input_stats.max_data_degree, data_degree);
+          auto data_degree = info->num_reads + info->num_writes;
+          ACCUMULATE_MIN(input_stats.min_data_degree, data_degree);
+          ACCUMULATE_MAX(input_stats.max_data_degree, data_degree);
           next_data_id++;
         }
       }

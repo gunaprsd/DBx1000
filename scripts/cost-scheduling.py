@@ -6,9 +6,9 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes =  [250, 1000, 4000, 8000, 16000, 32000, 64000, 128000]
-for cores in [30]:
-    for parts in [4, 8, 15, 30, 60]:
+sizes =  [64000]
+for cores in [15]:
+    for parts in [4, 8, 15, 30]:
         for size_per_thread in sizes:
             config = ' -benchmark="ycsb"'
             config += ' -ycsb_zipf_theta=0.9'
@@ -54,7 +54,8 @@ def partition(start, end):
             command += ' -input_folder="' + data_folder + "/" + seed_tag + '_raw"'
             command += ' -output_folder="' + data_folder + "/" + seed_tag + '_partitioned"'
             command += ' -task="partition"'
-            command += ' -ufactor=5'
+	    command += ' -objtype=communication_volume'
+            command += ' -ufactor=10'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)

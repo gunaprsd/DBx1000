@@ -32,7 +32,7 @@ struct TableInfo {
   uint64_t num_cross_accesses;
   uint64_t num_accessed_data;
   uint64_t num_single_core_data;
-	uint64_t max_data_core_degree;
+  uint64_t max_data_core_degree;
 
   TableInfo() { reset(); }
 
@@ -41,14 +41,20 @@ struct TableInfo {
     num_cross_accesses = 0;
     num_accessed_data = 0;
     num_single_core_data = 0;
+    max_data_core_degree = 0;
   }
 
   void print(string name) {
-		printf("%s-%-25s: %lu\n", name.c_str(), "Total-Accesses", num_total_accesses);
-		printf("%s-%-25s: %lu\n", name.c_str(), "Cross-Accesses", num_cross_accesses);
-		printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data", num_accessed_data);
-		printf("%s-%-25s: %lu\n", name.c_str(), "Num-Single-Core-Data", num_single_core_data);
-		printf("%s-%-25s: %lu\n", name.c_str(), "Max-Data-Core-Degree", max_data_core_degree);
+    printf("%s-%-25s: %lu\n", name.c_str(), "Total-Accesses",
+           num_total_accesses);
+    printf("%s-%-25s: %lu\n", name.c_str(), "Cross-Accesses",
+           num_cross_accesses);
+    printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data",
+           num_accessed_data);
+    printf("%s-%-25s: %lu\n", name.c_str(), "Num-Single-Core-Data",
+           num_single_core_data);
+    printf("%s-%-25s: %lu\n", name.c_str(), "Max-Data-Core-Degree",
+           max_data_core_degree);
   }
 };
 

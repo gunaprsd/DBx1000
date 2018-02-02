@@ -5,6 +5,7 @@ executable = "./build/rundb"
 data_folder = "data"
 start_num = 4
 num_runs = 5
+size_per_thread=16000
 configs = []
 for cores in [15]:
     for wh in [60, 30, 15, 8, 4]:
@@ -12,7 +13,9 @@ for cores in [15]:
             config = ' -benchmark="tpcc"'
             config += ' -tpcc_num_wh=' + str(wh)
             config += ' -tpcc_wh_update'
+            config += ' -tpcc_perc_payment=0'
             config += ' -threads=' + str(cores)
+            config += ' -size_per_thread=' + str(size_per_thread)
             tag = 'tpcc'
             tag += '_wh' + str(wh)
             tag += '_c' + str(cores)

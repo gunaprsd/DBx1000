@@ -118,10 +118,10 @@ void TPCCWorkloadGenerator::gen_new_order_request(
     // choose a unique random item
     bool unique;
     do {
-      params->items[oid].ol_i_id = helper.generateNonUniformRandom(
-          8191, 1, config.items_count, params->w_id - 1);
-      //    params->items[oid].ol_i_id =
-      //    helper.generateRandom(1, config.items_count, params->w_id - 1);
+      //      params->items[oid].ol_i_id = helper.generateNonUniformRandom(
+      //    8191, 1, config.items_count, params->w_id - 1);
+      params->items[oid].ol_i_id =
+          helper.generateRandom(1, config.items_count, params->w_id - 1);
       unique = true;
       for (uint32_t i = 0; i < oid; i++) {
         if (params->items[i].ol_i_id == params->items[oid].ol_i_id) {

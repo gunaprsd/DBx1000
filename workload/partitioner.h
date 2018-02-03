@@ -3,7 +3,7 @@
 #include "distributions.h"
 #include "global.h"
 #include "graph_partitioner.h"
-#include "partitioned_helper.h"
+#include "partitioner_helper.h"
 #include "query.h"
 
 template <typename T> class BasePartitioner {
@@ -23,7 +23,7 @@ public:
     auto num_tables = AccessIterator<T>::get_num_tables();
     _table_info = new TableInfo[num_tables];
     for (uint64_t i = 0; i < num_tables; i++) {
-      _table_info[i].reset();
+      _table_info[i].initialize(_num_clusters);
     }
   }
 
@@ -408,12 +408,10 @@ protected:
           auto num_cores = info->cores.size();
           ACCUMULATE_MIN(stats.min_data_core_degree, num_cores);
           ACCUMULATE_MAX(stats.max_data_core_degree, num_cores);
-          ACCUMULATE_MAX(_table_info[table_id].max_data_core_degree, num_cores);
           if (num_cores == 1) {
             stats.num_single_core_data++;
-            _table_info[table_id].num_single_core_data++;
           }
-
+					_table_info[table_id].core_distribution[num_cores-1]++;
 #ifdef SELECTIVE_CC
           if (info->cores.empty()) {
             iterator->set_cc_info(0);

@@ -31,17 +31,25 @@ struct TableInfo {
   uint64_t num_total_accesses;
   uint64_t num_cross_accesses;
   uint64_t num_accessed_data;
-  uint64_t num_single_core_data;
-  uint64_t max_data_core_degree;
+	uint64_t max_num_cores;
+	uint64_t *core_distribution;
 
-  TableInfo() { reset(); }
+  void initialize(uint64_t _max_num_cores) { reset(_max_num_cores); }
 
-  void reset() {
+  void reset(uint64_t _max_num_cores) {
     num_total_accesses = 0;
     num_cross_accesses = 0;
     num_accessed_data = 0;
-    num_single_core_data = 0;
-    max_data_core_degree = 0;
+
+		if(core_distribution != nullptr) {
+			this->max_num_cores = _max_num_cores;
+			core_distribution = new uint64_t[max_num_cores];
+		} else {
+			assert(max_num_cores == _max_num_cores);
+		}
+		for(uint64_t i = 0; i < max_num_cores; i++) {
+			core_distribution[i] = 0;
+		}
   }
 
   void print(string name) {
@@ -51,10 +59,11 @@ struct TableInfo {
            num_cross_accesses);
     printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data",
            num_accessed_data);
-    printf("%s-%-25s: %lu\n", name.c_str(), "Num-Single-Core-Data",
-           num_single_core_data);
-    printf("%s-%-25s: %lu\n", name.c_str(), "Max-Data-Core-Degree",
-           max_data_core_degree);
+    printf("%s-%-25s: [", name.c_str(), "Core-Distribution");
+		for(uint64_t i = 0; i < max_num_cores; i++) {
+			printf("%lu, ", core_distribution[i]);
+		}
+		printf("]\n");
   }
 };
 

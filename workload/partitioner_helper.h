@@ -31,8 +31,12 @@ struct TableInfo {
   uint64_t num_total_accesses;
   uint64_t num_cross_accesses;
   uint64_t num_accessed_data;
-	uint64_t max_num_cores;
-	uint64_t *core_distribution;
+  uint64_t max_num_cores;
+  uint64_t *core_distribution;
+
+  TableInfo() {
+    core_distribution = nullptr;
+  }
 
   void initialize(uint64_t _max_num_cores) { reset(_max_num_cores); }
 
@@ -41,15 +45,15 @@ struct TableInfo {
     num_cross_accesses = 0;
     num_accessed_data = 0;
 
-		if(core_distribution != nullptr) {
-			this->max_num_cores = _max_num_cores;
-			core_distribution = new uint64_t[max_num_cores];
-		} else {
-			assert(max_num_cores == _max_num_cores);
-		}
-		for(uint64_t i = 0; i < max_num_cores; i++) {
-			core_distribution[i] = 0;
-		}
+    if (core_distribution == nullptr) {
+      this->max_num_cores = _max_num_cores;
+      core_distribution = new uint64_t[max_num_cores];
+    } else {
+      assert(max_num_cores == _max_num_cores);
+    }
+    for (uint64_t i = 0; i < max_num_cores; i++) {
+      core_distribution[i] = 0;
+    }
   }
 
   void print(string name) {
@@ -60,10 +64,14 @@ struct TableInfo {
     printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data",
            num_accessed_data);
     printf("%s-%-25s: [", name.c_str(), "Core-Distribution");
-		for(uint64_t i = 0; i < max_num_cores; i++) {
-			printf("%lu, ", core_distribution[i]);
-		}
-		printf("]\n");
+    double weighted_num_cores = 0.0;
+    for (uint64_t i = 0; i < max_num_cores; i++) {
+      printf("%lu, ", core_distribution[i]);
+      weighted_num_cores += core_distribution[i] * (i+1);
+    }
+    printf("]\n");
+    double weighted_avg_num_cores =num_accessed_data > 0 ? weighted_num_cores / num_accessed_data : 0;
+    printf("%s-%-25s: %lf\n", name.c_str(), "Weighted-Avg-Cores", weighted_avg_num_cores);
   }
 };
 
@@ -72,6 +80,8 @@ struct DataNodeInfo {
   uint64_t epoch;
   uint64_t num_reads;
   uint64_t num_writes;
+  idx_t read_wgt;
+  idx_t write_wgt;
   std::set<idx_t> cores;
   std::vector<idx_t> read_txns;
   std::vector<idx_t> write_txns;

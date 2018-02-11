@@ -165,7 +165,8 @@ uint64_t TPCCUtility::getStocksHashIndex(uint64_t wid, uint64_t iid) {
 uint64_t TPCCUtility::getHashSize() { return stocks_off + stocks_cnt; }
 
 template <>
-bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type, uint32_t & table_id) {
+bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type,
+                                       uint32_t &table_id) {
   if (_query->type == TPCC_PAYMENT_QUERY) {
     auto payment_params =
         reinterpret_cast<tpcc_payment_params *>(&_query->params);
@@ -173,13 +174,13 @@ bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type, uint32_t &
     case 0:
       key = TPCCUtility::getWarehouseHashIndex(payment_params->w_id);
       type = TPCCUtility::config.warehouse_update ? WR : RD;
-			table_id = 0;
+      table_id = 0;
       break;
     case 1:
       key = TPCCUtility::getDistrictHashIndex(payment_params->d_w_id,
                                               payment_params->d_id);
       type = RD;
-				table_id = 1;
+      table_id = 1;
       break;
     case 2:
       if (!payment_params->by_last_name) {
@@ -187,7 +188,7 @@ bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type, uint32_t &
                                                 payment_params->c_d_id,
                                                 payment_params->c_id);
         type = WR;
-				table_id = 2;
+        table_id = 2;
       } else {
         return false;
       }
@@ -202,20 +203,20 @@ bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type, uint32_t &
     case 0:
       key = TPCCUtility::getWarehouseHashIndex(new_order_params->w_id);
       type = RD;
-			table_id = 0;
+      table_id = 0;
       break;
     case 1:
       key = TPCCUtility::getDistrictHashIndex(new_order_params->w_id,
                                               new_order_params->d_id);
       type = RD;
-				table_id = 1;
+      table_id = 1;
       break;
     case 2:
       key = TPCCUtility::getCustomerHashIndex(new_order_params->w_id,
                                               new_order_params->d_id,
                                               new_order_params->c_id);
       type = WR;
-				table_id = 2;
+      table_id = 2;
       break;
     default:
       if (_current_req_id > 2 &&
@@ -226,7 +227,7 @@ bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type, uint32_t &
           // return item
           key = TPCCUtility::getItemsHashIndex(
               new_order_params->items[item].ol_i_id);
-					table_id = 3;
+          table_id = 3;
           type = RD;
         } else {
           // return stock
@@ -234,7 +235,7 @@ bool AccessIterator<tpcc_params>::next(uint64_t &key, access_t &type, uint32_t &
               new_order_params->items[item].ol_supply_w_id,
               new_order_params->items[item].ol_i_id);
           type = WR;
-					table_id = 4;
+          table_id = 4;
         }
       } else {
         return false;
@@ -249,16 +250,14 @@ template <> uint64_t AccessIterator<tpcc_params>::get_max_key() {
   return TPCCUtility::getHashSize();
 }
 
-template<> uint32_t AccessIterator<tpcc_params>::get_num_tables() {
-	return 5;
-}
+template <> uint32_t AccessIterator<tpcc_params>::get_num_tables() { return 5; }
+
 template <>
 void AccessIterator<tpcc_params>::set_query(Query<tpcc_params> *query) {
   _query = query;
   _current_req_id = 0;
 }
 
-template <>
-void AccessIterator<tpcc_params>::set_cc_info(char cc_info) {
+template <> void AccessIterator<tpcc_params>::set_cc_info(char cc_info) {
   assert(false);
 }

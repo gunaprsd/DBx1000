@@ -6,8 +6,8 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = {}
-for cores in [15]:
-    for parts in [30, 15, 8, 4]:
+for cores in [30]:
+    for parts in [60, 4]:
         if parts <= 2 * cores:
             config = ' -benchmark="ycsb"'
             config += ' -ycsb_zipf_theta=0.9'
@@ -49,6 +49,7 @@ def partition(start, end):
             command += ' -output_folder="' + data_folder + "/" + seed_tag + '_partitioned"'
             command += ' -task="partition"'
             command += ' -objtype=edge_cut'
+            command += ' -unit_weights'
             command += ' -ufactor=10'
             command += ' >> ' + log_file
             print(command)

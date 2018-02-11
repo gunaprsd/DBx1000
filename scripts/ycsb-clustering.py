@@ -7,24 +7,24 @@ start_num = 4
 num_runs = 5
 configs = []
 sizes =  [64000]
-for cores in [15]:
-    for parts in [4, 8, 15, 30]:
+for cores in [30]:
+    for parts in [60, 30, 15, 8, 4]:
         for size_per_thread in sizes:
-            config = ' -benchmark="ycsb"'
+            config = ' -benchmark=ycsb'
             config += ' -ycsb_zipf_theta=0.9'
             config += ' -ycsb_read_percent=0.5'
             config += ' -ycsb_multipart_txns=0'
             config += ' -ycsb_num_partitions=' + str(parts)
             config += ' -threads=' + str(cores)
             config += ' -size_per_thread=' + str(size_per_thread)
-            tag = 'ycsb_single_high'
+            tag = 'ycsb'
             tag += '_p' + str(parts)
             tag += '_c' + str(cores)
             tag += '_sz' + str(size_per_thread)
             configs.append({'tag':tag, 'config':config})
 
 def generate(start, end):
-    log_file = "ycsb_single_generation.txt"
+    log_file = "ycsb_generation.txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -32,9 +32,9 @@ def generate(start, end):
             command = executable
             command += config
             seed_tag = tag + '_s' + str(num)
-            command += ' -tag="' + seed_tag + '"'
-            command += ' -output_folder="' + data_folder + "/" + seed_tag + '_raw"'
-            command += ' -task="generate"'
+            command += ' -tag=' + seed_tag
+            command += ' -output_folder=' + data_folder + '/' + seed_tag + '_raw'
+            command += ' -task=generate'
             command += ' -seed=' + str(num)
             command += ' >> ' + log_file
             print(command)
@@ -42,7 +42,7 @@ def generate(start, end):
             os.system(command)
 
 def partition(start, end):
-    log_file = "ycsb_single_partition_" + str(start) + "_" + str(end) + ".txt"
+    log_file = "ycsb_ec_conflictwts_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -50,11 +50,12 @@ def partition(start, end):
             command = executable
             command += config
             seed_tag = tag + '_s' + str(num)
-            command += ' -tag="' + seed_tag + '"'
-            command += ' -input_folder="' + data_folder + "/" + seed_tag + '_raw"'
-            command += ' -output_folder="' + data_folder + "/" + seed_tag + '_partitioned"'
-            command += ' -task="partition"'
-	    command += ' -objtype=communication_volume'
+            command += ' -tag=' + seed_tag
+            command += ' -input_folder=' + data_folder + "/" + seed_tag + '_raw'
+            command += ' -output_folder=' + data_folder + "/" + seed_tag + '_partitioned'
+            command += ' -task=partition'
+            command += ' -objtype=edge_cut'
+            command += ' -nounit_weights'
             command += ' -ufactor=10'
             command += ' >> ' + log_file
             print(command)

@@ -23,7 +23,7 @@ public:
     auto num_tables = AccessIterator<T>::get_num_tables();
     _table_info = new TableInfo[num_tables];
     for (uint64_t i = 0; i < num_tables; i++) {
-      _table_info[i].initialize(_num_clusters);
+      _table_info[i].initialize(num_clusters);
     }
   }
 
@@ -209,16 +209,28 @@ protected:
         if (info->read_txns.empty() && info->write_txns.empty()) {
           info->read_txns.reserve(info->num_reads);
           info->write_txns.reserve(info->num_writes);
+          if (FLAGS_unit_weights) {
+            info->read_wgt = 1;
+            info->write_wgt = 1;
+          } else {
+	    info->read_wgt = 1 + info->num_writes;
+            info->write_wgt = 1 + info->num_reads + info->num_writes;
+          }
+          assert(info->read_wgt > 0);
+          assert(info->write_wgt > 0);
         }
 
+        idx_t wt = 1.0;
         if (type == RD) {
           info->read_txns.push_back(i);
+          wt = info->read_wgt;
         } else if (type == WR) {
           info->write_txns.push_back(i);
+          wt = info->write_wgt;
         }
 
         adjncy.push_back(info->id);
-        adjwgt.push_back(1);
+        adjwgt.push_back((idx_t)wt);
         node_wgt++;
       }
 
@@ -247,19 +259,27 @@ protected:
         auto info = &_data_info[key];
         if (info->id == next_data_id) {
           // insert txn edges
+          assert(info->read_txns.size() == info->num_reads);
+          assert(info->write_txns.size() == info->num_writes);
           adjncy.insert(adjncy.end(), info->read_txns.begin(),
                         info->read_txns.end());
           adjncy.insert(adjncy.end(), info->write_txns.begin(),
                         info->write_txns.end());
 
           // insert edge weights
-          adjwgt.insert(adjwgt.end(), info->read_txns.size(), 1);
-          adjwgt.insert(adjwgt.end(), info->write_txns.size(), 1);
+          // double wt = (double)(info->num_reads +
+          // info->num_writes)/(double)input_stats.num_edges; wt *= 1000;
+          adjwgt.insert(adjwgt.end(), info->num_reads, info->read_wgt);
+          adjwgt.insert(adjwgt.end(), info->num_writes, info->write_wgt);
 
           // insert node details
           xadj.push_back(static_cast<idx_t>(adjncy.size()));
           vwgt.push_back(0);
-          vsize.push_back(1);
+          if (FLAGS_unit_weights) {
+            vsize.push_back(1);
+          } else {
+            vsize.push_back(info->num_reads + info->num_writes);
+          }
 
           auto data_degree = info->num_reads + info->num_writes;
           ACCUMULATE_MIN(input_stats.min_data_degree, data_degree);
@@ -411,7 +431,7 @@ protected:
           if (num_cores == 1) {
             stats.num_single_core_data++;
           }
-					_table_info[table_id].core_distribution[num_cores-1]++;
+          _table_info[table_id].core_distribution[num_cores - 1]++;
 #ifdef SELECTIVE_CC
           if (info->cores.empty()) {
             iterator->set_cc_info(0);

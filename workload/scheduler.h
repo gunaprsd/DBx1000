@@ -3,6 +3,7 @@
 
 #include "loader.h"
 #include "partitioner.h"
+#include "parser.h"
 
 template <typename T> class OfflineScheduler {
 public:
@@ -11,10 +12,17 @@ public:
       : _input_folder_path(input_folder_path),
         _output_folder_path(output_folder_path), _num_threads(num_threads),
         _max_batch_size(max_batch_size),
-        _loader(input_folder_path, num_threads), _partitioner(num_threads) {
+        _loader(input_folder_path, num_threads), _partitioner(nullptr) {
     _loader.load();
     _original_queries = _loader.get_queries_matrix();
     _partitioned_queries = nullptr;
+    if(FLAGS_parttype == "access_graph") {
+      _partitioner = new AccessGraphPartitioner(num_threads);
+    } else if(FLAGS_parttype == "approx") {
+      _partitioner = new ApproximateGraphPartitioner(num_threads);
+    } else {
+      assert(false);
+    }
 
     _temp = new vector<Query<T> *>[_num_threads];
     _temp_sizes = new size_t[_num_threads];
@@ -53,10 +61,10 @@ protected:
 
       // Create batch from current frame and invoke partitioner
       QueryBatch<T> batch(_original_queries, cframe_start, cframe_end);
-      _partitioner.partition(&batch, partitions);
+      _partitioner->partition(&batch, partitions);
 
       // Print some statistics, if necessary
-      _partitioner.print_stats();
+      _partitioner->print_stats();
 
       // Shuffle queries into temp array
       uint64_t size = batch.size();
@@ -74,8 +82,8 @@ protected:
       _current_frame_offset += _frame_height;
     }
 
-    uint64_t min_batch_size = UINT64_MAX;
-    uint64_t max_batch_size = 0;
+    size_t min_batch_size = UINT64_MAX;
+    size_t max_batch_size = 0;
     for (uint32_t i = 0; i < _num_threads; i++) {
       min_batch_size = min(min_batch_size, _temp_sizes[i]);
       max_batch_size = max(max_batch_size, _temp_sizes[i]);
@@ -144,7 +152,7 @@ protected:
   const uint32_t _num_threads;
   const uint64_t _max_batch_size;
   ParallelWorkloadLoader<T> _loader;
-  AccessGraphPartitioner<T> _partitioner;
+  BasePartitioner<T>* _partitioner;
   QueryMatrix<T> *_original_queries;
   Query<T> **_partitioned_queries;
   vector<Query<T> *> *_temp;

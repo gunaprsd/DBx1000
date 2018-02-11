@@ -10,6 +10,7 @@
 template <typename T> class BasePartitioner {
 public:
   virtual void partition(QueryBatch<T> *batch, vector<idx_t> &partitions) = 0;
+	virtual void print_stats() = 0;
 };
 
 template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {

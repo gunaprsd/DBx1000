@@ -34,9 +34,7 @@ struct TableInfo {
   uint64_t max_num_cores;
   uint64_t *core_distribution;
 
-  TableInfo() {
-    core_distribution = nullptr;
-  }
+  TableInfo() { core_distribution = nullptr; }
 
   void initialize(uint64_t _max_num_cores) { reset(_max_num_cores); }
 
@@ -67,11 +65,13 @@ struct TableInfo {
     double weighted_num_cores = 0.0;
     for (uint64_t i = 0; i < max_num_cores; i++) {
       printf("%lu, ", core_distribution[i]);
-      weighted_num_cores += core_distribution[i] * (i+1);
+      weighted_num_cores += core_distribution[i] * (i + 1);
     }
     printf("]\n");
-    double weighted_avg_num_cores =num_accessed_data > 0 ? weighted_num_cores / num_accessed_data : 0;
-    printf("%s-%-25s: %lf\n", name.c_str(), "Weighted-Avg-Cores", weighted_avg_num_cores);
+    double weighted_avg_num_cores =
+        num_accessed_data > 0 ? weighted_num_cores / num_accessed_data : 0;
+    printf("%s-%-25s: %lf\n", name.c_str(), "Weighted-Avg-Cores",
+           weighted_avg_num_cores);
   }
 };
 
@@ -88,6 +88,18 @@ struct DataNodeInfo {
   DataNodeInfo()
       : id(-1), epoch(UINT64_MAX), num_reads(0), num_writes(0), cores(),
         read_txns(), write_txns() {}
+};
+
+struct ApproxDataNodeInfo {
+  idx_t id;
+  uint64_t epoch;
+  uint64_t num_reads;
+  uint64_t num_writes;
+  idx_t read_wgt;
+  idx_t write_wgt;
+  std::set<idx_t> cores;
+  ApproxDataNodeInfo()
+      : id(-1), epoch(UINT64_MAX), num_reads(0), num_writes(0), cores() {}
 };
 
 struct InputStatistics {

@@ -595,7 +595,10 @@ protected:
     access_t type;
     uint32_t table_id;
 
-		double max_cluster_size = ((1000 + FLAGS_ufactor) * input_stats.num_edges) /(_num_clusters * 1000.0);
+    //    double max_cluster_size = ((1000 + FLAGS_ufactor) * input_stats.num_edges) /
+    //                          (_num_clusters * 1000.0);
+
+    double max_cluster_size = UINT64_MAX;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -603,7 +606,7 @@ protected:
     uint64_t *savings = new uint64_t[_num_clusters];
     uint64_t *sorted = new uint64_t[_num_clusters];
 
-		uint64_t *cluster_size = new uint64_t[_num_clusters];
+    uint64_t *cluster_size = new uint64_t[_num_clusters];
     memset(cluster_size, 0, sizeof(uint64_t) * _num_clusters);
 
     for (auto i = 0u; i < size; i++) {
@@ -619,8 +622,9 @@ protected:
           info->write_wgt = 1 + info->num_reads + info->num_writes;
         }
         auto core = parts[info->id];
-        savings[core] += type == RD ? info->read_wgt : info->write_wgt;
-        txn_size++;
+        //savings[core] += type == RD ? info->read_wgt : info->write_wgt;
+	savings[core] += info->write_wgt;
+	txn_size++;
       }
 
       for (uint64_t s = 0; s < _num_clusters; s++) {
@@ -641,13 +645,17 @@ protected:
         assert(savings[sorted[s]] >= savings[sorted[s + 1]]);
       }
 
+      bool allotted = false;
       for (uint64_t s = 0; s < _num_clusters; s++) {
         if (cluster_size[sorted[s]] + txn_size < max_cluster_size) {
           cluster_size[sorted[s]] += txn_size;
           parts[i] = sorted[s];
-					assert(parts[i] >= 0 && parts[i] < _num_clusters);
+          assert(parts[i] >= 0 && parts[i] < _num_clusters);
+          allotted = true;
+          break;
         }
       }
+      assert(allotted);
     }
 
     delete[] sorted;

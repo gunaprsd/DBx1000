@@ -5,12 +5,12 @@ executable = "./build/rundb"
 data_folder = "data"
 start_num = 4
 num_runs = 5
-size_per_thread=1000
+size_per_thread=50000
 configs = []
 name = {0 : 'pymnt', 0.5 : 'mixed', 1: 'order'}
 for cores in [30]:
-    for perc_payment in [0.5]:
-        for wh in [60, 30, 15, 8, 4]:
+    for perc_payment in [1]:
+        for wh in [30]:
             if wh <= 2 * cores:
                 config = ' -benchmark=tpcc'
                 config += ' -tpcc_num_wh=' + str(wh)
@@ -43,7 +43,7 @@ def generate(start, end):
             os.system(command)
 
 def partition(start, end):
-    log_file = "tpcc_ec_conflictwgts_u10" + str(start) + "_" + str(end) + ".txt"
+    log_file = "tpcc_approx_u10" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -56,7 +56,7 @@ def partition(start, end):
             command += ' -output_folder=' + data_folder + '/' + seed_tag + '_partitioned'
             command += ' -task=partition'
             command += ' -ufactor=10'
-            command += ' -objtype=edge_cut'
+            command += ' -parttype=approx'
             command += ' -nounit_weights'
             command += ' >> ' + log_file
             print(command)

@@ -97,6 +97,7 @@ struct ApproxDataNodeInfo {
   uint64_t num_writes;
   idx_t read_wgt;
   idx_t write_wgt;
+	uint64_t* core_weights;
   std::set<idx_t> cores;
   ApproxDataNodeInfo()
       : id(-1), epoch(UINT64_MAX), num_reads(0), num_writes(0), cores() {}

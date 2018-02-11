@@ -55,3 +55,4 @@ DEFINE_bool(unit_weights, false, "Unit weights or conflict weights?");
 DEFINE_string(partitioner, "access_graph", "Options: access_graph, conflict_graph");
 DEFINE_string(output_folder, "data", "Output folder for partitioner");
 DEFINE_uint32(ufactor, 5, "Load imbalance tolerance for METIS (1 + x/1000)");
+DEFINE_uint32(iterations, 5, "Number of iterations");

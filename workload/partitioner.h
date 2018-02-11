@@ -500,10 +500,13 @@ public:
     printf("Baseline stats computed\n");
 
     start_time = get_server_clock();
-    internal_partition(parts);
+		for(uint32_t i = 0; i < FLAGS_iterations; i++) {
+			internal_txn_partition(parts);
+			internal_data_partition(parts);
+		}
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
-    runtime_stats.second_pass_duration = duration;
+    runtime_stats.partition_duration = duration;
     printf("Partition completed\n");
 
     compute_partition_stats(parts, output_stats.output_cluster);
@@ -574,6 +577,10 @@ protected:
           info->read_wgt = 0;
           info->write_wgt = 0;
           info->cores.clear();
+					if(info->core_weights != nullptr) {
+						info->core_weights = new uint64_t[_num_clusters];
+						memset(info->core_weights, 0, sizeof(uint64_t) * _num_clusters);
+					}
         }
 
         if (type == RD) {
@@ -589,13 +596,14 @@ protected:
     }
   }
 
-  void internal_partition(idx_t *parts) {
+  void internal_txn_partition(idx_t *parts) {
     Query<T> *query;
     uint64_t key;
     access_t type;
     uint32_t table_id;
 
-    //    double max_cluster_size = ((1000 + FLAGS_ufactor) * input_stats.num_edges) /
+    //    double max_cluster_size = ((1000 + FLAGS_ufactor) *
+    //    input_stats.num_edges) /
     //                          (_num_clusters * 1000.0);
 
     double max_cluster_size = UINT64_MAX;
@@ -622,9 +630,9 @@ protected:
           info->write_wgt = 1 + info->num_reads + info->num_writes;
         }
         auto core = parts[info->id];
-        //savings[core] += type == RD ? info->read_wgt : info->write_wgt;
-	savings[core] += info->write_wgt;
-	txn_size++;
+        // savings[core] += type == RD ? info->read_wgt : info->write_wgt;
+        savings[core] += info->write_wgt;
+        txn_size++;
       }
 
       for (uint64_t s = 0; s < _num_clusters; s++) {
@@ -648,10 +656,15 @@ protected:
       bool allotted = false;
       for (uint64_t s = 0; s < _num_clusters; s++) {
         if (cluster_size[sorted[s]] + txn_size < max_cluster_size) {
-          cluster_size[sorted[s]] += txn_size;
-          parts[i] = sorted[s];
+					auto allotted_core = sorted[s];
+          cluster_size[allotted_core] += txn_size;
+          parts[i] = allotted_core;
           assert(parts[i] >= 0 && parts[i] < _num_clusters);
           allotted = true;
+					while (iterator->next(key, type, table_id)) {
+						auto info = &_data_info[key];
+						info->core_weights[allotted_core]++;
+					}
           break;
         }
       }
@@ -661,6 +674,37 @@ protected:
     delete[] sorted;
     delete[] savings;
     delete[] cluster_size;
+  }
+
+  void internal_data_partition(idx_t *parts) {
+    Query<T> *query;
+    uint64_t key;
+    access_t type;
+    uint32_t table_id;
+
+    AccessIterator<T> *iterator = new AccessIterator<T>();
+    QueryBatch<T> &queryBatch = *_batch;
+    uint64_t size = queryBatch.size();
+		idx_t next_data_id = size;
+    for (auto i = 0u; i < size; i++) {
+      query = queryBatch[i];
+      iterator->set_query(query);
+      while (iterator->next(key, type, table_id)) {
+        auto info = &_data_info[key];
+				if(info->id == next_data_id) {
+					uint64_t max_value = 0;
+					uint64_t allotted_core = 0;
+					for (uint64_t s = 0; s < _num_clusters; s++) {
+						if(info->core_weights[s] > max_value) {
+							max_value = info->core_weights[s];
+							allotted_core = s;
+						}
+					}
+					parts[info->id] = allotted_core;
+					next_data_id++;
+				}
+      }
+    }
   }
 
   void compute_baseline_stats(idx_t *parts, ClusterStatistics &stats) {

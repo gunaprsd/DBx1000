@@ -56,5 +56,6 @@ DECLARE_bool(unit_weights);
 DECLARE_string(partitioner);
 DECLARE_string(output_folder);
 DECLARE_uint32(ufactor);
+DECLARE_uint32(iterations);
 
 #endif //SYSTEM_PARSER_H__

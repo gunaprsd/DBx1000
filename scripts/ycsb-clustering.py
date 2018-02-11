@@ -6,9 +6,9 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes =  [64000]
+sizes =  [50000]
 for cores in [30]:
-    for parts in [60, 30, 15, 8, 4]:
+    for parts in [30]:
         for size_per_thread in sizes:
             config = ' -benchmark=ycsb'
             config += ' -ycsb_zipf_theta=0.9'
@@ -42,7 +42,7 @@ def generate(start, end):
             os.system(command)
 
 def partition(start, end):
-    log_file = "ycsb_ec_conflictwts_" + str(start) + "_" + str(end) + ".txt"
+    log_file = "ycsb_approx_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -54,8 +54,7 @@ def partition(start, end):
             command += ' -input_folder=' + data_folder + "/" + seed_tag + '_raw'
             command += ' -output_folder=' + data_folder + "/" + seed_tag + '_partitioned'
             command += ' -task=partition'
-            command += ' -objtype=edge_cut'
-            command += ' -nounit_weights'
+            command += ' -parttype=approx'
             command += ' -ufactor=10'
             command += ' >> ' + log_file
             print(command)

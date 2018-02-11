@@ -17,12 +17,13 @@ public:
     _original_queries = _loader.get_queries_matrix();
     _partitioned_queries = nullptr;
     if(FLAGS_parttype == "access_graph") {
-      _partitioner = new AccessGraphPartitioner(num_threads);
+      _partitioner = new AccessGraphPartitioner<T>(num_threads);
     } else if(FLAGS_parttype == "approx") {
-      _partitioner = new ApproximateGraphPartitioner(num_threads);
+      _partitioner = new ApproximateGraphPartitioner<T>(num_threads);
     } else {
       assert(false);
     }
+
 
     _temp = new vector<Query<T> *>[_num_threads];
     _temp_sizes = new size_t[_num_threads];

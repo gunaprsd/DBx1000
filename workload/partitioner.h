@@ -595,18 +595,17 @@ protected:
     access_t type;
     uint32_t table_id;
 
-    uint64_t max_cluster_size = static_cast<uint64_t>(
-        (1000 + FLAGS_ufactor) * (double)input_stats.num_edges /
-        (double)_num_clusters / 1000.0);
+		double max_cluster_size = ((1000 + FLAGS_ufactor) * input_stats.num_edges) /(_num_clusters * 1000.0);
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
     uint64_t *savings = new uint64_t[_num_clusters];
     uint64_t *sorted = new uint64_t[_num_clusters];
-    uint64_t *cluster_size = new uint64_t[_num_clusters];
 
+		uint64_t *cluster_size = new uint64_t[_num_clusters];
     memset(cluster_size, 0, sizeof(uint64_t) * _num_clusters);
+
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
@@ -646,6 +645,7 @@ protected:
         if (cluster_size[sorted[s]] + txn_size < max_cluster_size) {
           cluster_size[sorted[s]] += txn_size;
           parts[i] = sorted[s];
+					assert(parts[i] >= 0 && parts[i] < _num_clusters);
         }
       }
     }

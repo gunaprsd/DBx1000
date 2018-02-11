@@ -24,7 +24,6 @@ public:
       assert(false);
     }
 
-
     _temp = new vector<Query<T> *>[_num_threads];
     _temp_sizes = new size_t[_num_threads];
     for (uint32_t i = 0; i < _num_threads; i++) {

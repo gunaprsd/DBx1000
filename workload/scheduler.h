@@ -2,6 +2,7 @@
 #define DBX1000_SCHEDULER_H
 
 #include "loader.h"
+#include "approximate_partitioner.h"
 #include "partitioner.h"
 #include "parser.h"
 
@@ -62,9 +63,6 @@ protected:
       // Create batch from current frame and invoke partitioner
       QueryBatch<T> batch(_original_queries, cframe_start, cframe_end);
       _partitioner->partition(&batch, partitions);
-
-      // Print some statistics, if necessary
-      _partitioner->print_stats();
 
       // Shuffle queries into temp array
       uint64_t size = batch.size();

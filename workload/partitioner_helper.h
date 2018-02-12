@@ -3,29 +3,7 @@
 
 #include "global.h"
 #include <metis.h>
-
-struct RuntimeStatistics {
-  double first_pass_duration;
-  double second_pass_duration;
-  double third_pass_duration;
-  double partition_duration;
-
-  RuntimeStatistics() { reset(); }
-
-  void reset() {
-    first_pass_duration = 0;
-    second_pass_duration = 0;
-    third_pass_duration = 0;
-    partition_duration = 0;
-  }
-
-  void print() {
-    PRINT_INFO(-10lf, "First-Pass-Duration", first_pass_duration);
-    PRINT_INFO(-10lf, "Second-Pass-Duration", second_pass_duration);
-    PRINT_INFO(-10lf, "Third-Pass-Duration", third_pass_duration);
-    PRINT_INFO(-10lf, "Partition-Duration", partition_duration);
-  }
-};
+#include <cstring>
 
 struct TableInfo {
   uint64_t num_total_accesses;
@@ -61,17 +39,26 @@ struct TableInfo {
            num_cross_accesses);
     printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data",
            num_accessed_data);
-    printf("%s-%-25s: [", name.c_str(), "Core-Distribution");
-    double weighted_num_cores = 0.0;
+    printf("%s-%-25s:\n", name.c_str(), "Core-Distribution");
+
     for (uint64_t i = 0; i < max_num_cores; i++) {
-      printf("%lu, ", core_distribution[i]);
-      weighted_num_cores += core_distribution[i] * (i + 1);
+      double fraction =
+          (double)core_distribution[i] * 100.0 / (double)num_accessed_data;
+      printf("%5.2lf, ", fraction);
     }
-    printf("]\n");
-    double weighted_avg_num_cores =
-        num_accessed_data > 0 ? weighted_num_cores / num_accessed_data : 0;
-    printf("%s-%-25s: %lf\n", name.c_str(), "Weighted-Avg-Cores",
-           weighted_avg_num_cores);
+    printf("\n");
+
+    double total_weighted_num_cores = 0.0;
+    for (uint64_t i = 0; i < max_num_cores; i++) {
+      total_weighted_num_cores += core_distribution[i] * (i + 1);
+    }
+
+    if (num_accessed_data > 0) {
+      printf("%s-%-25s: %5.2lf\n", name.c_str(), "Weighted-Avg-Cores",
+             total_weighted_num_cores / num_accessed_data);
+    } else {
+      printf("%s-%-25s: %5.2lf\n", name.c_str(), "Weighted-Avg-Cores", 0.0);
+    }
   }
 };
 
@@ -97,10 +84,23 @@ struct ApproxDataNodeInfo {
   uint64_t num_writes;
   idx_t read_wgt;
   idx_t write_wgt;
-	uint64_t* core_weights;
+  uint64_t *core_weights;
   std::set<idx_t> cores;
   ApproxDataNodeInfo()
       : id(-1), epoch(UINT64_MAX), num_reads(0), num_writes(0), cores() {}
+  void init(uint64_t _epoch, idx_t _id, uint32_t num_clusters) {
+    id = _id;
+    epoch = _epoch;
+    num_reads = 0;
+    num_writes = 0;
+    read_wgt = 0;
+    write_wgt = 0;
+    cores.clear();
+    if (core_weights != nullptr) {
+      core_weights = new uint64_t[num_clusters];
+      memset(core_weights, 0, sizeof(uint64_t) * num_clusters);
+    }
+  }
 };
 
 struct InputStatistics {
@@ -152,14 +152,26 @@ struct ClusterStatistics {
 
   void reset() {
     num_single_core_data = 0;
-    min_data_core_degree = 1;
-    max_data_core_degree = 1;
-    min_cross_access_read = 0;
+    min_data_core_degree = UINT64_MAX;
+    max_data_core_degree = 0;
+    min_cross_access_read = UINT64_MAX;
     max_cross_access_read = 0;
     tot_cross_access_read = 0;
-    min_cross_access_write = 0;
+    min_cross_access_write = UINT64_MAX;
     max_cross_access_write = 0;
     tot_cross_access_write = 0;
+  }
+
+  void print() {
+    PRINT_INFO(lu, "Num-Single-Core-Data", num_single_core_data);
+    PRINT_INFO(lu, "Min-Data-Core-Degree", min_data_core_degree);
+    PRINT_INFO(lu, "Max-Data-Core-Degree", max_data_core_degree);
+    PRINT_INFO(lu, "Min-Txn-Cross-Access-Read", min_cross_access_read);
+    PRINT_INFO(lu, "Max-Txn-Cross-Access-Read", max_cross_access_read);
+    PRINT_INFO(lu, "Total-Txn-Cross-Access-Read", tot_cross_access_read);
+    PRINT_INFO(lu, "Min-Txn-Cross-Access-Write", min_cross_access_write);
+    PRINT_INFO(lu, "Max-Txn-Cross-Access-Write", max_cross_access_write);
+    PRINT_INFO(lu, "Total-Txn-Cross-Access-Write", tot_cross_access_write);
   }
 };
 

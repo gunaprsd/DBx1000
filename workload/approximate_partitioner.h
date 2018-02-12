@@ -21,22 +21,22 @@ class ApproximateGraphPartitioner : public BasePartitioner<T> {
     void print() {
       PRINT_INFO(-10lf, "Init-Pass-Duration", init_pass_duration);
       PRINT_INFO(-10lf, "Partition-Duration", partition_duration);
-      auto avg_duration = partition_duration/(double)num_iterations;
+      auto avg_duration = partition_duration / (double)num_iterations;
       PRINT_INFO(-10lf, "Avg-Partition-Duration", avg_duration);
     }
   };
 
 protected:
-    const uint32_t _num_clusters;
-    QueryBatch<T> *_batch;
-    ApproxDataNodeInfo *_data_info;
-    TableInfo *_table_info;
-    uint64_t * _cluster_size;
+  const uint32_t _num_clusters;
+  QueryBatch<T> *_batch;
+  ApproxDataNodeInfo *_data_info;
+  TableInfo *_table_info;
+  uint64_t *_cluster_size;
 
-    uint64_t iteration;
-    RuntimeStatistics runtime_stats;
-    InputStatistics input_stats;
-    OutputStatistics output_stats;
+  uint64_t iteration;
+  RuntimeStatistics runtime_stats;
+  InputStatistics input_stats;
+  OutputStatistics output_stats;
 
 public:
   ApproximateGraphPartitioner(uint32_t num_clusters)
@@ -53,6 +53,8 @@ public:
     for (uint64_t i = 0; i < num_tables; i++) {
       _table_info[i].initialize(num_clusters);
     }
+
+    _cluster_size = new uint64_t[num_clusters];
   }
 
   void partition(QueryBatch<T> *batch, vector<idx_t> &partitions) override {
@@ -70,7 +72,7 @@ public:
     input_stats.print();
 
     uint64_t total_num_vertices =
-            input_stats.num_txn_nodes + input_stats.num_data_nodes;
+        input_stats.num_txn_nodes + input_stats.num_data_nodes;
     auto parts = new idx_t[total_num_vertices];
     init_random_partition(parts);
 
@@ -81,20 +83,19 @@ public:
     for (uint32_t i = 0; i < FLAGS_iterations; i++) {
       start_time = get_server_clock();
 
-      //partition data based on transaction allocation
+      // partition data based on transaction allocation
       internal_data_partition(parts);
-      //partition txn based on data allocation.
+      // partition txn based on data allocation.
       internal_txn_partition(parts);
 
       end_time = get_server_clock();
       runtime_stats.num_iterations++;
       runtime_stats.partition_duration += DURATION(end_time, start_time);
 
-      printf("**************** Iteration: %u ****************\n", i+1);
+      printf("**************** Iteration: %u ****************\n", i + 1);
       compute_partition_stats(parts, output_stats.output_cluster);
       print_partition_stats();
     }
-
 
     printf("************** Runtime Information *************\n");
     runtime_stats.print();
@@ -168,7 +169,6 @@ protected:
       ACCUMULATE_MAX(input_stats.max_txn_degree, txn_degree);
     }
 
-
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
@@ -191,11 +191,9 @@ protected:
     access_t type;
     uint32_t table_id;
 
-    //    double max_cluster_size = ((1000 + FLAGS_ufactor) *
-    //    input_stats.num_edges) /
-    //                          (_num_clusters * 1000.0);
-
-    double max_cluster_size = UINT64_MAX;
+    double max_cluster_size = ((1000 + FLAGS_ufactor) * input_stats.num_edges) /
+                              (_num_clusters * 1000.0);
+    // double max_cluster_size = UINT64_MAX;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -204,19 +202,19 @@ protected:
     uint64_t *savings = new uint64_t[_num_clusters];
     uint64_t *sorted = new uint64_t[_num_clusters];
 
-    //empty init cluster sizes
-    for(uint64_t s = 0; s < _num_clusters; s++) {
+    // empty init cluster sizes
+    for (uint64_t s = 0; s < _num_clusters; s++) {
       _cluster_size[s] = 0;
     }
 
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
-      //empty init savings array
-      for(uint64_t s = 0; s < _num_clusters; s++) {
+      // empty init savings array
+      for (uint64_t s = 0; s < _num_clusters; s++) {
         savings[s] = 0;
       }
 
-      //compute savings for each core
+      // compute savings for each core
       uint64_t txn_size = 0;
       iterator->set_query(query);
       while (iterator->next(key, type, table_id)) {
@@ -231,7 +229,7 @@ protected:
         txn_size++;
       }
 
-      //sort savings and store indices in sorted array
+      // sort savings and store indices in sorted array
       sort_helper(sorted, savings, _num_clusters);
 
       bool allotted = false;
@@ -242,7 +240,7 @@ protected:
           parts[i] = core;
           _cluster_size[core] += txn_size;
 
-          //Add core weight for each data item
+          // Add core weight for each data item
           iterator->set_query(query);
           while (iterator->next(key, type, table_id)) {
             auto info = &_data_info[key];
@@ -293,9 +291,9 @@ protected:
     }
   }
 
-  void init_random_partition(idx_t * parts) {
+  void init_random_partition(idx_t *parts) {
     uint64_t total_num_vertices =
-            input_stats.num_txn_nodes + input_stats.num_data_nodes;
+        input_stats.num_txn_nodes + input_stats.num_data_nodes;
     RandomNumberGenerator randomNumberGenerator(1);
     randomNumberGenerator.seed(0, FLAGS_seed + 125);
     for (size_t i = 0; i < total_num_vertices; i++) {
@@ -303,7 +301,7 @@ protected:
     }
   }
 
-  void sort_helper(uint64_t* index, uint64_t* value, uint64_t size) {
+  void sort_helper(uint64_t *index, uint64_t *value, uint64_t size) {
     for (uint64_t i = 0; i < size; i++) {
       index[i] = i;
     }
@@ -325,7 +323,7 @@ protected:
 
   void compute_partition_stats(idx_t *parts, ClusterStatistics &stats) {
     stats.reset();
-    for(uint32_t i = 0; i < AccessIterator<T>::get_num_tables(); i++) {
+    for (uint32_t i = 0; i < AccessIterator<T>::get_num_tables(); i++) {
       _table_info[i].reset(_num_clusters);
     }
 
@@ -338,7 +336,7 @@ protected:
     access_t type;
     uint32_t table_id;
 
-    //Computing transaction information
+    // Computing transaction information
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
@@ -369,7 +367,7 @@ protected:
       ACCUMULATE_MAX(stats.max_cross_access_write, cross_access_write);
     }
 
-    //Computing data information
+    // Computing data information
     idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];

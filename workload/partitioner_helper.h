@@ -96,7 +96,7 @@ struct ApproxDataNodeInfo {
     read_wgt = 0;
     write_wgt = 0;
     cores.clear();
-    if (core_weights != nullptr) {
+    if (core_weights == nullptr) {
       core_weights = new uint64_t[num_clusters];
       memset(core_weights, 0, sizeof(uint64_t) * num_clusters);
     }

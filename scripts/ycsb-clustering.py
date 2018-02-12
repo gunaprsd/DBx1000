@@ -56,6 +56,7 @@ def partition(start, end):
             command += ' -task=partition'
             command += ' -parttype=approx'
             command += ' -ufactor=10'
+            command += ' -iterations=15'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)

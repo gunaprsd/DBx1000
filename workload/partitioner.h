@@ -500,10 +500,10 @@ public:
     printf("Baseline stats computed\n");
 
     start_time = get_server_clock();
-		for(uint32_t i = 0; i < FLAGS_iterations; i++) {
-			internal_txn_partition(parts);
-			internal_data_partition(parts);
-		}
+    for (uint32_t i = 0; i < FLAGS_iterations; i++) {
+      internal_txn_partition(parts);
+      internal_data_partition(parts);
+    }
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
     runtime_stats.partition_duration = duration;
@@ -577,10 +577,10 @@ protected:
           info->read_wgt = 0;
           info->write_wgt = 0;
           info->cores.clear();
-					if(info->core_weights != nullptr) {
-						info->core_weights = new uint64_t[_num_clusters];
-						memset(info->core_weights, 0, sizeof(uint64_t) * _num_clusters);
-					}
+          if (info->core_weights == nullptr) {
+            info->core_weights = new uint64_t[_num_clusters];
+            memset(info->core_weights, 0, sizeof(uint64_t) * _num_clusters);
+          }
         }
 
         if (type == RD) {
@@ -602,11 +602,10 @@ protected:
     access_t type;
     uint32_t table_id;
 
-    //    double max_cluster_size = ((1000 + FLAGS_ufactor) *
-    //    input_stats.num_edges) /
-    //                          (_num_clusters * 1000.0);
+    double max_cluster_size = ((1000 + FLAGS_ufactor) * input_stats.num_edges) /
+                              (_num_clusters * 1000.0);
 
-    double max_cluster_size = UINT64_MAX;
+    // double max_cluster_size = UINT64_MAX;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -616,7 +615,8 @@ protected:
 
     uint64_t *cluster_size = new uint64_t[_num_clusters];
     memset(cluster_size, 0, sizeof(uint64_t) * _num_clusters);
-
+    RandomNumberGenerator generator(1);
+    generator.seed(0, 1234);
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
@@ -649,6 +649,14 @@ protected:
         }
       }
 
+      if(generator.nextInt64(0) % 100 <= 2) {
+	printf("[");
+	for(uint64_t s = 0; s < _num_clusters; s++) {
+	  printf(", %lu", sorted[s]);
+	}
+	printf("]\n");
+	}
+
       for (uint64_t s = 0; s < _num_clusters - 1; s++) {
         assert(savings[sorted[s]] >= savings[sorted[s + 1]]);
       }
@@ -656,15 +664,16 @@ protected:
       bool allotted = false;
       for (uint64_t s = 0; s < _num_clusters; s++) {
         if (cluster_size[sorted[s]] + txn_size < max_cluster_size) {
-					auto allotted_core = sorted[s];
+          auto allotted_core = sorted[s];
           cluster_size[allotted_core] += txn_size;
           parts[i] = allotted_core;
           assert(parts[i] >= 0 && parts[i] < _num_clusters);
           allotted = true;
-					while (iterator->next(key, type, table_id)) {
-						auto info = &_data_info[key];
-						info->core_weights[allotted_core]++;
-					}
+	  iterator->set_query(query);
+          while (iterator->next(key, type, table_id)) {
+            auto info = &_data_info[key];
+            info->core_weights[allotted_core] += txn_size;
+          }
           break;
         }
       }
@@ -685,24 +694,24 @@ protected:
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
-		idx_t next_data_id = size;
+    idx_t next_data_id = size;
     for (auto i = 0u; i < size; i++) {
       query = queryBatch[i];
       iterator->set_query(query);
       while (iterator->next(key, type, table_id)) {
         auto info = &_data_info[key];
-				if(info->id == next_data_id) {
-					uint64_t max_value = 0;
-					uint64_t allotted_core = 0;
-					for (uint64_t s = 0; s < _num_clusters; s++) {
-						if(info->core_weights[s] > max_value) {
-							max_value = info->core_weights[s];
-							allotted_core = s;
-						}
-					}
-					parts[info->id] = allotted_core;
-					next_data_id++;
-				}
+        if (info->id == next_data_id) {
+          uint64_t max_value = 0;
+          uint64_t allotted_core = 0;
+          for (uint64_t s = 0; s < _num_clusters; s++) {
+            if (info->core_weights[s] > max_value) {
+              max_value = info->core_weights[s];
+              allotted_core = s;
+            }
+          }
+          parts[info->id] = allotted_core;
+          next_data_id++;
+        }
       }
     }
   }

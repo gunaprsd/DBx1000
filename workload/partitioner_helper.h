@@ -10,15 +10,12 @@ struct DataNodeInfo {
   idx_t id;
   uint32_t table_id;
   uint64_t epoch;
-  uint64_t assigned_core;
+  idx_t assigned_core;
   bool single_core;
   std::vector<idx_t> read_txns;
   std::vector<idx_t> write_txns;
 
-  DataNodeInfo()
-      : id(-1), table_id(UINT64_MAX), epoch(UINT64_MAX),
-        assigned_core(UINT64_MAX), single_core(false), read_txns(),
-        write_txns() {}
+  DataNodeInfo() {}
 
   void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
     id = _id;
@@ -31,7 +28,6 @@ struct DataNodeInfo {
   }
 };
 
-
 struct TableInfo {
   uint32_t id;
   uint64_t num_accessed_data;
@@ -39,9 +35,7 @@ struct TableInfo {
   vector<uint64_t> txn_cross_access_histogram;
   vector<uint64_t> data_core_degree_histogram;
 
-  TableInfo()
-      : id(UINT64_MAX), num_accessed_data(0), num_total_accesses(0),
-        txn_cross_access_histogram(), data_core_degree_histogram() {}
+  TableInfo() {}
   void initialize(uint32_t _id, uint64_t max_core_degree,
                   uint64_t max_txn_access) {
     id = _id;
@@ -105,48 +99,49 @@ struct TableInfo {
   }
 };
 
-template<typename T> struct GraphInfo {
-		uint64_t num_txn_nodes;
-		uint64_t num_data_nodes;
-		uint64_t num_edges;
+template <typename T> struct GraphInfo {
+  uint64_t num_txn_nodes;
+  uint64_t num_data_nodes;
+  uint64_t num_edges;
 
-		uint64_t min_data_degree;
-		uint64_t max_data_degree;
-		uint64_t min_txn_degree;
-		uint64_t max_txn_degree;
+  uint64_t min_data_degree;
+  uint64_t max_data_degree;
+  uint64_t min_txn_degree;
+  uint64_t max_txn_degree;
 
-		DataNodeInfo* data_info;
-		vector<uint64_t> data_inv_idx;
-		GraphInfo() : data_inv_idx() {
-			uint64_t max_data_nodes = AccessIterator<T>::get_max_key();
-			data_info = new DataNodeInfo[max_data_nodes];
-			reset();
-		}
+  DataNodeInfo *data_info;
+  vector<uint64_t> data_inv_idx;
+  GraphInfo() : data_inv_idx() {
+    uint64_t max_data_nodes = AccessIterator<T>::get_max_key();
+    data_info = new DataNodeInfo[max_data_nodes];
+    reset();
+  }
 
-		void reset() {
-			num_txn_nodes = 0;
-			num_data_nodes = 0;
-			num_edges = 0;
-			min_data_degree = UINT64_MAX;
-			max_data_degree = 0;
-			min_txn_degree = UINT64_MAX;
-			max_txn_degree = 0;
-		}
+  void reset() {
+    num_txn_nodes = 0;
+    num_data_nodes = 0;
+    num_edges = 0;
+    min_data_degree = UINT64_MAX;
+    max_data_degree = 0;
+    min_txn_degree = UINT64_MAX;
+    max_txn_degree = 0;
+  }
 
-		void print() {
-			PRINT_INFO(lu, "Num-Data-Nodes", num_data_nodes);
-			PRINT_INFO(lu, "Num-Txn-Nodes", num_txn_nodes);
-			PRINT_INFO(lu, "Num-Edges", num_edges);
-			PRINT_INFO(lu, "Min-Data-Degree", min_data_degree);
-			PRINT_INFO(lu, "Max-Data-Degree", max_data_degree);
-			PRINT_INFO(lu, "Min-Txn-Degree", min_txn_degree);
-			PRINT_INFO(lu, "Max-Txn-Degree", max_txn_degree);
-		}
+  void print() {
+    PRINT_INFO(lu, "Num-Data-Nodes", num_data_nodes);
+    PRINT_INFO(lu, "Num-Txn-Nodes", num_txn_nodes);
+    PRINT_INFO(lu, "Num-Edges", num_edges);
+    PRINT_INFO(lu, "Min-Data-Degree", min_data_degree);
+    PRINT_INFO(lu, "Max-Data-Degree", max_data_degree);
+    PRINT_INFO(lu, "Min-Txn-Degree", min_txn_degree);
+    PRINT_INFO(lu, "Max-Txn-Degree", max_txn_degree);
+  }
 };
 
 template <typename T> struct ClusterInfo {
-  vector<TableInfo> table_info;
+
   uint64_t objective;
+  vector<TableInfo> table_info;
   ClusterInfo() : objective(0), table_info() {}
 
   void initialize(uint64_t num_clusters) {
@@ -175,23 +170,22 @@ template <typename T> struct ClusterInfo {
 };
 
 struct RuntimeInfo {
-		double compute_graph_info_duration;
-		double partition_duration;
+  double compute_graph_info_duration;
+  double partition_duration;
 
-		RuntimeInfo() { reset(); }
+  RuntimeInfo() { reset(); }
 
-		void reset() {
-			compute_graph_info_duration = 0;
-			partition_duration = 0;
-		}
+  void reset() {
+    compute_graph_info_duration = 0;
+    partition_duration = 0;
+  }
 
-		void print() {
-			PRINT_INFO(-10lf, "Compute-Graph-Info-Duration",
-								 compute_graph_info_duration);
-			PRINT_INFO(-10lf, "Partition-Duration", partition_duration);
-		}
+  void print() {
+    PRINT_INFO(-10lf, "Compute-Graph-Info-Duration",
+               compute_graph_info_duration);
+    PRINT_INFO(-10lf, "Partition-Duration", partition_duration);
+  }
 };
-
 
 #define ACCUMULATE_MIN(a, b) a = min(a, static_cast<uint64_t>(b))
 #define ACCUMULATE_MAX(a, b) a = max(a, static_cast<uint64_t>(b))

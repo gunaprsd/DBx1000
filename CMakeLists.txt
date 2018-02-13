@@ -106,8 +106,7 @@ SET(SRC_LIST cc/occ.h
         workload/loader.h
         ycsb/ycsb.cpp
         workload/scheduler.h system/parser.h
-        workload/partitioner_helper.h
-        workload/approximate_partitioner.h)
+        workload/partitioner_helper.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})

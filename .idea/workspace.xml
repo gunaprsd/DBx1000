@@ -2,8 +2,8 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true" buildAllGenerated="true">
     <generated>
-      <config projectName="DBx1000" targetName="rundb" />
       <config projectName="DBx1000" targetName="gflags_nothreads_static" />
+      <config projectName="DBx1000" targetName="rundb" />
     </generated>
   </component>
   <component name="CMakeSettings">
@@ -14,6 +14,9 @@
   <component name="ChangeListManager">
     <list default="true" id="c244eca0-0039-459c-b54d-e525f055ed8a" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change beforePath="$PROJECT_DIR$/workload/approximate_partitioner.h" afterPath="$PROJECT_DIR$/workload/approximate_partitioner.h" />
+      <change beforePath="$PROJECT_DIR$/workload/partitioner.h" afterPath="$PROJECT_DIR$/workload/partitioner.h" />
+      <change beforePath="$PROJECT_DIR$/workload/partitioner_helper.h" afterPath="$PROJECT_DIR$/workload/partitioner_helper.h" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -29,51 +32,58 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="parser.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/system/parser.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1197">
-              <caret line="57" column="53" lean-forward="false" selection-start-line="57" selection-start-column="53" selection-end-line="57" selection-end-column="53" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="partitioner.h" pinned="false" current-in-tab="true">
+      <file leaf-file-name="partitioner.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/workload/partitioner.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="924">
-              <caret line="82" column="0" lean-forward="true" selection-start-line="82" selection-start-column="0" selection-end-line="82" selection-end-column="0" />
+            <state relative-caret-position="-1465">
+              <caret line="77" column="22" lean-forward="false" selection-start-line="77" selection-start-column="22" selection-end-line="77" selection-end-column="22" />
               <folding>
                 <element signature="e#231#377#1" expanded="false" />
-                <element signature="e#464#1112#1" expanded="false" />
-                <element signature="e#1125#1695#0" expanded="false" />
-                <element signature="e#3992#4301#0" expanded="false" />
-                <element signature="e#4665#5988#0" expanded="false" />
-                <element signature="e#5992#7809#0" expanded="false" />
-                <element signature="e#7813#9546#0" expanded="false" />
-                <element signature="e#9550#12392#0" expanded="false" />
-                <element signature="e#15025#15037#0" expanded="true" />
+                <element signature="e#463#1108#1" expanded="false" />
+                <element signature="e#660#803#0" expanded="false" />
+                <element signature="e#809#1104#0" expanded="false" />
+                <element signature="e#1121#1715#0" expanded="false" />
+                <element signature="e#4152#4229#0" expanded="false" />
+                <element signature="e#4233#5348#0" expanded="false" />
+                <element signature="e#5352#6739#0" expanded="false" />
+                <element signature="e#6743#8002#0" expanded="false" />
+                <element signature="e#10653#11021#0" expanded="false" />
+                <element signature="e#11025#11263#0" expanded="false" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="approximate_partitioner.h" pinned="false" current-in-tab="false">
+      <file leaf-file-name="query.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/system/query.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="525">
+              <caret line="25" column="28" lean-forward="false" selection-start-line="25" selection-start-column="28" selection-end-line="25" selection-end-column="28" />
+              <folding>
+                <element signature="e#586#598#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="approximate_partitioner.h" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/workload/approximate_partitioner.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="172">
-              <caret line="39" column="0" lean-forward="false" selection-start-line="39" selection-start-column="0" selection-end-line="39" selection-end-column="0" />
+            <state relative-caret-position="313">
+              <caret line="168" column="3" lean-forward="true" selection-start-line="168" selection-start-column="3" selection-end-line="168" selection-end-column="3" />
               <folding>
-                <element signature="e#74#98#0" expanded="true" />
-                <element signature="e#1095#1697#0" expanded="false" />
-                <element signature="e#3570#3808#0" expanded="false" />
-                <element signature="e#3823#5606#0" expanded="false" />
-                <element signature="e#5610#7827#0" expanded="false" />
-                <element signature="e#7831#8748#0" expanded="false" />
-                <element signature="e#8752#9135#0" expanded="false" />
-                <element signature="e#9139#9651#0" expanded="false" />
-                <element signature="e#9655#12019#0" expanded="false" />
+                <element signature="e#220#787#1" expanded="false" />
+                <element signature="e#381#487#0" expanded="false" />
+                <element signature="e#493#783#0" expanded="false" />
+                <element signature="e#1104#1789#0" expanded="false" />
+                <element signature="e#1793#3615#0" expanded="false" />
+                <element signature="e#3619#3857#0" expanded="false" />
+                <element signature="e#3872#5261#0" expanded="false" />
+                <element signature="e#5265#6794#0" expanded="false" />
+                <element signature="e#6798#7475#0" expanded="false" />
+                <element signature="e#7479#7857#0" expanded="false" />
+                <element signature="e#7861#8373#0" expanded="false" />
+                <element signature="e#8377#10819#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -82,7 +92,7 @@
       <file leaf-file-name="CMakeLists.txt" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1129">
+            <state relative-caret-position="2289">
               <caret line="109" column="42" lean-forward="false" selection-start-line="109" selection-start-column="42" selection-end-line="109" selection-end-column="42" />
               <folding />
             </state>
@@ -92,7 +102,7 @@
       <file leaf-file-name="ycsb_workload.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ycsb/ycsb_workload.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="693">
+            <state relative-caret-position="777">
               <caret line="37" column="0" lean-forward="false" selection-start-line="37" selection-start-column="0" selection-end-line="37" selection-end-column="0" />
               <folding />
             </state>
@@ -102,7 +112,7 @@
       <file leaf-file-name="main.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/system/main.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="378">
+            <state relative-caret-position="609">
               <caret line="29" column="41" lean-forward="false" selection-start-line="29" selection-start-column="41" selection-end-line="29" selection-end-column="41" />
               <folding />
             </state>
@@ -125,12 +135,17 @@
       <file leaf-file-name="partitioner_helper.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/workload/partitioner_helper.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="105">
-              <caret line="5" column="18" lean-forward="false" selection-start-line="5" selection-start-column="18" selection-end-line="5" selection-end-column="18" />
+            <state relative-caret-position="173">
+              <caret line="69" column="19" lean-forward="false" selection-start-line="69" selection-start-column="19" selection-end-line="69" selection-end-column="19" />
               <folding>
-                <element signature="e#75#94#0" expanded="true" />
-                <element signature="e#5221#5295#0" expanded="false" />
-                <element signature="e#5299#7129#0" expanded="false" />
+                <element signature="e#134#1864#1" expanded="false" />
+                <element signature="e#424#843#0" expanded="false" />
+                <element signature="e#847#1862#0" expanded="false" />
+                <element signature="e#2154#2344#0" expanded="false" />
+                <element signature="e#2349#3070#1" expanded="false" />
+                <element signature="e#5238#7311#1" expanded="false" />
+                <element signature="e#5401#5475#0" expanded="false" />
+                <element signature="e#5479#7309#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -139,7 +154,7 @@
       <file leaf-file-name="graph_partitioner.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/workload/graph_partitioner.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1297">
+            <state relative-caret-position="1533">
               <caret line="73" column="28" lean-forward="false" selection-start-line="73" selection-start-column="28" selection-end-line="73" selection-end-column="28" />
               <folding>
                 <element signature="e#297#782#1" expanded="false" />
@@ -167,7 +182,7 @@
       <file leaf-file-name="graph_partitioner.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/workload/graph_partitioner.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="84">
+            <state relative-caret-position="105">
               <caret line="5" column="75" lean-forward="false" selection-start-line="5" selection-start-column="75" selection-end-line="5" selection-end-column="75" />
               <folding>
                 <element signature="e#85#2128#0" expanded="false" />
@@ -259,8 +274,8 @@
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/workload/scheduler.h" />
         <option value="$PROJECT_DIR$/workload/partitioner_helper.h" />
-        <option value="$PROJECT_DIR$/workload/approximate_partitioner.h" />
         <option value="$PROJECT_DIR$/workload/partitioner.h" />
+        <option value="$PROJECT_DIR$/workload/approximate_partitioner.h" />
       </list>
     </option>
   </component>
@@ -271,9 +286,10 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
-  <component name="ProjectFrameBounds" fullScreen="true">
-    <option name="width" value="2560" />
-    <option name="height" value="1440" />
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="y" value="23" />
+    <option name="width" value="1440" />
+    <option name="height" value="900" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -402,23 +418,24 @@
       <workItem from="1518133923258" duration="650000" />
       <workItem from="1518317067447" duration="9120000" />
       <workItem from="1518456530781" duration="67000" />
-      <workItem from="1518459961606" duration="4769000" />
+      <workItem from="1518459961606" duration="5732000" />
+      <workItem from="1518499806118" duration="8523000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="151899000" />
+    <option name="totallyTimeSpent" value="161385000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="2560" height="1440" extended-state="0" />
+    <frame x="0" y="23" width="1440" height="877" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.121307604" sideWeight="0.4941349" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.17547569" sideWeight="0.4941349" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3269934" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32969216" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32626188" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4630578" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4629156" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24947146" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -460,7 +477,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="40" />
+      <option name="time" value="46" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -652,13 +669,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/system/query.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="651">
-          <caret line="31" column="35" lean-forward="false" selection-start-line="31" selection-start-column="35" selection-end-line="31" selection-end-column="35" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ycsb/ycsb.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="252">
@@ -713,7 +723,7 @@
         <state relative-caret-position="3150">
           <caret line="150" column="0" lean-forward="false" selection-start-line="150" selection-start-column="0" selection-end-line="150" selection-end-column="0" />
           <folding>
-            <element signature="e#3976#3988#0" expanded="true" />
+            <element signature="e#3976#3988#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -736,7 +746,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/workload/graph_partitioner.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="84">
+        <state relative-caret-position="105">
           <caret line="5" column="75" lean-forward="false" selection-start-line="5" selection-start-column="75" selection-end-line="5" selection-end-column="75" />
           <folding>
             <element signature="e#85#2128#0" expanded="false" />
@@ -748,7 +758,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/workload/graph_partitioner.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1297">
+        <state relative-caret-position="1533">
           <caret line="73" column="28" lean-forward="false" selection-start-line="73" selection-start-column="28" selection-end-line="73" selection-end-column="28" />
           <folding>
             <element signature="e#297#782#1" expanded="false" />
@@ -774,7 +784,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/system/main.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="378">
+        <state relative-caret-position="609">
           <caret line="29" column="41" lean-forward="false" selection-start-line="29" selection-start-column="41" selection-end-line="29" selection-end-column="41" />
           <folding />
         </state>
@@ -782,7 +792,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ycsb/ycsb_workload.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="693">
+        <state relative-caret-position="777">
           <caret line="37" column="0" lean-forward="false" selection-start-line="37" selection-start-column="0" selection-end-line="37" selection-end-column="0" />
           <folding />
         </state>
@@ -790,7 +800,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/CMakeLists.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1129">
+        <state relative-caret-position="2289">
           <caret line="109" column="42" lean-forward="false" selection-start-line="109" selection-start-column="42" selection-end-line="109" selection-end-column="42" />
           <folding />
         </state>
@@ -807,50 +817,70 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/workload/partitioner_helper.h">
+    <entry file="file://$PROJECT_DIR$/system/query.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="5" column="18" lean-forward="false" selection-start-line="5" selection-start-column="18" selection-end-line="5" selection-end-column="18" />
+        <state relative-caret-position="525">
+          <caret line="25" column="28" lean-forward="false" selection-start-line="25" selection-start-column="28" selection-end-line="25" selection-end-column="28" />
           <folding>
-            <element signature="e#75#94#0" expanded="true" />
-            <element signature="e#5221#5295#0" expanded="false" />
-            <element signature="e#5299#7129#0" expanded="false" />
+            <element signature="e#586#598#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/workload/approximate_partitioner.h">
+    <entry file="file://$PROJECT_DIR$/workload/partitioner_helper.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="172">
-          <caret line="39" column="0" lean-forward="false" selection-start-line="39" selection-start-column="0" selection-end-line="39" selection-end-column="0" />
+        <state relative-caret-position="173">
+          <caret line="69" column="19" lean-forward="false" selection-start-line="69" selection-start-column="19" selection-end-line="69" selection-end-column="19" />
           <folding>
-            <element signature="e#74#98#0" expanded="true" />
-            <element signature="e#1095#1697#0" expanded="false" />
-            <element signature="e#3570#3808#0" expanded="false" />
-            <element signature="e#3823#5606#0" expanded="false" />
-            <element signature="e#5610#7827#0" expanded="false" />
-            <element signature="e#7831#8748#0" expanded="false" />
-            <element signature="e#8752#9135#0" expanded="false" />
-            <element signature="e#9139#9651#0" expanded="false" />
-            <element signature="e#9655#12019#0" expanded="false" />
+            <element signature="e#134#1864#1" expanded="false" />
+            <element signature="e#424#843#0" expanded="false" />
+            <element signature="e#847#1862#0" expanded="false" />
+            <element signature="e#2154#2344#0" expanded="false" />
+            <element signature="e#2349#3070#1" expanded="false" />
+            <element signature="e#5238#7311#1" expanded="false" />
+            <element signature="e#5401#5475#0" expanded="false" />
+            <element signature="e#5479#7309#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/workload/partitioner.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="924">
-          <caret line="82" column="0" lean-forward="true" selection-start-line="82" selection-start-column="0" selection-end-line="82" selection-end-column="0" />
+        <state relative-caret-position="-1465">
+          <caret line="77" column="22" lean-forward="false" selection-start-line="77" selection-start-column="22" selection-end-line="77" selection-end-column="22" />
           <folding>
             <element signature="e#231#377#1" expanded="false" />
-            <element signature="e#464#1112#1" expanded="false" />
-            <element signature="e#1125#1695#0" expanded="false" />
-            <element signature="e#3992#4301#0" expanded="false" />
-            <element signature="e#4665#5988#0" expanded="false" />
-            <element signature="e#5992#7809#0" expanded="false" />
-            <element signature="e#7813#9546#0" expanded="false" />
-            <element signature="e#9550#12392#0" expanded="false" />
-            <element signature="e#15025#15037#0" expanded="true" />
+            <element signature="e#463#1108#1" expanded="false" />
+            <element signature="e#660#803#0" expanded="false" />
+            <element signature="e#809#1104#0" expanded="false" />
+            <element signature="e#1121#1715#0" expanded="false" />
+            <element signature="e#4152#4229#0" expanded="false" />
+            <element signature="e#4233#5348#0" expanded="false" />
+            <element signature="e#5352#6739#0" expanded="false" />
+            <element signature="e#6743#8002#0" expanded="false" />
+            <element signature="e#10653#11021#0" expanded="false" />
+            <element signature="e#11025#11263#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/workload/approximate_partitioner.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="313">
+          <caret line="168" column="3" lean-forward="true" selection-start-line="168" selection-start-column="3" selection-end-line="168" selection-end-column="3" />
+          <folding>
+            <element signature="e#220#787#1" expanded="false" />
+            <element signature="e#381#487#0" expanded="false" />
+            <element signature="e#493#783#0" expanded="false" />
+            <element signature="e#1104#1789#0" expanded="false" />
+            <element signature="e#1793#3615#0" expanded="false" />
+            <element signature="e#3619#3857#0" expanded="false" />
+            <element signature="e#3872#5261#0" expanded="false" />
+            <element signature="e#5265#6794#0" expanded="false" />
+            <element signature="e#6798#7475#0" expanded="false" />
+            <element signature="e#7479#7857#0" expanded="false" />
+            <element signature="e#7861#8373#0" expanded="false" />
+            <element signature="e#8377#10819#0" expanded="false" />
           </folding>
         </state>
       </provider>

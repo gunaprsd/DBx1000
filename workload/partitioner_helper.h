@@ -2,8 +2,8 @@
 #define DBX1000_PARTITIONED_HELPER_H
 
 #include "global.h"
-#include <metis.h>
 #include <cstring>
+#include <metis.h>
 
 struct TableInfo {
   uint64_t num_total_accesses;
@@ -64,21 +64,27 @@ struct TableInfo {
 
 struct DataNodeInfo {
   idx_t id;
+  uint32_t table_id;
   uint64_t epoch;
-  uint64_t num_reads;
-  uint64_t num_writes;
-  idx_t read_wgt;
-  idx_t write_wgt;
-  std::set<idx_t> cores;
+	uint64_t assigned_core;
+	bool single_core;
   std::vector<idx_t> read_txns;
   std::vector<idx_t> write_txns;
   DataNodeInfo()
-      : id(-1), epoch(UINT64_MAX), num_reads(0), num_writes(0), cores(),
-        read_txns(), write_txns() {}
+      : id(-1), table_id(UINT64_MAX), epoch(UINT64_MAX), read_txns(), write_txns() {}
+  void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
+    id = _id;
+    epoch = _epoch;
+    table_id = _table_id;
+    cores.clear();
+    read_txns.clear();
+    write_txns.clear();
+  }
 };
 
 struct ApproxDataNodeInfo {
   idx_t id;
+  uint32_t table_id;
   uint64_t epoch;
   uint64_t num_reads;
   uint64_t num_writes;
@@ -88,9 +94,11 @@ struct ApproxDataNodeInfo {
   std::set<idx_t> cores;
   ApproxDataNodeInfo()
       : id(-1), epoch(UINT64_MAX), num_reads(0), num_writes(0), cores() {}
-  void init(uint64_t _epoch, idx_t _id, uint32_t num_clusters) {
+  void init(uint64_t _epoch, idx_t _id, uint32_t _table_id,
+            uint32_t num_clusters) {
     id = _id;
     epoch = _epoch;
+    table_id = _table_id;
     num_reads = 0;
     num_writes = 0;
     read_wgt = 0;
@@ -118,9 +126,9 @@ struct InputStatistics {
     num_txn_nodes = 0;
     num_data_nodes = 0;
     num_edges = 0;
-    min_data_degree = 0;
+    min_data_degree = UINT64_MAX;
     max_data_degree = 0;
-    min_txn_degree = 0;
+    min_txn_degree = UINT64_MAX;
     max_txn_degree = 0;
   }
 
@@ -136,7 +144,6 @@ struct InputStatistics {
 };
 
 struct ClusterStatistics {
-  uint64_t num_single_core_data;
   uint64_t min_data_core_degree;
   uint64_t max_data_core_degree;
 
@@ -148,10 +155,10 @@ struct ClusterStatistics {
   uint64_t max_cross_access_write;
   uint64_t tot_cross_access_write;
 
+  uint64_t objective;
   ClusterStatistics() { reset(); }
 
   void reset() {
-    num_single_core_data = 0;
     min_data_core_degree = UINT64_MAX;
     max_data_core_degree = 0;
     min_cross_access_read = UINT64_MAX;
@@ -160,10 +167,10 @@ struct ClusterStatistics {
     min_cross_access_write = UINT64_MAX;
     max_cross_access_write = 0;
     tot_cross_access_write = 0;
+    objective = 0;
   }
 
   void print() {
-    PRINT_INFO(lu, "Num-Single-Core-Data", num_single_core_data);
     PRINT_INFO(lu, "Min-Data-Core-Degree", min_data_core_degree);
     PRINT_INFO(lu, "Max-Data-Core-Degree", max_data_core_degree);
     PRINT_INFO(lu, "Min-Txn-Cross-Access-Read", min_cross_access_read);
@@ -172,6 +179,7 @@ struct ClusterStatistics {
     PRINT_INFO(lu, "Min-Txn-Cross-Access-Write", min_cross_access_write);
     PRINT_INFO(lu, "Max-Txn-Cross-Access-Write", max_cross_access_write);
     PRINT_INFO(lu, "Total-Txn-Cross-Access-Write", tot_cross_access_write);
+    PRINT_INFO(lu, "Objective", objective);
   }
 };
 

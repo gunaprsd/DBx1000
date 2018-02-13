@@ -157,7 +157,7 @@ template <typename T> struct ClusterInfo {
   void reset() {
     objective = 0;
     for (auto tinfo : table_info) {
-      reset();
+      tinfo.reset();
     }
   }
 

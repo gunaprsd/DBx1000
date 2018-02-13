@@ -1,0 +1,102 @@
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=4 -threads=30 -size_per_thread=500 -tag=ycsb_p4_c30_sz500_s0 -input_folder=data/ycsb_p4_c30_sz500_s0_raw -output_folder=data/ycsb_p4_c30_sz500_s0_partitioned -task=partition -parttype=conflict_graph -ufactor=10 -iterations=15
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=4 -threads=30 -size_per_thread=500 -tag=ycsb_p4_c30_sz500_s0 -input_folder=data/ycsb_p4_c30_sz500_s0_raw -output_folder=data/ycsb_p4_c30_sz500_s0_partitioned -task=partition -parttype=conflict_graph -ufactor=10 -iterations=15
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=4 -threads=30 -size_per_thread=500 -tag=ycsb_p4_c30_sz500_s0 -input_folder=data/ycsb_p4_c30_sz500_s0_raw -output_folder=data/ycsb_p4_c30_sz500_s0_partitioned -task=partition -parttype=conflict_graph -ufactor=10 -iterations=15
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=4 -threads=30 -size_per_thread=500 -tag=ycsb_p4_c30_sz500_s0 -input_folder=data/ycsb_p4_c30_sz500_s0_raw -output_folder=data/ycsb_p4_c30_sz500_s0_partitioned -task=partition -parttype=conflict_graph -ufactor=10 -iterations=15
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=4 -threads=30 -size_per_thread=500 -tag=ycsb_p4_c30_sz500_s0 -input_folder=data/ycsb_p4_c30_sz500_s0_raw -output_folder=data/ycsb_p4_c30_sz500_s0_partitioned -task=partition -parttype=conflict_graph -ufactor=10 -iterations=15
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=4 -threads=30 -size_per_thread=500 -tag=ycsb_p4_c30_sz500_s0 -input_folder=data/ycsb_p4_c30_sz500_s0_raw -output_folder=data/ycsb_p4_c30_sz500_s0_partitioned -task=partition -parttype=conflict_graph -ufactor=10 -iterations=15
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=4 -threads=30 -size_per_thread=500 -tag=ycsb_p4_c30_sz500_s0 -input_folder=data/ycsb_p4_c30_sz500_s0_raw -output_folder=data/ycsb_p4_c30_sz500_s0_partitioned -task=partition -parttype=access_graph -ufactor=10 -iterations=15
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=4 -threads=30 -size_per_thread=500 -tag=ycsb_p4_c30_sz500_s0 -input_folder=data/ycsb_p4_c30_sz500_s0_raw -output_folder=data/ycsb_p4_c30_sz500_s0_partitioned -task=partition -parttype=access_graph -ufactor=10 -iterations=15
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=30 -threads=30 -size_per_thread=500 -tag=ycsb_p30_c30_sz500_s0 -input_folder=data/ycsb_p30_c30_sz500_s0_raw -output_folder=data/ycsb_p30_c30_sz500_s0_partitioned -task=partition -parttype=access_graph -ufactor=10 -iterations=15
+Workload-Load-Time            : 0.018521
+************** Input Graph Information *************
+Num-Data-Nodes                : 158505
+Num-Txn-Nodes                 : 15000
+Num-Edges                     : 235581
+Min-Data-Degree               : 1
+Max-Data-Degree               : 280
+Min-Txn-Degree                : 12
+Max-Txn-Degree                : 16
+************** Random Cluster Information *************
+Objective                     : 1850302
+Main-Total-Accesses           : 140724200567165
+Main-Num-Accessed-Data        : 158535
+Main-Txn-Cross-Access-Histogram: 471, 1282, 2179, 2853, 2911, 2424, 1528, 786, 329, 112, 24, 9, 
+Main-Data-Core-Degree-Histogram: 88.77,  6.32,  1.88,  0.86,  0.51,  0.36,  0.22,  0.17,  0.13,  0.10,  0.09,  0.07,  0.05,  0.05,  0.04,  0.03,  0.03,  0.03,  0.03,  0.02,  0.02,  0.02,  0.02,  0.01,  0.01,  0.02,  0.02,  0.02,  0.02,  0.05, 
+Main-Weighted-Avg-Cores       :  1.32
+Optimizing for Edge Cuts
+You just increased the maxndoms: 3 2
+
+Timing Information -------------------------------------------------
+ Multilevel: 		   0.152
+     Coarsening: 		   0.072
+            Matching: 			   0.036
+            Contract: 			   0.036
+     Initial Partition: 	   0.012
+     Uncoarsening: 		   0.064
+          Refinement: 			   0.032
+          Projection: 			   0.012
+     Splitting: 		   0.000
+********************************************************************
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=30 -threads=30 -size_per_thread=500 -tag=ycsb_p30_c30_sz500_s0 -input_folder=data/ycsb_p30_c30_sz500_s0_raw -output_folder=data/ycsb_p30_c30_sz500_s0_partitioned -task=partition -parttype=access_graph -ufactor=10 -iterations=15
+Workload-Load-Time            : 0.014745
+************** Input Graph Information *************
+Num-Data-Nodes                : 158505
+Num-Txn-Nodes                 : 15000
+Num-Edges                     : 235581
+Min-Data-Degree               : 1
+Max-Data-Degree               : 280
+Min-Txn-Degree                : 12
+Max-Txn-Degree                : 16
+************** Random Cluster Information *************
+Objective                     : 1850302
+Main-Total-Accesses           : 140722188888029
+Main-Num-Accessed-Data        : 158535
+Main-Txn-Cross-Access-Histogram: 471, 1282, 2179, 2853, 2911, 2424, 1528, 786, 329, 112, 24, 9, 
+Main-Data-Core-Degree-Histogram: 88.77,  6.32,  1.88,  0.86,  0.51,  0.36,  0.22,  0.17,  0.13,  0.10,  0.09,  0.07,  0.05,  0.05,  0.04,  0.03,  0.03,  0.03,  0.03,  0.02,  0.02,  0.02,  0.02,  0.01,  0.01,  0.02,  0.02,  0.02,  0.02,  0.05, 
+Main-Weighted-Avg-Cores       :  1.32
+Optimizing for Edge Cuts
+You just increased the maxndoms: 3 2
+
+Timing Information -------------------------------------------------
+ Multilevel: 		   0.148
+     Coarsening: 		   0.068
+            Matching: 			   0.040
+            Contract: 			   0.028
+     Initial Partition: 	   0.012
+     Uncoarsening: 		   0.068
+          Refinement: 			   0.036
+          Projection: 			   0.012
+     Splitting: 		   0.000
+********************************************************************
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=30 -threads=30 -size_per_thread=500 -tag=ycsb_p30_c30_sz500_s0 -input_folder=data/ycsb_p30_c30_sz500_s0_raw -output_folder=data/ycsb_p30_c30_sz500_s0_partitioned -task=partition -parttype=access_graph -ufactor=10 -iterations=15
+Workload-Load-Time            : 0.014197
+************** Input Graph Information *************
+Num-Data-Nodes                : 158505
+Num-Txn-Nodes                 : 15000
+Num-Edges                     : 235581
+Min-Data-Degree               : 1
+Max-Data-Degree               : 280
+Min-Txn-Degree                : 12
+Max-Txn-Degree                : 16
+************** Random Cluster Information *************
+Objective                     : 1850302
+Main-Total-Accesses           : 140732625818445
+Main-Num-Accessed-Data        : 158529
+Main-Txn-Cross-Access-Histogram: 471, 1282, 2179, 2853, 2911, 2424, 1528, 786, 329, 112, 24, 9, 
+Main-Data-Core-Degree-Histogram: 88.77,  6.32,  1.88,  0.86,  0.51,  0.36,  0.22,  0.17,  0.13,  0.10,  0.09,  0.07,  0.05,  0.05,  0.04,  0.03,  0.03,  0.03,  0.03,  0.02,  0.02,  0.02,  0.02,  0.01,  0.01,  0.02,  0.02,  0.02,  0.02,  0.05, 
+Main-Weighted-Avg-Cores       :  1.32
+Optimizing for Edge Cuts
+You just increased the maxndoms: 3 2
+
+Timing Information -------------------------------------------------
+ Multilevel: 		   0.148
+     Coarsening: 		   0.068
+            Matching: 			   0.040
+            Contract: 			   0.028
+     Initial Partition: 	   0.016
+     Uncoarsening: 		   0.064
+          Refinement: 			   0.036
+          Projection: 			   0.008
+     Splitting: 		   0.000
+********************************************************************
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=30 -threads=30 -size_per_thread=500 -tag=ycsb_p30_c30_sz500_s0 -input_folder=data/ycsb_p30_c30_sz500_s0_raw -output_folder=data/ycsb_p30_c30_sz500_s0_partitioned -task=partition -parttype=approx -ufactor=10 -iterations=15

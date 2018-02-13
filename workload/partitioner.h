@@ -61,6 +61,7 @@ protected:
       : _num_clusters(num_clusters), _iteration(0), _batch(nullptr),
         _graph_info(), _cluster_info(), _rand(1) {
     _rand.seed(0, FLAGS_seed + 125);
+    _cluster_info.initialize(num_clusters);
   }
 
   void compute_graph_info() {
@@ -217,8 +218,10 @@ protected:
   virtual void do_partition(idx_t *parts) = 0;
 };
 
-template <typename T> class ConflictGraphPartitioner : public BasePartitioner<T> {
+template <typename T>
+class ConflictGraphPartitioner : public BasePartitioner<T> {
   typedef BasePartitioner<T> Parent;
+
 public:
   ConflictGraphPartitioner(uint32_t num_clusters)
       : BasePartitioner<T>(num_clusters), vwgt(), adjwgt(), xadj(), adjncy() {}
@@ -293,7 +296,7 @@ protected:
 
     create_graph();
 
-	 	assert(FLAGS_objtype == "edge_cut");
+    assert(FLAGS_objtype == "edge_cut");
     auto graph = new METIS_CSRGraph();
     graph->nvtxs = Parent::_graph_info.num_txn_nodes;
     graph->adjncy_size = static_cast<idx_t>(adjncy.size());
@@ -413,7 +416,6 @@ protected:
 
     add_data_nodes();
 
-    auto all_parts = new idx_t[total_num_vertices];
     auto graph = new METIS_CSRGraph();
     graph->nvtxs = total_num_vertices;
     graph->adjncy_size = 2 * Parent::_graph_info.num_edges;
@@ -423,9 +425,14 @@ protected:
     graph->adjwgt = adjwgt.data();
     graph->vsize = vsize.data();
     graph->ncon = 1;
+
+    auto all_parts = new idx_t[total_num_vertices];
     METISGraphPartitioner::compute_partitions(graph, Parent::_num_clusters,
                                               all_parts);
-    memcpy(parts, all_parts, sizeof(idx_t) * Parent::_graph_info.num_txn_nodes);
+    for (uint64_t i = 0; i < Parent::_graph_info.num_txn_nodes; i++) {
+      parts[i] = all_parts[i];
+    }
+    delete all_parts;
 
     auto end_time = get_server_clock();
     Parent::_runtime_info.partition_duration = DURATION(end_time, start_time);
@@ -435,11 +442,11 @@ protected:
     adjncy.clear();
     adjwgt.clear();
     vsize.clear();
-    delete all_parts;
   }
 };
 
-template <typename T> class ApproximateGraphPartitioner : public BasePartitioner<T> {
+template <typename T>
+class ApproximateGraphPartitioner : public BasePartitioner<T> {
   typedef BasePartitioner<T> Parent;
 
 public:
@@ -493,7 +500,7 @@ protected:
       iterator->set_query(query);
       while (iterator->next(key, type, table_id)) {
         auto info = &Parent::_graph_info.data_info[key];
-        auto core = parts[info->id];
+        auto core = info->assigned_core;
         savings[core] += info->read_txns.size() + info->write_txns.size();
         txn_size++;
       }
@@ -521,8 +528,8 @@ protected:
   void internal_data_partition(idx_t *parts) {
     uint64_t *core_weights = new uint64_t[Parent::_num_clusters];
     for (size_t i = 0; i < Parent::_graph_info.data_inv_idx.size(); i++) {
-      auto info =
-          &Parent::_graph_info.data_info[Parent::_graph_info.data_inv_idx[i]];
+      auto key = Parent::_graph_info.data_inv_idx[i];
+      auto info = &Parent::_graph_info.data_info[key];
       memset(core_weights, 0, sizeof(uint64_t) * Parent::_num_clusters);
       for (auto txn_id : info->read_txns) {
         core_weights[parts[txn_id]]++;
@@ -538,7 +545,7 @@ protected:
           allotted_core = c;
         }
       }
-      parts[info->id] = allotted_core;
+      info->assigned_core = allotted_core;
     }
   }
 

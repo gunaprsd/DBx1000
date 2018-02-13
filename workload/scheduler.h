@@ -20,6 +20,8 @@ public:
       _partitioner = new AccessGraphPartitioner<T>(num_threads);
     } else if(FLAGS_parttype == "approx") {
       _partitioner = new ApproximateGraphPartitioner<T>(num_threads);
+    } else if(FLAGS_parttype == "conflict_graph") {
+      _partitioner = new ConflictGraphPartitioner<T>(num_threads);
     } else {
       assert(false);
     }

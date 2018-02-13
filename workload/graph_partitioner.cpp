@@ -50,7 +50,7 @@ void METISGraphPartitioner::compute_partitions(METIS_CSRGraph *graph,
       use_vtx_sizes ? graph->vsize : nullptr,
       use_adj_wgts ? graph->adjwgt : nullptr, &nparts, nullptr, nullptr,
       options, &objval, parts);
-  PRINT_INFO(ld, "Partitioning-Obj-Value", objval);
+  //PRINT_INFO(ld, "Partitioning-Obj-Value", objval);
   switch (result) {
   case METIS_ERROR_INPUT:
     printf("Error in input!\n");

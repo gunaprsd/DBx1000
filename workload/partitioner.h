@@ -8,7 +8,6 @@
 #include <cstring>
 
 template <typename T> class BasePartitioner {
-
 public:
   void partition(QueryBatch<T> *batch, vector<idx_t> &partitions) {
     _batch = batch;
@@ -66,6 +65,7 @@ protected:
 
   void compute_graph_info() {
     _graph_info.reset();
+
     Query<T> *query;
     uint64_t key;
     access_t type;
@@ -75,33 +75,40 @@ protected:
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
 
+    // Create the basic access graph
     for (uint64_t i = 0u; i < size; i++) {
       _graph_info.num_txn_nodes++;
       query = queryBatch[i];
-      uint64_t txn_degree = 0;
 
+      uint64_t num_access = 0;
       iterator->set_query(query);
       while (iterator->next(key, type, table_id)) {
         auto info = &_graph_info.data_info[key];
         if (info->epoch != _iteration) {
+          // Seeing the data item for the first time
+          // in this batch - initialize appropriately
           idx_t data_id = _graph_info.num_data_nodes + size;
           info->reset(data_id, _iteration, table_id);
           _graph_info.data_inv_idx.push_back(key);
           _graph_info.num_data_nodes++;
         }
+
+        // Add txn to read or write list of data item
         if (type == RD) {
           info->read_txns.push_back(i);
         } else {
           info->write_txns.push_back(i);
         }
-        txn_degree++;
+
+        num_access++;
       }
 
-      _graph_info.num_edges += txn_degree;
-      ACCUMULATE_MIN(_graph_info.min_txn_degree, txn_degree);
-      ACCUMULATE_MAX(_graph_info.max_txn_degree, txn_degree);
+      _graph_info.num_edges += num_access;
+      ACCUMULATE_MIN(_graph_info.min_txn_degree, num_access);
+      ACCUMULATE_MAX(_graph_info.max_txn_degree, num_access);
     }
 
+    // Compute data min and max degrees
     for (size_t i = 0; i < _graph_info.data_inv_idx.size(); i++) {
       auto info = &_graph_info.data_info[_graph_info.data_inv_idx[i]];
       auto data_degree = info->read_txns.size() + info->write_txns.size();
@@ -122,12 +129,14 @@ protected:
     _cluster_info.objective = 0;
     uint64_t *core_weights = new uint64_t[_num_clusters];
     for (size_t i = 0; i < _graph_info.data_inv_idx.size(); i++) {
-      uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0, max_c = 0,
-               chosen_c = UINT64_MAX;
+      // Initialize all variables
+      uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0;
+      uint64_t max_c = 0, chosen_c = UINT64_MAX;
       memset(core_weights, 0, sizeof(uint64_t) * _num_clusters);
 
-      // compute core weights
-      auto info = &_graph_info.data_info[_graph_info.data_inv_idx[i]];
+      // Compute number of txns in each core for data item D
+      auto key = _graph_info.data_inv_idx[i];
+      auto info = &_graph_info.data_info[key];
       for (auto txn_id : info->read_txns) {
         core_weights[parts[txn_id]]++;
       }
@@ -135,7 +144,7 @@ protected:
         core_weights[parts[txn_id]]++;
       }
 
-      // compute stats on core weights
+      // Compute stats on core weights
       for (uint64_t c = 0; c < _num_clusters; c++) {
         sum_c_sq += (core_weights[c] * core_weights[c]);
         sum_c += core_weights[c];
@@ -146,18 +155,30 @@ protected:
         }
       }
 
-      // update table and objective info
-      _cluster_info.objective += ((sum_c * sum_c) - sum_c_sq) / 2;
-
+      // Update data information - core and if single-core-only
       info->single_core = (num_c == 1);
       info->assigned_core = chosen_c;
 
+      /*
+       * Update objective info
+       * ---------------------
+       * The objective for clustering is to minimize sum of weights of
+       * straddler edges in conflict graph. To compute it, we
+       * can do it per-data item as follows:
+       * \sum_{d \in D} \sum_{T_i, T_j not in same core and access d} 1
+       * For each data item,
+       * \sum_{T_i, T_j not in same core} 1 = (All pairs count - \sum_{T_i, T_j
+       * in same core})/2
+       */
+      _cluster_info.objective += ((sum_c * sum_c) - sum_c_sq) / 2;
+
       // update table wise info
-      _cluster_info.table_info[info->table_id].num_accessed_data++;
-      _cluster_info.table_info[info->table_id].num_total_accesses += sum_c;
-      _cluster_info.table_info[info->table_id]
-          .data_core_degree_histogram[num_c - 1]++;
+      auto table_info = &_cluster_info.table_info[info->table_id];
+      table_info->num_accessed_data++;
+      table_info->num_total_accesses += sum_c;
+      table_info->data_core_degree_histogram[num_c - 1]++;
     }
+    delete core_weights;
 
     auto iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *_batch;
@@ -179,6 +200,11 @@ protected:
         if (parts[i] != info->assigned_core) {
           table_cross_access[table_id]++;
         }
+#ifdef SELECTIVE_CC
+        if (select_cc && info->single_core) {
+          iterator->set_cc_info(0);
+        }
+#endif
       }
 
       for (uint64_t s = 0; s < num_tables; s++) {
@@ -191,8 +217,106 @@ protected:
   virtual void do_partition(idx_t *parts) = 0;
 };
 
+template <typename T> class ConflictGraphPartitioner : public BasePartitioner<T> {
+  typedef BasePartitioner<T> Parent;
+public:
+  ConflictGraphPartitioner(uint32_t num_clusters)
+      : BasePartitioner<T>(num_clusters), vwgt(), adjwgt(), xadj(), adjncy() {}
+
+protected:
+  vector<idx_t> vwgt;
+  vector<idx_t> adjwgt;
+  vector<idx_t> xadj;
+  vector<idx_t> adjncy;
+
+  void create_graph() {
+    QueryBatch<T> &queryBatch = *Parent::_batch;
+    uint64_t size = queryBatch.size();
+
+    uint64_t key1, key2;
+    access_t type1, type2;
+    uint32_t table_id1, table_id2;
+    idx_t node_weight = 0, edge_weight = 0;
+
+    AccessIterator<T> *iterator1 = new AccessIterator<T>();
+    AccessIterator<T> *iterator2 = new AccessIterator<T>();
+    Query<T> *query1, *query2;
+
+    xadj.push_back(0);
+    for (auto i = 0u; i < size; i++) {
+      query1 = queryBatch[i];
+
+      // Compute the node weight
+      node_weight = 0;
+      iterator1->set_query(query1);
+      while (iterator1->next(key1, type1, table_id1)) {
+        node_weight++;
+      }
+
+      for (auto j = 0u; j < size; j++) {
+        query2 = queryBatch[j];
+
+        if (i == j) {
+          break;
+        }
+
+        // Compute edge weight for T_i, T_j
+        edge_weight = 0;
+        iterator1->set_query(query1);
+        while (iterator1->next(key1, type1, table_id1)) {
+          iterator2->set_query(query2);
+          while (iterator2->next(key2, type2, table_id2)) {
+            bool conflict = !((type1 == RD) && (type2 == RD));
+            if (key1 == key2 && conflict) {
+              edge_weight++;
+            }
+          }
+        }
+
+        if (edge_weight > 0) {
+          adjncy.push_back(j);
+          adjwgt.push_back(edge_weight);
+        }
+      }
+
+      xadj.push_back(static_cast<idx_t>(adjncy.size()));
+      vwgt.push_back(node_weight);
+    }
+  }
+
+  void do_partition(idx_t *parts) override {
+    auto start_time = get_server_clock();
+    xadj.reserve(Parent::_graph_info.num_txn_nodes + 1);
+    vwgt.reserve(Parent::_graph_info.num_txn_nodes);
+    adjncy.reserve(2 * Parent::_graph_info.num_edges);
+    adjwgt.reserve(2 * Parent::_graph_info.num_edges);
+
+    create_graph();
+
+	 	assert(FLAGS_objtype == "edge_cut");
+    auto graph = new METIS_CSRGraph();
+    graph->nvtxs = Parent::_graph_info.num_txn_nodes;
+    graph->adjncy_size = static_cast<idx_t>(adjncy.size());
+    graph->vwgt = vwgt.data();
+    graph->xadj = xadj.data();
+    graph->adjncy = adjncy.data();
+    graph->adjwgt = adjwgt.data();
+    graph->ncon = 1;
+    METISGraphPartitioner::compute_partitions(graph, Parent::_num_clusters,
+                                              parts);
+
+    auto end_time = get_server_clock();
+    Parent::_runtime_info.partition_duration = DURATION(end_time, start_time);
+
+    xadj.clear();
+    vwgt.clear();
+    adjncy.clear();
+    adjwgt.clear();
+  }
+};
+
 template <typename T> class AccessGraphPartitioner : public BasePartitioner<T> {
-typedef BasePartitioner<T> Parent;
+  typedef BasePartitioner<T> Parent;
 
 public:
   AccessGraphPartitioner(uint32_t num_clusters)
@@ -243,7 +367,8 @@ protected:
 
   void add_data_nodes() {
     for (size_t i = 0; i < Parent::_graph_info.data_inv_idx.size(); i++) {
-      auto info = &Parent::_graph_info.data_info[Parent::_graph_info.data_inv_idx[i]];
+      auto info =
+          &Parent::_graph_info.data_info[Parent::_graph_info.data_inv_idx[i]];
       // insert txn edges
       adjncy.insert(adjncy.end(), info->read_txns.begin(),
                     info->read_txns.end());
@@ -276,7 +401,7 @@ protected:
   void do_partition(idx_t *parts) override {
     auto start_time = get_server_clock();
     auto total_num_vertices =
-						Parent::_graph_info.num_txn_nodes + Parent::_graph_info.num_data_nodes;
+        Parent::_graph_info.num_txn_nodes + Parent::_graph_info.num_data_nodes;
     xadj.reserve(total_num_vertices + 1);
     vwgt.reserve(total_num_vertices);
     vsize.reserve(total_num_vertices);
@@ -298,11 +423,12 @@ protected:
     graph->adjwgt = adjwgt.data();
     graph->vsize = vsize.data();
     graph->ncon = 1;
-    METISGraphPartitioner::compute_partitions(graph, Parent::_num_clusters, all_parts);
+    METISGraphPartitioner::compute_partitions(graph, Parent::_num_clusters,
+                                              all_parts);
     memcpy(parts, all_parts, sizeof(idx_t) * Parent::_graph_info.num_txn_nodes);
 
     auto end_time = get_server_clock();
-		Parent::_runtime_info.partition_duration = DURATION(end_time, start_time);
+    Parent::_runtime_info.partition_duration = DURATION(end_time, start_time);
 
     xadj.clear();
     vwgt.clear();
@@ -310,128 +436,131 @@ protected:
     adjwgt.clear();
     vsize.clear();
     delete all_parts;
-
   }
 };
 
 template <typename T> class ApproximateGraphPartitioner : public BasePartitioner<T> {
-		typedef BasePartitioner<T> Parent;
+  typedef BasePartitioner<T> Parent;
+
 public:
-    ApproximateGraphPartitioner(uint32_t num_clusters)
-            : BasePartitioner<T>(num_clusters) {}
+  ApproximateGraphPartitioner(uint32_t num_clusters)
+      : BasePartitioner<T>(num_clusters) {}
 
-    void do_partition(idx_t* parts) {
-      uint64_t start_time, end_time;
-      for (uint32_t i = 0; i < FLAGS_iterations; i++) {
-        start_time = get_server_clock();
-        // partition data based on transaction allocation
-        internal_data_partition(parts);
-        // partition txn based on data allocation.
-        internal_txn_partition(parts);
-        end_time = get_server_clock();
-				Parent::_runtime_info.partition_duration += DURATION(end_time, start_time);
+  void do_partition(idx_t *parts) {
+    uint64_t start_time, end_time;
+    for (uint32_t i = 0; i < FLAGS_iterations; i++) {
+      start_time = get_server_clock();
+      // partition data based on transaction allocation
+      internal_data_partition(parts);
+      // partition txn based on data allocation.
+      internal_txn_partition(parts);
+      end_time = get_server_clock();
+      Parent::_runtime_info.partition_duration +=
+          DURATION(end_time, start_time);
 
-				Parent::compute_cluster_info(parts);
-        printf("**************** Iteration: %u ****************\n", i + 1);
-				Parent::_cluster_info.print();
-      }
+      Parent::compute_cluster_info(parts);
+      printf("**************** Iteration: %u ****************\n", i + 1);
+      Parent::_cluster_info.print();
     }
+  }
+
 protected:
+  void internal_txn_partition(idx_t *parts) {
+    auto _cluster_size = new uint64_t[Parent::_num_clusters];
+    memset(_cluster_size, 0, sizeof(uint64_t) * Parent::_num_clusters);
+    Query<T> *query;
+    uint64_t key;
+    access_t type;
+    uint32_t table_id;
 
-    void internal_txn_partition(idx_t *parts) {
-      auto _cluster_size = new uint64_t[Parent::_num_clusters];
-      memset(_cluster_size, 0, sizeof(uint64_t) * Parent::_num_clusters);
-      Query<T> *query;
-      uint64_t key;
-      access_t type;
-      uint32_t table_id;
+    double max_cluster_size =
+        ((1000 + FLAGS_ufactor) * Parent::_graph_info.num_edges) /
+        (Parent::_num_clusters * 1000.0);
+    // double max_cluster_size = UINT64_MAX;
 
-      double max_cluster_size = ((1000 + FLAGS_ufactor) * Parent::_graph_info.num_edges) /
-                                (Parent::_num_clusters * 1000.0);
-      // double max_cluster_size = UINT64_MAX;
+    AccessIterator<T> *iterator = new AccessIterator<T>();
+    QueryBatch<T> &queryBatch = *Parent::_batch;
+    uint64_t size = queryBatch.size();
 
-      AccessIterator<T> *iterator = new AccessIterator<T>();
-      QueryBatch<T> &queryBatch = *Parent::_batch;
-      uint64_t size = queryBatch.size();
+    uint64_t *savings = new uint64_t[Parent::_num_clusters];
+    uint64_t *sorted = new uint64_t[Parent::_num_clusters];
 
-      uint64_t *savings = new uint64_t[Parent::_num_clusters];
-      uint64_t *sorted = new uint64_t[Parent::_num_clusters];
+    for (auto i = 0u; i < size; i++) {
+      memset(savings, 0, sizeof(uint64_t) * Parent::_num_clusters);
 
-      for (auto i = 0u; i < size; i++) {
-        memset(savings, 0, sizeof(uint64_t) * Parent::_num_clusters);
-
-        query = queryBatch[i];
-        uint64_t txn_size = 0;
-        iterator->set_query(query);
-        while (iterator->next(key, type, table_id)) {
-          auto info = &Parent::_graph_info.data_info[key];
-          auto core = parts[info->id];
-          savings[core] += info->read_txns.size() + info->write_txns.size();
-          txn_size++;
-        }
-
-        sort_helper(sorted, savings, Parent::_num_clusters);
-
-        bool allotted = false;
-        for (uint64_t s = 0; s < Parent::_num_clusters; s++) {
-          auto core = sorted[s];
-          if (_cluster_size[core] + txn_size < max_cluster_size) {
-            assert(core >= 0 && core < Parent::_num_clusters);
-            parts[i] = core;
-            _cluster_size[core] += txn_size;
-            allotted = true;
-            break;
-          }
-        }
-        assert(allotted);
+      query = queryBatch[i];
+      uint64_t txn_size = 0;
+      iterator->set_query(query);
+      while (iterator->next(key, type, table_id)) {
+        auto info = &Parent::_graph_info.data_info[key];
+        auto core = parts[info->id];
+        savings[core] += info->read_txns.size() + info->write_txns.size();
+        txn_size++;
       }
 
-      delete[] sorted;
-      delete[] savings;
+      sort_helper(sorted, savings, Parent::_num_clusters);
+
+      bool allotted = false;
+      for (uint64_t s = 0; s < Parent::_num_clusters; s++) {
+        auto core = sorted[s];
+        if (_cluster_size[core] + txn_size < max_cluster_size) {
+          assert(core >= 0 && core < Parent::_num_clusters);
+          parts[i] = core;
+          _cluster_size[core] += txn_size;
+          allotted = true;
+          break;
+        }
+      }
+      assert(allotted);
     }
 
-    void internal_data_partition(idx_t *parts) {
-      uint64_t* core_weights = new uint64_t[Parent::_num_clusters];
-      for(size_t i = 0; i < Parent::_graph_info.data_inv_idx.size(); i++) {
-        auto info = &Parent::_graph_info.data_info[Parent::_graph_info.data_inv_idx[i]];
-        memset(core_weights, 0, sizeof(uint64_t) * Parent::_num_clusters);
-        for(auto txn_id : info->read_txns) {
-          core_weights[parts[txn_id]]++;
+    delete[] sorted;
+    delete[] savings;
+  }
+
+  void internal_data_partition(idx_t *parts) {
+    uint64_t *core_weights = new uint64_t[Parent::_num_clusters];
+    for (size_t i = 0; i < Parent::_graph_info.data_inv_idx.size(); i++) {
+      auto info =
+          &Parent::_graph_info.data_info[Parent::_graph_info.data_inv_idx[i]];
+      memset(core_weights, 0, sizeof(uint64_t) * Parent::_num_clusters);
+      for (auto txn_id : info->read_txns) {
+        core_weights[parts[txn_id]]++;
+      }
+      for (auto txn_id : info->write_txns) {
+        core_weights[parts[txn_id]]++;
+      }
+      uint64_t max_value = 0;
+      uint64_t allotted_core = 0;
+      for (uint64_t c = 0; c < Parent::_num_clusters; c++) {
+        if (core_weights[c] > max_value) {
+          max_value = core_weights[c];
+          allotted_core = c;
         }
-        for(auto txn_id: info->write_txns) {
-          core_weights[parts[txn_id]]++;
+      }
+      parts[info->id] = allotted_core;
+    }
+  }
+
+  void sort_helper(uint64_t *index, uint64_t *value, uint64_t size) {
+    for (uint64_t i = 0; i < size; i++) {
+      index[i] = i;
+    }
+
+    for (uint64_t i = 1; i < size; i++) {
+      for (uint64_t j = 0; j < size - i; j++) {
+        if (value[index[j + 1]] > value[index[j]]) {
+          auto temp = index[j + 1];
+          index[j + 1] = index[j];
+          index[j] = temp;
         }
-        uint64_t max_value = 0;
-        uint64_t allotted_core = 0;
-        for (uint64_t c = 0; c < Parent::_num_clusters; c++) {
-          if (core_weights[c] > max_value) {
-            max_value = core_weights[c];
-            allotted_core = c;
-          }
-        }
-        parts[info->id] = allotted_core;
       }
     }
 
-    void sort_helper(uint64_t *index, uint64_t *value, uint64_t size) {
-      for (uint64_t i = 0; i < size; i++) {
-        index[i] = i;
-      }
-
-      for (uint64_t i = 1; i < size; i++) {
-        for (uint64_t j = 0; j < size - i; j++) {
-          if (value[index[j + 1]] > value[index[j]]) {
-            auto temp = index[j + 1];
-            index[j + 1] = index[j];
-            index[j] = temp;
-          }
-        }
-      }
-
-      for (uint64_t i = 0; i < size - 1; i++) {
-        assert(value[index[i]] >= value[index[i + 1]]);
-      }
+    for (uint64_t i = 0; i < size - 1; i++) {
+      assert(value[index[i]] >= value[index[i + 1]]);
     }
+  }
 };
 
 #endif // DBX1000_PARTITIONER_H

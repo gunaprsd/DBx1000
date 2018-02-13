@@ -368,8 +368,8 @@ protected:
 
   void add_data_nodes() {
     for (size_t i = 0; i < Parent::_graph_info.data_inv_idx.size(); i++) {
-      auto info =
-          &Parent::_graph_info.data_info[Parent::_graph_info.data_inv_idx[i]];
+      auto key = Parent::_graph_info.data_inv_idx[i];
+      auto info = &Parent::_graph_info.data_info[key];
       // insert txn edges
       adjncy.insert(adjncy.end(), info->read_txns.begin(),
                     info->read_txns.end());

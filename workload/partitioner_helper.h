@@ -46,6 +46,7 @@ struct TableInfo {
       txn_cross_access_histogram.push_back(0);
     }
   }
+
   void reset() {
     num_accessed_data = 0;
     num_total_accesses = 0;
@@ -77,7 +78,7 @@ struct TableInfo {
     printf("%s-%-25s: ", name.c_str(), "Data-Core-Degree-Histogram");
     stop_index = data_core_degree_histogram.size();
     for (; stop_index > 0u; stop_index--) {
-      if (data_core_degree_histogram[stop_index - 1] > 0) {
+      if (data_core_degree_histogram[stop_index - 1] > 0.01) {
         break;
       }
     }
@@ -125,6 +126,7 @@ template <typename T> struct GraphInfo {
     max_data_degree = 0;
     min_txn_degree = UINT64_MAX;
     max_txn_degree = 0;
+	 data_inv_idx.clear();
   }
 
   void print() {

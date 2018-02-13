@@ -131,9 +131,9 @@ protected:
     uint64_t *core_weights = new uint64_t[_num_clusters];
     for (size_t i = 0; i < _graph_info.data_inv_idx.size(); i++) {
       // Initialize all variables
-      uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0;
-      uint64_t max_c = 0, chosen_c = UINT64_MAX;
-      memset(core_weights, 0, sizeof(uint64_t) * _num_clusters);
+      for (uint64_t c = 0; c < _num_clusters; c++) {
+        core_weights[c] = 0;
+      }
 
       // Compute number of txns in each core for data item D
       auto key = _graph_info.data_inv_idx[i];
@@ -146,6 +146,8 @@ protected:
       }
 
       // Compute stats on core weights
+      uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0;
+      uint64_t max_c = 0, chosen_c = UINT64_MAX;
       for (uint64_t c = 0; c < _num_clusters; c++) {
         sum_c_sq += (core_weights[c] * core_weights[c]);
         sum_c += core_weights[c];
@@ -394,7 +396,7 @@ protected:
   }
 
   void do_partition(idx_t *parts) override {
-	 auto start_time = get_server_clock();
+    auto start_time = get_server_clock();
     auto total_num_vertices =
         Parent::_graph_info.num_txn_nodes + Parent::_graph_info.num_data_nodes;
     xadj.reserve(total_num_vertices + 1);

@@ -53,6 +53,7 @@ struct TableInfo {
     for (uint64_t i = 0; i < data_core_degree_histogram.size(); i++) {
       data_core_degree_histogram[i] = 0;
     }
+
     for (uint64_t i = 0; i < txn_cross_access_histogram.size(); i++) {
       txn_cross_access_histogram[i] = 0;
     }

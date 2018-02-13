@@ -30,6 +30,7 @@ public:
   void set_cc_info(char cc_info);
   static uint64_t get_max_key();
   static uint32_t get_num_tables();
+	static uint32_t max_access_per_txn(uint32_t table_id);
 protected:
   Query<T> *_query;
   uint32_t _current_req_id;

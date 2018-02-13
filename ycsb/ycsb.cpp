@@ -41,3 +41,11 @@ template <> void AccessIterator<ycsb_params>::set_cc_info(char cc_info) {
     _query->params.requests[_current_req_id-1].cc_info = cc_info;
   }
 }
+template<>
+uint32_t AccessIterator<ycsb_params>::max_access_per_txn(uint32_t table_id) {
+  if(table_id == 0) {
+    return YCSB_NUM_REQUESTS;
+  } else {
+    return 0;
+  }
+}

@@ -261,3 +261,22 @@ void AccessIterator<tpcc_params>::set_query(Query<tpcc_params> *query) {
 template <> void AccessIterator<tpcc_params>::set_cc_info(char cc_info) {
   assert(false);
 }
+
+
+template<>
+uint32_t AccessIterator<tpcc_params>::max_access_per_txn(uint32_t table_id) {
+  switch(table_id) {
+    case 0:
+      return 1;
+    case 1:
+      return 1;
+    case 2:
+      return 1;
+    case 3:
+      return TPCC_MAX_NUM_ORDERS;
+    case 4:
+      return TPCC_MAX_NUM_ORDERS;
+    default:
+      return 0;
+  }
+}

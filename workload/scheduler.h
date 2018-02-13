@@ -2,7 +2,6 @@
 #define DBX1000_SCHEDULER_H
 
 #include "loader.h"
-#include "approximate_partitioner.h"
 #include "partitioner.h"
 #include "parser.h"
 

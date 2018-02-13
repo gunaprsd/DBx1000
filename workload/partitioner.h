@@ -296,7 +296,6 @@ protected:
 
     create_graph();
 
-    assert(FLAGS_objtype == "edge_cut");
     auto graph = new METIS_CSRGraph();
     graph->nvtxs = Parent::_graph_info.num_txn_nodes;
     graph->adjncy_size = static_cast<idx_t>(adjncy.size());
@@ -364,7 +363,6 @@ protected:
 
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       vwgt.push_back(node_wgt);
-      vsize.push_back(0);
     }
   }
 
@@ -392,17 +390,11 @@ protected:
       // insert node details
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       vwgt.push_back(0);
-      auto data_degree = info->read_txns.size() + info->write_txns.size();
-      if (FLAGS_unit_weights) {
-        vsize.push_back(1);
-      } else {
-        vsize.push_back(static_cast<idx_t>(data_degree));
-      }
     }
   }
 
   void do_partition(idx_t *parts) override {
-    auto start_time = get_server_clock();
+	 auto start_time = get_server_clock();
     auto total_num_vertices =
         Parent::_graph_info.num_txn_nodes + Parent::_graph_info.num_data_nodes;
     xadj.reserve(total_num_vertices + 1);
@@ -410,10 +402,9 @@ protected:
     vsize.reserve(total_num_vertices);
     adjncy.reserve(2 * Parent::_graph_info.num_edges);
     adjwgt.reserve(2 * Parent::_graph_info.num_edges);
+
     xadj.push_back(0);
-
     add_txn_nodes();
-
     add_data_nodes();
 
     auto graph = new METIS_CSRGraph();
@@ -423,25 +414,27 @@ protected:
     graph->xadj = xadj.data();
     graph->adjncy = adjncy.data();
     graph->adjwgt = adjwgt.data();
-    graph->vsize = vsize.data();
     graph->ncon = 1;
 
     auto all_parts = new idx_t[total_num_vertices];
+    for (uint64_t i = 0; i < total_num_vertices; i++) {
+      all_parts[i] = -1;
+    }
+
     METISGraphPartitioner::compute_partitions(graph, Parent::_num_clusters,
                                               all_parts);
+    auto end_time = get_server_clock();
+    Parent::_runtime_info.partition_duration = DURATION(end_time, start_time);
+
     for (uint64_t i = 0; i < Parent::_graph_info.num_txn_nodes; i++) {
       parts[i] = all_parts[i];
     }
     delete all_parts;
 
-    auto end_time = get_server_clock();
-    Parent::_runtime_info.partition_duration = DURATION(end_time, start_time);
-
     xadj.clear();
     vwgt.clear();
     adjncy.clear();
     adjwgt.clear();
-    vsize.clear();
   }
 };
 
@@ -537,15 +530,15 @@ protected:
       for (auto txn_id : info->write_txns) {
         core_weights[parts[txn_id]]++;
       }
-      uint64_t max_value = 0;
-      uint64_t allotted_core = 0;
+      uint64_t max_c = 0;
+      uint64_t chosen_c = 0;
       for (uint64_t c = 0; c < Parent::_num_clusters; c++) {
-        if (core_weights[c] > max_value) {
-          max_value = core_weights[c];
-          allotted_core = c;
+        if (core_weights[c] > max_c) {
+          max_c = core_weights[c];
+          chosen_c = c;
         }
       }
-      info->assigned_core = allotted_core;
+      info->assigned_core = chosen_c;
     }
   }
 

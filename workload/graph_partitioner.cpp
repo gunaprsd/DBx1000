@@ -22,21 +22,9 @@ void METISGraphPartitioner::compute_partitions(METIS_CSRGraph *graph,
   auto options =
       reinterpret_cast<idx_t *>(malloc(sizeof(idx_t) * METIS_NOPTIONS));
 
-  bool use_adj_wgts = false;
-  bool use_vtx_sizes = false;
   METIS_SetDefaultOptions(options);
   options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY;
-  if (FLAGS_objtype.compare("edge_cut") == 0) {
-    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
-    use_adj_wgts = true;
-    printf("Optimizing for Edge Cuts\n");
-  } else if (FLAGS_objtype.compare("communication_volume") == 0) {
-    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
-    printf("Optimizing for Communication Volume\n");
-    use_vtx_sizes = true;
-  } else {
-    assert(false);
-  }
+  options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
   options[METIS_OPTION_CTYPE] = METIS_CTYPE_RM;
   options[METIS_OPTION_RTYPE] = METIS_RTYPE_GREEDY;
   options[METIS_OPTION_UFACTOR] = FLAGS_ufactor;
@@ -45,12 +33,11 @@ void METISGraphPartitioner::compute_partitions(METIS_CSRGraph *graph,
   options[METIS_OPTION_MINCONN] = 1;
 
   // Do the compute_partitions
-  int result = METIS_PartGraphKway(
-      &graph->nvtxs, &graph->ncon, graph->xadj, graph->adjncy, graph->vwgt,
-      use_vtx_sizes ? graph->vsize : nullptr,
-      use_adj_wgts ? graph->adjwgt : nullptr, &nparts, nullptr, nullptr,
-      options, &objval, parts);
-  //PRINT_INFO(ld, "Partitioning-Obj-Value", objval);
+  int result =
+      METIS_PartGraphKway(&graph->nvtxs, &graph->ncon, graph->xadj,
+                          graph->adjncy, graph->vwgt, nullptr, graph->adjwgt,
+                          &nparts, nullptr, nullptr, options, &objval, parts);
+  // PRINT_INFO(ld, "Partitioning-Obj-Value", objval);
   switch (result) {
   case METIS_ERROR_INPUT:
     printf("Error in input!\n");

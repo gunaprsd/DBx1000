@@ -5,6 +5,7 @@
 #include "graph_partitioner.h"
 #include "partitioner_helper.h"
 #include "query.h"
+#include <algorithm>
 #include <cstring>
 
 template <typename T> class BasePartitioner {
@@ -446,24 +447,8 @@ class ApproximateGraphPartitioner : public BasePartitioner<T> {
 
 public:
   ApproximateGraphPartitioner(uint32_t num_clusters)
-      : BasePartitioner<T>(num_clusters) {}
-
-  void do_partition(idx_t *parts) {
-    uint64_t start_time, end_time;
-    for (uint32_t i = 0; i < FLAGS_iterations; i++) {
-      start_time = get_server_clock();
-      // partition data based on transaction allocation
-      internal_data_partition(parts);
-      // partition txn based on data allocation.
-      internal_txn_partition(parts);
-      end_time = get_server_clock();
-      Parent::_runtime_info.partition_duration +=
-          DURATION(end_time, start_time);
-
-      Parent::compute_cluster_info(parts);
-      printf("**************** Iteration: %u ****************\n", i + 1);
-      Parent::_cluster_info.print();
-    }
+      : BasePartitioner<T>(num_clusters) {
+    std::srand(unsigned(std::time(0)));
   }
 
 protected:
@@ -487,16 +472,22 @@ protected:
     uint64_t *savings = new uint64_t[Parent::_num_clusters];
     uint64_t *sorted = new uint64_t[Parent::_num_clusters];
 
+    vector<idx_t> txn_ids;
+    txn_ids.reserve(size);
     for (auto i = 0u; i < size; i++) {
+      txn_ids.push_back(i);
+    }
+    std::random_shuffle(txn_ids.begin(), txn_ids.end());
+	 
+    for (auto i : txn_ids) {
       memset(savings, 0, sizeof(uint64_t) * Parent::_num_clusters);
-
       query = queryBatch[i];
       uint64_t txn_size = 0;
       iterator->set_query(query);
       while (iterator->next(key, type, table_id)) {
         auto info = &Parent::_graph_info.data_info[key];
         auto core = info->assigned_core;
-        savings[core] += info->read_txns.size() + info->write_txns.size();
+        savings[core] += (info->read_txns.size() + info->write_txns.size());
         txn_size++;
       }
 
@@ -561,6 +552,24 @@ protected:
 
     for (uint64_t i = 0; i < size - 1; i++) {
       assert(value[index[i]] >= value[index[i + 1]]);
+    }
+  }
+
+  void do_partition(idx_t *parts) {
+    uint64_t start_time, end_time;
+    for (uint32_t i = 0; i < FLAGS_iterations; i++) {
+      start_time = get_server_clock();
+      // partition data based on transaction allocation
+      internal_data_partition(parts);
+      // partition txn based on data allocation.
+      internal_txn_partition(parts);
+      end_time = get_server_clock();
+      Parent::_runtime_info.partition_duration +=
+          DURATION(end_time, start_time);
+
+      Parent::compute_cluster_info(parts);
+      printf("**************** Iteration: %u ****************\n", i + 1);
+      Parent::_cluster_info.print();
     }
   }
 };

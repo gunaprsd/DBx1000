@@ -144,15 +144,15 @@ template <typename T> struct GraphInfo {
 template <typename T> struct ClusterInfo {
 
   uint64_t objective;
-  vector<TableInfo> table_info;
+  vector<TableInfo*> table_info;
   ClusterInfo() : objective(0), table_info() {}
 
   void initialize(uint64_t num_clusters) {
     table_info.clear();
     uint64_t num_tables = AccessIterator<T>::get_num_tables();
     for (uint32_t i = 0; i < num_tables; i++) {
-      table_info.push_back(TableInfo());
-      table_info[i].initialize(i, num_clusters,
+      table_info.push_back(new TableInfo());
+      table_info[i]->initialize(i, num_clusters,
                                AccessIterator<T>::max_access_per_txn(i));
     }
   }
@@ -160,14 +160,14 @@ template <typename T> struct ClusterInfo {
   void reset() {
     objective = 0;
     for (auto tinfo : table_info) {
-      tinfo.reset();
+      tinfo->reset();
     }
   }
 
   void print() {
     PRINT_INFO(lu, "Objective", objective);
     for (auto tinfo : table_info) {
-      tinfo.print(get_table_name<T>(tinfo.id));
+      tinfo->print(get_table_name<T>(tinfo->id));
     }
   }
 };

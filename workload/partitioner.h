@@ -138,11 +138,14 @@ protected:
       // Compute number of txns in each core for data item D
       auto key = _graph_info.data_inv_idx[i];
       auto info = &_graph_info.data_info[key];
+      uint64_t num_access = 0;
       for (auto txn_id : info->read_txns) {
         core_weights[parts[txn_id]]++;
+        num_access++;
       }
       for (auto txn_id : info->write_txns) {
         core_weights[parts[txn_id]]++;
+        num_access++;
       }
 
       // Compute stats on core weights
@@ -157,6 +160,10 @@ protected:
           chosen_c = c;
         }
       }
+
+      assert(num_access == sum_c);
+      assert((size_t)num_access ==
+             (info->read_txns.size() + info->write_txns.size()));
 
       // Update data information - core and if single-core-only
       info->single_core = (num_c == 1);
@@ -176,7 +183,7 @@ protected:
       _cluster_info.objective += ((sum_c * sum_c) - sum_c_sq) / 2;
 
       // update table wise info
-      auto table_info = &_cluster_info.table_info[info->table_id];
+      auto table_info = _cluster_info.table_info[info->table_id];
       table_info->num_accessed_data++;
       table_info->num_total_accesses += sum_c;
       table_info->data_core_degree_histogram[num_c - 1]++;
@@ -212,7 +219,8 @@ protected:
 
       for (uint64_t s = 0; s < num_tables; s++) {
         uint64_t count = table_cross_access[s];
-        _cluster_info.table_info[s].txn_cross_access_histogram[count - 1]++;
+	auto tinfo = _cluster_info.table_info[s];
+        tinfo->txn_cross_access_histogram[count - 1]++;
       }
     }
   }
@@ -475,10 +483,10 @@ protected:
     access_t type;
     uint32_t table_id;
 
-    double max_cluster_size =
-        ((1000 + FLAGS_ufactor) * Parent::_graph_info.num_edges) /
-        (Parent::_num_clusters * 1000.0);
-    // double max_cluster_size = UINT64_MAX;
+    // double max_cluster_size =
+    //     ((1000 + FLAGS_ufactor) * Parent::_graph_info.num_edges) /
+    //    (Parent::_num_clusters * 1000.0);
+    double max_cluster_size = UINT64_MAX;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *Parent::_batch;

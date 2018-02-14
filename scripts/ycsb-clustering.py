@@ -6,7 +6,7 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes =  [500]
+sizes =  [50000]
 for cores in [30]:
     for parts in [30]:
         for size_per_thread in sizes:
@@ -56,7 +56,7 @@ def partition(start, end):
             command += ' -task=partition'
             command += ' -parttype=approx'
             command += ' -ufactor=10'
-            command += ' -iterations=15'
+            command += ' -iterations=30'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)

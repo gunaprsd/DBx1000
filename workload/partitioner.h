@@ -220,7 +220,7 @@ protected:
 
       for (uint64_t s = 0; s < num_tables; s++) {
         uint64_t count = table_cross_access[s];
-	auto tinfo = _cluster_info.table_info[s];
+        auto tinfo = _cluster_info.table_info[s];
         tinfo->txn_cross_access_histogram[count - 1]++;
       }
     }
@@ -468,10 +468,10 @@ protected:
     access_t type;
     uint32_t table_id;
 
-    // double max_cluster_size =
-    //     ((1000 + FLAGS_ufactor) * Parent::_graph_info.num_edges) /
-    //    (Parent::_num_clusters * 1000.0);
-    double max_cluster_size = UINT64_MAX;
+    double max_cluster_size =
+        ((1000 + FLAGS_ufactor) * Parent::_graph_info.num_edges) /
+        (Parent::_num_clusters * 1000.0);
+    // double max_cluster_size = UINT64_MAX;
 
     AccessIterator<T> *iterator = new AccessIterator<T>();
     QueryBatch<T> &queryBatch = *Parent::_batch;
@@ -486,7 +486,7 @@ protected:
       txn_ids.push_back(i);
     }
     std::random_shuffle(txn_ids.begin(), txn_ids.end());
-	 
+
     for (auto i : txn_ids) {
       memset(savings, 0, sizeof(uint64_t) * Parent::_num_clusters);
       query = queryBatch[i];

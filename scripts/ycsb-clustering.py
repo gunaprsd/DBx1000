@@ -6,17 +6,17 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes =  [50000]
+sizes =  [500]
 for cores in [30]:
     for parts in [30]:
         for size_per_thread in sizes:
-            config = ' -benchmark=ycsb'
-            config += ' -ycsb_zipf_theta=0.9'
-            config += ' -ycsb_read_percent=0.5'
-            config += ' -ycsb_multipart_txns=0'
-            config += ' -ycsb_num_partitions=' + str(parts)
-            config += ' -threads=' + str(cores)
-            config += ' -size_per_thread=' + str(size_per_thread)
+            config = ' -benchmark=ycsb \\\n'
+            config += ' -ycsb_zipf_theta=0.9 \\\n'
+            config += ' -ycsb_read_percent=0.5 \\\n'
+            config += ' -ycsb_multipart_txns=0 \\\n'
+            config += ' -ycsb_num_partitions=' + str(parts) + ' \\\n'
+            config += ' -threads=' + str(cores) + ' \\\n'
+            config += ' -size_per_thread=' + str(size_per_thread) + ' \\\n'
             tag = 'ycsb'
             tag += '_p' + str(parts)
             tag += '_c' + str(cores)
@@ -29,41 +29,41 @@ def generate(start, end):
         tag = pr['tag']
         config = pr['config']
         for num in xrange(start, end):
-            command = executable
+            command = executable +  ' \\\n'
             command += config
             seed_tag = tag + '_s' + str(num)
-            command += ' -tag=' + seed_tag
-            command += ' -output_folder=' + data_folder + '/' + seed_tag + '_raw'
-            command += ' -task=generate'
-            command += ' -seed=' + str(num)
+            command += ' -tag=' + seed_tag + ' \\\n'
+            command += ' -output_folder=' + data_folder + '/' + seed_tag + '_raw \\\n'
+            command += ' -task=generate \\\n'
+            command += ' -seed=' + str(num) + ' \\\n'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)
             os.system(command)
 
-def partition(start, end):
-    log_file = "ycsb_approx_" + str(start) + "_" + str(end) + ".txt"
+def partition(start, end, type_tag):
+    log_file = "ycsb_partition_" + type_tag + "_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
         for num in xrange(start, end):
-            command = executable
+            command = executable + ' \\\n'
             command += config
             seed_tag = tag + '_s' + str(num)
-            command += ' -tag=' + seed_tag
-            command += ' -input_folder=' + data_folder + "/" + seed_tag + '_raw'
-            command += ' -output_folder=' + data_folder + "/" + seed_tag + '_partitioned'
-            command += ' -task=partition'
-            command += ' -parttype=approx'
-            command += ' -ufactor=10'
-            command += ' -iterations=30'
+            command += ' -tag=' + seed_tag + ' \\\n'
+            command += ' -input_folder=' + data_folder + "/" + seed_tag + '_raw \\\n'
+            command += ' -output_folder=' + data_folder + "/" + seed_tag + '_' + type_tag + ' \\\n'
+            command += ' -task=partition \\\n'
+            command += ' -parttype=' + type_tag + '\\\n'
+            command += ' -ufactor=10 \\\n'
+            command += ' -iterations=30 \\\n'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)
             os.system(command)
 
 def execute(start, end, type_tag):
-    log_file = "ycsb_single_execution_" + str(start) + "_" + str(end) + ".txt"
+    log_file = "ycsb_execution_" + type_tag + "_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -79,8 +79,8 @@ def execute(start, end, type_tag):
             command += ' >> ' + log_file
             for i in xrange(0, 5):
                 print(command)
-#                os.system("echo " + command + " >> " + log_file)
-#                os.system(command)
+                os.system("echo " + command + " >> " + log_file)
+                os.system(command)
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
@@ -88,7 +88,8 @@ if __name__ == "__main__":
     elif sys.argv[1] == "generate":
         generate(int(sys.argv[2]), int(sys.argv[3]))
     elif sys.argv[1] == "partition":
-        partition(int(sys.argv[2]), int(sys.argv[3]))
+        assert(len(sys.argv) == 5)
+        partition(int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])
     elif sys.argv[1] == "execute":
         assert(len(sys.argv) == 5)
         execute(int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])

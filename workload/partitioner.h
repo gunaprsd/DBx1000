@@ -456,7 +456,7 @@ class ApproximateGraphPartitioner : public BasePartitioner<T> {
 public:
   ApproximateGraphPartitioner(uint32_t num_clusters)
       : BasePartitioner<T>(num_clusters) {
-    std::srand(unsigned(std::time(0)));
+    std::srand(FLAGS_seed);
   }
 
 protected:
@@ -480,14 +480,7 @@ protected:
     uint64_t *savings = new uint64_t[Parent::_num_clusters];
     uint64_t *sorted = new uint64_t[Parent::_num_clusters];
 
-    vector<idx_t> txn_ids;
-    txn_ids.reserve(size);
-    for (auto i = 0u; i < size; i++) {
-      txn_ids.push_back(i);
-    }
-    std::random_shuffle(txn_ids.begin(), txn_ids.end());
-
-    for (auto i : txn_ids) {
+    for (uint64_t i = 0; i < size; i++) {
       memset(savings, 0, sizeof(uint64_t) * Parent::_num_clusters);
       query = queryBatch[i];
       uint64_t txn_size = 0;
@@ -495,7 +488,11 @@ protected:
       while (iterator->next(key, type, table_id)) {
         auto info = &Parent::_graph_info.data_info[key];
         auto core = info->assigned_core;
-        savings[core] += (info->read_txns.size() + info->write_txns.size());
+        if (type == RD) {
+          savings[core] += info->write_txns.size();
+        } else {
+          savings[core] += (info->read_txns.size() + info->write_txns.size());
+        }
         txn_size++;
       }
 

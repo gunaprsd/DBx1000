@@ -503,9 +503,9 @@ protected:
         auto info = &Parent::_graph_info.data_info[key];
         auto core = info->assigned_core;
         if (type == RD) {
-          savings[core] += info->write_txns.size();
+          savings[core] += 1 + info->write_txns.size();
         } else {
-          savings[core] += (info->read_txns.size() + info->write_txns.size());
+          savings[core] += 1 + (info->read_txns.size() + info->write_txns.size());
         }
         txn_size++;
       }

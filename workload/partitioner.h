@@ -77,6 +77,7 @@ protected:
     QueryBatch<T> &queryBatch = *_batch;
     uint64_t size = queryBatch.size();
 
+    _graph_info.num_data_nodes = 0;
     // Create the basic access graph
     for (uint64_t i = 0u; i < size; i++) {
       _graph_info.num_txn_nodes++;
@@ -111,6 +112,8 @@ protected:
     }
 
     // Compute data min and max degrees
+    assert((size_t)_graph_info.num_data_nodes ==
+           _graph_info.data_inv_idx.size());
     for (size_t i = 0; i < _graph_info.data_inv_idx.size(); i++) {
       auto info = &_graph_info.data_info[_graph_info.data_inv_idx[i]];
       auto data_degree = info->read_txns.size() + info->write_txns.size();
@@ -375,6 +378,10 @@ protected:
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       vwgt.push_back(node_wgt);
     }
+    assert((size_t)Parent::_graph_info.num_edges == adjncy.size());
+    assert((size_t)Parent::_graph_info.num_edges == adjwgt.size());
+    assert((size_t)Parent::_graph_info.num_txn_nodes == vwgt.size());
+    assert((size_t)Parent::_graph_info.num_txn_nodes == xadj.size() - 1);
   }
 
   void add_data_nodes() {
@@ -390,8 +397,8 @@ protected:
       // insert edge weights
       idx_t read_wgt = 1, write_wgt = 1;
       if (!FLAGS_unit_weights) {
-        read_wgt = static_cast<idx_t>(info->write_txns.size());
-        write_wgt = static_cast<idx_t>(info->read_txns.size() +
+        read_wgt += static_cast<idx_t>(info->write_txns.size());
+        write_wgt += static_cast<idx_t>(info->read_txns.size() +
                                        info->write_txns.size());
       }
 
@@ -402,6 +409,13 @@ protected:
       xadj.push_back(static_cast<idx_t>(adjncy.size()));
       vwgt.push_back(0);
     }
+
+    assert(2 * (size_t)Parent::_graph_info.num_edges == adjncy.size());
+    assert(2 * (size_t)Parent::_graph_info.num_edges == adjwgt.size());
+    auto num_nodes = static_cast<size_t>(Parent::_graph_info.num_data_nodes +
+                                         Parent::_graph_info.num_txn_nodes);
+    assert(num_nodes == vwgt.size());
+    assert(num_nodes + 1 == xadj.size());
   }
 
   void do_partition(idx_t *parts) override {

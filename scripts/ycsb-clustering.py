@@ -6,10 +6,12 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes =  [500]
-for cores in [30]:
-    for parts in [30]:
+sizes =  [256000]
+for cores in [15, 30]:
+    for parts in [4, 8, 15, 30, 60]:
         for size_per_thread in sizes:
+            if parts > 2 * cores:
+                continue
             config = ' -benchmark=ycsb \\\n'
             config += ' -ycsb_zipf_theta=0.9 \\\n'
             config += ' -ycsb_read_percent=0.5 \\\n'

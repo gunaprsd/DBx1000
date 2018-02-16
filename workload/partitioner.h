@@ -397,7 +397,7 @@ protected:
       if (!FLAGS_unit_weights) {
         read_wgt += static_cast<idx_t>(info->write_txns.size());
         write_wgt += static_cast<idx_t>(info->read_txns.size() +
-                                       info->write_txns.size());
+                                        info->write_txns.size());
       }
 
       adjwgt.insert(adjwgt.end(), info->read_txns.size(), read_wgt);
@@ -503,22 +503,34 @@ protected:
         if (type == RD) {
           savings[core] += 1 + info->write_txns.size();
         } else {
-          savings[core] += 1 + (info->read_txns.size() + info->write_txns.size());
+          savings[core] +=
+              1 + (info->read_txns.size() + info->write_txns.size());
         }
         txn_size++;
       }
 
       sort_helper(sorted, savings, Parent::_num_clusters);
 
+      double mean, stdev;
+      for (uint64_t s = 0; s < Parent::_num_clusters; s++) {
+        mean += savings[s];
+        stdev += savings[s] * savings[s];
+      }
+      mean = mean / Parent::_num_clusters;
+      stdev = sqrt(stdev) / Parent::_num_clusters;
+
       bool allotted = false;
       for (uint64_t s = 0; s < Parent::_num_clusters; s++) {
         auto core = sorted[s];
-        if (_cluster_size[core] + txn_size < max_cluster_size) {
-          assert(core >= 0 && core < Parent::_num_clusters);
-          parts[i] = core;
-          _cluster_size[core] += txn_size;
-          allotted = true;
-          break;
+        double diff_ratio = (savings[core] - mean) / (1 + stdev);
+        if (diff_ratio > 2.0) {
+          if (_cluster_size[core] + txn_size < max_cluster_size) {
+            assert(core >= 0 && core < Parent::_num_clusters);
+            parts[i] = core;
+            _cluster_size[core] += txn_size;
+            allotted = true;
+            break;
+          }
         }
       }
       assert(allotted);

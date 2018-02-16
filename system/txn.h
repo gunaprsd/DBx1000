@@ -43,6 +43,11 @@ public:
   itemid_t *index_read(INDEX *index, idx_key_t key, int part_id);
   void index_read(INDEX *index, idx_key_t key, int part_id, itemid_t *&item);
   row_t *get_row(row_t *row, access_t type);
+	row_t * get_row(row_t* row, access_t type, char cc_info);
+
+	/*
+	 * get_row_CC
+	 */
 
   uint64_t get_thd_id();
   Database *get_db();

@@ -44,7 +44,7 @@
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL,
 // TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
-#define CC_ALG 				       NO_WAIT
+#define CC_ALG SILO
 #define ISOLATION_LEVEL SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.
@@ -92,8 +92,8 @@
 #define WRITE_PERMISSION_LOCK false
 #define ATOMIC_TIMESTAMP "false"
 // [TICTOC, SILO]
-#define VALIDATION_LOCK "no-wait" // no-wait or waiting
-#define PRE_ABORT "true"
+#define VALIDATION_LOCK_WAIT false // no-wait or waiting
+#define PRE_ABORT true
 #define ATOMIC_WORD true
 // [HSTORE]
 // when set to true, hstore will not access the global timestamp.

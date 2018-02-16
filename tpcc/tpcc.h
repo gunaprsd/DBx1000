@@ -5,6 +5,8 @@
 
 #include "query.h"
 #include "tpcc_const.h"
+#define MAX_ACCESS_IN_PAYMENT 3
+#define MAX_ACCESS_IN_NEW_ORDER 3 + 2 * TPCC_MAX_NUM_ORDERS
 
 struct ol_item {
   uint64_t ol_i_id;
@@ -13,6 +15,7 @@ struct ol_item {
 };
 
 struct tpcc_payment_params {
+	char cc_info[MAX_ACCESS_IN_PAYMENT];
   uint64_t w_id;
   uint64_t d_id;
   uint64_t c_id;
@@ -25,7 +28,8 @@ struct tpcc_payment_params {
 };
 
 struct tpcc_new_order_params {
-  uint64_t w_id;
+	char cc_info[MAX_ACCESS_IN_NEW_ORDER];
+	uint64_t w_id;
   uint64_t d_id;
   uint64_t c_id;
   ol_item items[TPCC_MAX_NUM_ORDERS];

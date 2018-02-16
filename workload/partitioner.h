@@ -214,11 +214,9 @@ protected:
         if (parts[i] != info->assigned_core) {
           table_cross_access[table_id]++;
         }
-#ifdef SELECTIVE_CC
-        if (select_cc && info->single_core) {
+        if (SELECTIVE_CC && select_cc && info->single_core) {
           iterator->set_cc_info(0);
         }
-#endif
       }
 
       for (uint64_t s = 0; s < num_tables; s++) {

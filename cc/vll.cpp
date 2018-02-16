@@ -5,7 +5,7 @@
 #include "row_vll.h"
 #include "table.h"
 #include "txn.h"
-#include "ycsb.h"
+#include "ycsb_database.h"
 #if CC_ALG == VLL
 
 void VLLMan::init() {
@@ -70,7 +70,6 @@ int VLLMan::beginTxn(txn_man *txn, BaseQuery *query, TxnQEntry *&entry) {
     ret = 3;
 
   txn->vll_txn_type = VLL_Free;
-  assert(WORKLOAD == YCSB);
 
   for (int rid = 0; rid < txn->row_cnt; rid++) {
     access_t type = txn->accesses[rid]->type;

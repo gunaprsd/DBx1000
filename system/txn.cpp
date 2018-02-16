@@ -22,13 +22,8 @@ void txn_man::initialize(Database *h_wl, uint64_t thd_id) {
     accesses[i] = NULL;
   num_accesses_alloc = 0;
 #if CC_ALG == TICTOC || CC_ALG == SILO
-  _pre_abort = (PRE_ABORT == "true");
-  if (VALIDATION_LOCK == "no-wait")
-    _validation_no_wait = true;
-  else if (VALIDATION_LOCK == "waiting")
-    _validation_no_wait = false;
-  else
-    assert(false);
+ _pre_abort = PRE_ABORT;
+ _validation_no_wait = !VALIDATION_LOCK_WAIT;
 #endif
 #if CC_ALG == TICTOC
   _max_wts = 0;
@@ -104,8 +99,9 @@ void txn_man::cleanup(RC rc) {
 }
 
 row_t *txn_man::get_row(row_t *row, access_t type) {
-  if (CC_ALG == HSTORE)
+  if (CC_ALG == HSTORE) {
     return row;
+  }
   uint64_t start_time = get_sys_clock();
   RC rc = RCOK;
   if (accesses[row_cnt] == NULL) {
@@ -158,9 +154,13 @@ row_t *txn_man::get_row(row_t *row, access_t type) {
   if (type == WR)
     wr_cnt++;
 
-  uint64_t timespan = get_sys_clock() - start_time;
-  INC_TMP_STATS(get_thd_id(), time_man, timespan);
+  uint64_t duration = get_sys_clock() - start_time;
+  INC_TMP_STATS(get_thd_id(), time_man, duration);
   return accesses[row_cnt - 1]->data;
+}
+
+row_t *txn_man::get_row(row_t *row, access_t type, char cc_info) {
+  return nullptr;
 }
 
 void txn_man::insert_row(row_t *row, table_t *table) {
@@ -222,3 +222,4 @@ void txn_man::release() {
     mem_allocator.free(accesses[i], 0);
   mem_allocator.free(accesses, 0);
 }
+

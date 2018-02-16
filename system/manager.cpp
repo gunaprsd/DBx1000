@@ -3,6 +3,8 @@
 #include "txn.h"
 #include "pthread.h"
 #include "occ.h"
+#include "plock.h"
+#include "vll.h"
 
 void Manager::init() {
 	timestamp = (uint64_t *) _mm_malloc(sizeof(uint64_t), 64);

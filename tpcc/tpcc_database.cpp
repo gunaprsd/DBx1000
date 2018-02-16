@@ -278,7 +278,7 @@ void TPCCDatabase::load_customer_table(uint64_t did, uint64_t wid) {
     char c_data[500];
 
     helper->generateAlphaString(FIRSTNAME_MINLEN, sizeof(c_first), c_first,
-                                 wid - 1);
+                                wid - 1);
     helper->generateAlphaString(10, 20, street, wid - 1);
     helper->generateAlphaString(10, 20, street2, wid - 1);
     helper->generateAlphaString(10, 20, city, wid - 1);
@@ -444,8 +444,7 @@ void TPCCDatabase::initialize_permutation(uint64_t *perm_c_id, uint64_t wid) {
 
   // shuffle
   for (i = 0; i < TPCC_CUST_PER_DIST - 1; i++) {
-    uint64_t j =
-        helper->generateRandom(i + 1, TPCC_CUST_PER_DIST - 1, wid - 1);
+    uint64_t j = helper->generateRandom(i + 1, TPCC_CUST_PER_DIST - 1, wid - 1);
     uint64_t tmp = perm_c_id[i];
     perm_c_id[i] = perm_c_id[j];
     perm_c_id[j] = tmp;
@@ -508,6 +507,7 @@ RC TPCCTransactionManager::run_txn(BaseQuery *query) {
  * - Reading customer tuple (either through last name or customer id) for update
  */
 RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
+  uint32_t access_id = 0;
   RC rc = RCOK;
   itemid_t *item = nullptr;
   uint64_t key = 0;
@@ -521,19 +521,22 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
   assert(item != nullptr);
   row_t *r_wh = ((row_t *)item->location);
   row_t *r_wh_local = nullptr;
-  if (db->config.warehouse_update) {
-    r_wh_local = get_row(r_wh, WR);
+  if (SELECTIVE_CC && params->cc_info[access_id] == 0) {
+    r_wh_local = r_wh;
   } else {
-    r_wh_local = get_row(r_wh, RD);
+    r_wh_local = get_row(r_wh, db->config.warehouse_update ? WR : RD);
+    if (r_wh_local == nullptr) {
+      return finish(Abort);
+    }
+
   }
-  if (r_wh_local == nullptr) {
-    return finish(Abort);
-  }
+  access_id++;
+  assert(r_wh_local != nullptr);
 
   /*====================================================+
-                        EXEC SQL UPDATE warehouse SET w_ytd = w_ytd + :h_amount
-                        WHERE w_id=:w_id;
-        +====================================================*/
+		EXEC SQL UPDATE warehouse SET w_ytd = w_ytd + :h_amount
+		WHERE w_id=:w_id;
+	+====================================================*/
 
   if (db->config.warehouse_update) {
     double w_ytd;
@@ -542,10 +545,10 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
   }
 
   /*===================================================================+
-                        EXEC SQL SELECT w_street_1, w_street_2, w_city, w_state,
-     w_zip, w_name INTO :w_street_1, :w_street_2, :w_city, :w_state, :w_zip,
-     :w_name FROM warehouse WHERE w_id=:w_id;
-        +===================================================================*/
+		EXEC SQL SELECT w_street_1, w_street_2, w_city, w_state,
+		w_zip, w_name INTO :w_street_1, :w_street_2, :w_city, :w_state, :w_zip,
+		:w_name FROM warehouse WHERE w_id=:w_id;
+	+===================================================================*/
 
   char w_name[11];
   char w_street_1[21];
@@ -565,10 +568,17 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
   item = index_read(db->i_district, key, TPCCUtility::getPartition(w_id));
   assert(item != nullptr);
   row_t *r_dist = ((row_t *)item->location);
-  row_t *r_dist_local = get_row(r_dist, WR);
-  if (r_dist_local == nullptr) {
-    return finish(Abort);
+
+  row_t *r_dist_local = nullptr;
+  if (SELECTIVE_CC && params->cc_info[access_id] == 0) {
+    r_dist_local = r_dist;
+  } else {
+    get_row(r_dist, WR);
+    if (r_dist_local == nullptr) {
+      return finish(Abort);
+    }
   }
+  access_id++;
 
   /*=====================================================+
                         EXEC SQL UPDATE district SET d_ytd = d_ytd + :h_amount
@@ -647,10 +657,17 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
      c_data = :c_new_data WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id =
      :c_id;
          +======================================================================*/
-  row_t *r_customer_local = get_row(r_customer, WR);
-  if (r_customer_local == NULL) {
-    return finish(Abort);
+  row_t *r_customer_local = nullptr;
+  if (SELECTIVE_CC && params->cc_info[access_id] == 0) {
+    r_customer_local = r_customer;
+  } else {
+    r_customer_local = get_row(r_customer, WR);
+    if (r_customer_local == NULL) {
+      return finish(Abort);
+    }
   }
+  access_id++;
+
   double c_balance;
   double c_ytd_payment;
   double c_payment_cnt;
@@ -694,6 +711,7 @@ RC TPCCTransactionManager::run_payment(tpcc_payment_params *params) {
  *    - insert new order line tuple
  */
 RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
+  uint32_t access_id = 0;
   RC rc = RCOK;
   uint64_t key = 0;
   itemid_t *item = nullptr;
@@ -714,10 +732,42 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
   item = index_read(db->i_warehouse, w_id, TPCCUtility::getPartition(w_id));
   assert(item != nullptr);
   row_t *r_wh = ((row_t *)item->location);
-  row_t *r_wh_local = get_row(r_wh, RD);
-  if (r_wh_local == nullptr) {
-    return finish(Abort);
+  row_t *r_wh_local = nullptr;
+  if (SELECTIVE_CC && query->cc_info[access_id] == 0) {
+    r_wh_local = r_wh;
+  } else {
+    r_wh_local = get_row(r_wh, RD);
+    if (r_wh_local == nullptr) {
+      return finish(Abort);
+    }
   }
+  assert(r_wh_local != nullptr);
+  access_id++;
+
+  /*==================================================+
+                EXEC SQL SELECT d_next_o_id, d_tax
+                INTO :d_next_o_id, :d_tax
+                FROM district WHERE d_id = :d_id AND d_w_id = :w_id;
+
+                EXEC SQL UPDATE district SET d _next_o_id = :d
+                _next_o_id + 1 WHERE d _id = :d_id AN D d _w _id = :w _id ;
+        +===================================================*/
+
+  key = TPCCUtility::getDistrictKey(d_id, w_id);
+  item = index_read(db->i_district, key, TPCCUtility::getPartition(w_id));
+  assert(item != nullptr);
+  row_t *r_dist = ((row_t *)item->location);
+  row_t *r_dist_local = nullptr;
+  if (SELECTIVE_CC && query->cc_info[access_id]) {
+    r_dist_local = r_dist;
+  } else {
+    r_dist_local = get_row(r_dist, WR);
+    if (r_dist_local == NULL) {
+      return finish(Abort);
+    }
+  }
+  assert(r_dist_local != nullptr);
+  access_id++;
 
   double w_tax;
   r_wh_local->get_value(W_TAX, w_tax);
@@ -725,31 +775,20 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
   item = index_read(db->i_customer_id, key, TPCCUtility::getPartition(w_id));
   assert(item != nullptr);
   auto r_customer = (row_t *)item->location;
-  auto r_customer_local = get_row(r_customer, RD);
-  if (r_customer_local == NULL) {
-    return finish(Abort);
+  row_t *r_customer_local = nullptr;
+  if (SELECTIVE_CC && query->cc_info[access_id] == 0) {
+    r_customer_local = r_customer;
+  } else {
+    r_customer_local = get_row(r_customer, RD);
+    if (r_customer_local == NULL) {
+      return finish(Abort);
+    }
   }
+  assert(r_customer_local != nullptr);
+  access_id++;
 
   uint64_t c_discount;
   r_customer_local->get_value(C_DISCOUNT, c_discount);
-
-  /*==================================================+
-                        EXEC SQL SELECT d_next_o_id, d_tax
-                        INTO :d_next_o_id, :d_tax
-                        FROM district WHERE d_id = :d_id AND d_w_id = :w_id;
-
-                        EXEC SQL UPDATE district SET d _next_o_id = :d
-     _next_o_id + 1 WHERE d _id = :d_id AN D d _w _id = :w _id ;
-        +===================================================*/
-
-  key = TPCCUtility::getDistrictKey(d_id, w_id);
-  item = index_read(db->i_district, key, TPCCUtility::getPartition(w_id));
-  assert(item != nullptr);
-  row_t *r_dist = ((row_t *)item->location);
-  row_t *r_dist_local = get_row(r_dist, WR);
-  if (r_dist_local == NULL) {
-    return finish(Abort);
-  }
 
   double d_tax;
   r_dist_local->get_value(D_TAX, d_tax);
@@ -804,10 +843,17 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
     item = index_read(db->i_item, ol_i_id, 0);
     assert(item != nullptr);
     row_t *r_item = ((row_t *)item->location);
-    row_t *r_item_local = get_row(r_item, RD);
-    if (r_item_local == nullptr) {
-      return finish(Abort);
+    row_t *r_item_local = nullptr;
+    if (SELECTIVE_CC && query->cc_info[access_id] == 0) {
+      r_item_local = r_item;
+    } else {
+      r_item_local = get_row(r_item, RD);
+      if (r_item_local == nullptr) {
+        return finish(Abort);
+      }
     }
+    assert(r_item_local != nullptr);
+    access_id++;
 
     int64_t i_price;
     r_item_local->get_value(I_PRICE, i_price);
@@ -831,10 +877,17 @@ RC TPCCTransactionManager::run_new_order(tpcc_new_order_params *query) {
                TPCCUtility::getPartition(ol_supply_w_id), stock_item);
     assert(item != nullptr);
     row_t *r_stock = ((row_t *)stock_item->location);
-    row_t *r_stock_local = get_row(r_stock, WR);
-    if (r_stock_local == nullptr) {
-      return finish(Abort);
+    row_t *r_stock_local = nullptr;
+    if (SELECTIVE_CC && query->cc_info[access_id] == 0) {
+      r_stock_local = r_stock;
+    } else {
+      r_stock_local = get_row(r_stock, WR);
+      if (r_stock_local == nullptr) {
+        return finish(Abort);
+      }
     }
+    assert(r_stock_local != nullptr);
+    access_id++;
 
     uint64_t s_quantity;
     int64_t s_remote_cnt;

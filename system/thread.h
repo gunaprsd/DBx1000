@@ -6,6 +6,7 @@
 #include "query.h"
 #include "thread_queue.h"
 #include "txn.h"
+#include "vll.h"
 
 template <typename T> class Thread {
 public:
@@ -48,6 +49,8 @@ public:
       rc = m_txn->run_txn(m_query);
 #elif CC_ALG == OCC
       m_txn->start_ts = get_next_ts();
+      rc = m_txn->run_txn(m_query);
+#elif CC_ALG == TIMESTAMP
       rc = m_txn->run_txn(m_query);
 #elif CC_ALG == MVCC || CC_ALG == HEKATON
       m_txn->set_ts(get_next_ts());

@@ -65,19 +65,19 @@ def partition(start, end, type_tag):
             os.system(command)
 
 def execute(start, end, type_tag):
-    log_file = "ycsb_execution_" + type_tag + "_" + str(start) + "_" + str(end) + ".txt"
+    log_file = "ycsb_execution_no_wait_" + type_tag + "_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
         for num in xrange(start, end):
-            base_command = executable
+            base_command = executable + ' \\\n'
             base_command += config
             seed_tag = tag + '_s' + str(num)
-            base_command += ' -tag="' + seed_tag + '"'
-            base_command += ' -task="execute"'
+            base_command += ' -tag=' + seed_tag + ' \\\n'
+            base_command += ' -task=execute \\\n'
             # raw command
             command = base_command
-            command += ' -input_folder="' + data_folder + "/" + seed_tag + '_' + type_tag + '"'
+            command += ' -input_folder=' + data_folder + "/" + seed_tag + '_' + type_tag + ' \\\n'
             command += ' >> ' + log_file
             for i in xrange(0, 5):
                 print(command)

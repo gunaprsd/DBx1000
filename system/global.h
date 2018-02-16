@@ -31,7 +31,7 @@
 #include "carbon_user.h"
 #endif
 
-#define SELECTIVE_CC
+//#define SELECTIVE_CC
 //#define PRINT_CLUSTERED_FILE
 using namespace std;
 

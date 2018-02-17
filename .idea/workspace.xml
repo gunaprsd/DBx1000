@@ -14,19 +14,9 @@
   <component name="ChangeListManager">
     <list default="true" id="c244eca0-0039-459c-b54d-e525f055ed8a" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/cc/vll.cpp" afterPath="$PROJECT_DIR$/cc/vll.cpp" />
-      <change beforePath="$PROJECT_DIR$/config.h" afterPath="$PROJECT_DIR$/config.h" />
-      <change beforePath="$PROJECT_DIR$/storage/row.cpp" afterPath="$PROJECT_DIR$/storage/row.cpp" />
-      <change beforePath="$PROJECT_DIR$/storage/row.h" afterPath="$PROJECT_DIR$/storage/row.h" />
-      <change beforePath="$PROJECT_DIR$/system/global.h" afterPath="$PROJECT_DIR$/system/global.h" />
-      <change beforePath="$PROJECT_DIR$/system/manager.cpp" afterPath="$PROJECT_DIR$/system/manager.cpp" />
-      <change beforePath="$PROJECT_DIR$/system/thread.h" afterPath="$PROJECT_DIR$/system/thread.h" />
-      <change beforePath="$PROJECT_DIR$/system/txn.cpp" afterPath="$PROJECT_DIR$/system/txn.cpp" />
-      <change beforePath="$PROJECT_DIR$/system/txn.h" afterPath="$PROJECT_DIR$/system/txn.h" />
-      <change beforePath="$PROJECT_DIR$/tpcc/tpcc.h" afterPath="$PROJECT_DIR$/tpcc/tpcc.h" />
-      <change beforePath="$PROJECT_DIR$/tpcc/tpcc_database.cpp" afterPath="$PROJECT_DIR$/tpcc/tpcc_database.cpp" />
+      <change beforePath="$PROJECT_DIR$/system/parser.cpp" afterPath="$PROJECT_DIR$/system/parser.cpp" />
+      <change beforePath="$PROJECT_DIR$/system/parser.h" afterPath="$PROJECT_DIR$/system/parser.h" />
       <change beforePath="$PROJECT_DIR$/workload/partitioner.h" afterPath="$PROJECT_DIR$/workload/partitioner.h" />
-      <change beforePath="$PROJECT_DIR$/ycsb/ycsb_database.cpp" afterPath="$PROJECT_DIR$/ycsb/ycsb_database.cpp" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -42,6 +32,35 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file leaf-file-name="partitioner.h" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/workload/partitioner.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="569">
+              <caret line="579" column="5" lean-forward="true" selection-start-line="579" selection-start-column="5" selection-end-line="579" selection-end-column="5" />
+              <folding>
+                <element signature="e#252#7338#1" expanded="false" />
+                <element signature="e#286#1443#0" expanded="false" />
+                <element signature="e#1653#1896#0" expanded="false" />
+                <element signature="e#1900#3766#0" expanded="false" />
+                <element signature="e#3770#3928#0" expanded="false" />
+                <element signature="e#3932#7288#0" expanded="false" />
+                <element signature="e#5454#5913#0" expanded="false" />
+                <element signature="e#7363#10129#1" expanded="false" />
+                <element signature="e#7707#9160#0" expanded="false" />
+                <element signature="e#9164#10127#0" expanded="false" />
+                <element signature="e#10154#14616#1" expanded="false" />
+                <element signature="e#10534#11826#0" expanded="false" />
+                <element signature="e#11830#13222#0" expanded="false" />
+                <element signature="e#13226#14614#0" expanded="false" />
+                <element signature="e#14753#14878#0" expanded="false" />
+                <element signature="e#18427#19257#0" expanded="false" />
+                <element signature="e#19261#19773#0" expanded="false" />
+                <element signature="e#19777#20412#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="tpcc_database.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tpcc/tpcc_database.cpp">
           <provider selected="true" editor-type-id="text-editor">
@@ -72,43 +91,12 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="vll.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cc/vll.cpp">
+      <file leaf-file-name="parser.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/system/parser.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1704">
-              <caret line="71" column="31" lean-forward="false" selection-start-line="71" selection-start-column="31" selection-end-line="71" selection-end-column="31" />
-              <folding>
-                <element signature="e#0#16#0" expanded="true" />
-                <marker date="1518816697070" expanded="true" signature="201:274" ph="{...}" />
-                <marker date="1518816697070" expanded="true" signature="333:1830" ph="{...}" />
-                <marker date="1518816697070" expanded="true" signature="1904:2421" ph="{...}" />
-                <marker date="1518816697070" expanded="true" signature="2476:3347" ph="{...}" />
-                <marker date="1518816697070" expanded="true" signature="3404:3737" ph="{...}" />
-                <marker date="1518816697070" expanded="true" signature="3770:3931" ph="{...}" />
-                <marker date="1518816697070" expanded="true" signature="3977:4028" ph="{...}" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="vll.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cc/vll.h">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-5">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+            <state relative-caret-position="631">
+              <caret line="59" column="0" lean-forward="true" selection-start-line="59" selection-start-column="0" selection-end-line="59" selection-end-column="0" />
               <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="manager.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/system/manager.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="552">
-              <caret line="23" column="17" lean-forward="false" selection-start-line="23" selection-start-column="17" selection-end-line="23" selection-end-column="17" />
-              <folding>
-                <element signature="e#0#20#0" expanded="true" />
-              </folding>
             </state>
           </provider>
         </entry>
@@ -117,7 +105,7 @@
         <entry file="file://$PROJECT_DIR$/system/thread.h">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="312">
-              <caret line="166" column="0" lean-forward="true" selection-start-line="166" selection-start-column="0" selection-end-line="166" selection-end-column="0" />
+              <caret line="166" column="0" lean-forward="false" selection-start-line="166" selection-start-column="0" selection-end-line="166" selection-end-column="0" />
               <folding>
                 <element signature="e#51#72#0" expanded="true" />
                 <element signature="e#196#3279#1" expanded="false" />
@@ -129,11 +117,21 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="txn.cpp" pinned="false" current-in-tab="true">
+      <file leaf-file-name="parser.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/system/parser.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="679">
+              <caret line="57" column="0" lean-forward="false" selection-start-line="57" selection-start-column="0" selection-end-line="57" selection-end-column="30" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="txn.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/system/txn.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="373">
-              <caret line="113" column="21" lean-forward="false" selection-start-line="113" selection-start-column="12" selection-end-line="113" selection-end-column="21" />
+            <state relative-caret-position="301">
+              <caret line="110" column="58" lean-forward="true" selection-start-line="110" selection-start-column="58" selection-end-line="110" selection-end-column="58" />
               <folding>
                 <element signature="e#182#890#0" expanded="false" />
                 <element signature="e#731#844#0" expanded="true" />
@@ -289,13 +287,10 @@
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/workload/scheduler.h" />
         <option value="$PROJECT_DIR$/workload/graph_partitioner.cpp" />
-        <option value="$PROJECT_DIR$/system/parser.h" />
-        <option value="$PROJECT_DIR$/system/parser.cpp" />
         <option value="$PROJECT_DIR$/workload/partitioner_helper.h" />
         <option value="$PROJECT_DIR$/tpcc/tpcc.h" />
         <option value="$PROJECT_DIR$/tpcc/tpcc_database.h" />
         <option value="$PROJECT_DIR$/ycsb/ycsb_database.cpp" />
-        <option value="$PROJECT_DIR$/workload/partitioner.h" />
         <option value="$PROJECT_DIR$/system/global.h" />
         <option value="$PROJECT_DIR$/system/txn.h" />
         <option value="$PROJECT_DIR$/storage/row.h" />
@@ -306,6 +301,9 @@
         <option value="$PROJECT_DIR$/system/thread.h" />
         <option value="$PROJECT_DIR$/system/txn.cpp" />
         <option value="$PROJECT_DIR$/config.h" />
+        <option value="$PROJECT_DIR$/system/parser.cpp" />
+        <option value="$PROJECT_DIR$/system/parser.h" />
+        <option value="$PROJECT_DIR$/workload/partitioner.h" />
       </list>
     </option>
   </component>
@@ -316,7 +314,7 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
-  <component name="ProjectFrameBounds" fullScreen="true">
+  <component name="ProjectFrameBounds" extendedState="6" fullScreen="true">
     <option name="y" value="23" />
     <option name="width" value="1920" />
     <option name="height" value="1057" />
@@ -465,21 +463,22 @@
       <workItem from="1518546449853" duration="11285000" />
       <workItem from="1518577106608" duration="7844000" />
       <workItem from="1518743697049" duration="752000" />
-      <workItem from="1518803946759" duration="11384000" />
+      <workItem from="1518803946759" duration="13665000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="201156000" />
+    <option name="totallyTimeSpent" value="203437000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="2560" height="1440" extended-state="0" />
+    <frame x="0" y="0" width="1440" height="900" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.07207562" sideWeight="0.4941349" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.12896407" sideWeight="0.4941349" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3269934" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32969216" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.31748354" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.5247884" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24947146" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -522,7 +521,7 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="54" />
+      <option name="time" value="55" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -676,14 +675,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/system/parser.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1200">
-          <caret line="50" column="3" lean-forward="false" selection-start-line="50" selection-start-column="3" selection-end-line="50" selection-end-column="3" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/workload/partitioner_helper.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3432">
@@ -773,31 +764,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/workload/partitioner.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="754">
-          <caret line="215" column="9" lean-forward="false" selection-start-line="215" selection-start-column="9" selection-end-line="215" selection-end-column="9" />
-          <folding>
-            <element signature="e#286#1443#0" expanded="false" />
-            <element signature="e#1653#1896#0" expanded="false" />
-            <element signature="e#1900#3766#0" expanded="false" />
-            <element signature="e#3770#3928#0" expanded="false" />
-            <element signature="e#5454#5913#0" expanded="false" />
-            <element signature="e#7707#9160#0" expanded="false" />
-            <element signature="e#9164#10127#0" expanded="false" />
-            <element signature="e#10534#11826#0" expanded="false" />
-            <element signature="e#11830#13221#0" expanded="false" />
-            <element signature="e#13225#14613#0" expanded="false" />
-            <element signature="e#14640#18687#1" expanded="false" />
-            <element signature="e#14752#14877#0" expanded="false" />
-            <element signature="e#14892#16696#0" expanded="false" />
-            <element signature="e#16700#17530#0" expanded="false" />
-            <element signature="e#17534#18046#0" expanded="false" />
-            <element signature="e#18050#18685#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/system/txn.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="538">
@@ -865,20 +831,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/system/parser.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="979">
-          <caret line="51" column="3" lean-forward="false" selection-start-line="51" selection-start-column="3" selection-end-line="51" selection-end-column="3" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/storage/row.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="702">
           <caret line="74" column="0" lean-forward="false" selection-start-line="74" selection-start-column="0" selection-end-line="74" selection-end-column="0" />
           <folding>
-            <element signature="e#14#33#0" expanded="true" />
+            <element signature="e#14#33#0" expanded="false" />
             <marker date="1518815073381" expanded="false" signature="3205:3307" ph="..." />
           </folding>
         </state>
@@ -923,20 +881,6 @@
           <caret line="23" column="17" lean-forward="false" selection-start-line="23" selection-start-column="17" selection-end-line="23" selection-end-column="17" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/system/thread.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="312">
-          <caret line="166" column="0" lean-forward="true" selection-start-line="166" selection-start-column="0" selection-end-line="166" selection-end-column="0" />
-          <folding>
-            <element signature="e#51#72#0" expanded="true" />
-            <element signature="e#196#3279#1" expanded="false" />
-            <element signature="e#1385#1414#0" expanded="true" />
-            <element signature="e#3304#4662#1" expanded="false" />
-            <marker date="1518816839000" expanded="false" signature="2181:2210" ph="..." />
           </folding>
         </state>
       </provider>
@@ -1029,10 +973,24 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/system/thread.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="312">
+          <caret line="166" column="0" lean-forward="false" selection-start-line="166" selection-start-column="0" selection-end-line="166" selection-end-column="0" />
+          <folding>
+            <element signature="e#51#72#0" expanded="true" />
+            <element signature="e#196#3279#1" expanded="false" />
+            <element signature="e#1385#1414#0" expanded="true" />
+            <element signature="e#3304#4662#1" expanded="false" />
+            <marker date="1518816839000" expanded="false" signature="2181:2210" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/system/txn.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="373">
-          <caret line="113" column="21" lean-forward="false" selection-start-line="113" selection-start-column="12" selection-end-line="113" selection-end-column="21" />
+        <state relative-caret-position="301">
+          <caret line="110" column="58" lean-forward="true" selection-start-line="110" selection-start-column="58" selection-end-line="110" selection-end-column="58" />
           <folding>
             <element signature="e#182#890#0" expanded="false" />
             <element signature="e#731#844#0" expanded="true" />
@@ -1044,6 +1002,49 @@
             <element signature="e#3879#4005#0" expanded="true" />
             <element signature="e#4136#4209#0" expanded="true" />
             <element signature="e#5635#5697#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/system/parser.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="679">
+          <caret line="57" column="0" lean-forward="false" selection-start-line="57" selection-start-column="0" selection-end-line="57" selection-end-column="30" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/system/parser.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="631">
+          <caret line="59" column="0" lean-forward="true" selection-start-line="59" selection-start-column="0" selection-end-line="59" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/workload/partitioner.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="569">
+          <caret line="579" column="5" lean-forward="true" selection-start-line="579" selection-start-column="5" selection-end-line="579" selection-end-column="5" />
+          <folding>
+            <element signature="e#252#7338#1" expanded="false" />
+            <element signature="e#286#1443#0" expanded="false" />
+            <element signature="e#1653#1896#0" expanded="false" />
+            <element signature="e#1900#3766#0" expanded="false" />
+            <element signature="e#3770#3928#0" expanded="false" />
+            <element signature="e#3932#7288#0" expanded="false" />
+            <element signature="e#5454#5913#0" expanded="false" />
+            <element signature="e#7363#10129#1" expanded="false" />
+            <element signature="e#7707#9160#0" expanded="false" />
+            <element signature="e#9164#10127#0" expanded="false" />
+            <element signature="e#10154#14616#1" expanded="false" />
+            <element signature="e#10534#11826#0" expanded="false" />
+            <element signature="e#11830#13222#0" expanded="false" />
+            <element signature="e#13226#14614#0" expanded="false" />
+            <element signature="e#14753#14878#0" expanded="false" />
+            <element signature="e#18427#19257#0" expanded="false" />
+            <element signature="e#19261#19773#0" expanded="false" />
+            <element signature="e#19777#20412#0" expanded="false" />
           </folding>
         </state>
       </provider>

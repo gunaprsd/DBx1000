@@ -511,29 +511,72 @@ protected:
 
       sort_helper(sorted, savings, Parent::_num_clusters);
 
-      double mean, stdev;
-      for (uint64_t s = 0; s < Parent::_num_clusters; s++) {
-        mean += savings[s];
-        stdev += savings[s] * savings[s];
-      }
-      mean = mean / Parent::_num_clusters;
-      stdev = sqrt(stdev) / Parent::_num_clusters;
-
       bool allotted = false;
-      for (uint64_t s = 0; s < Parent::_num_clusters; s++) {
-        auto core = sorted[s];
-        double diff_ratio = (savings[core] - mean) / (1 + stdev);
-        if (diff_ratio > 2.0) {
-          if (_cluster_size[core] + txn_size < max_cluster_size) {
-            assert(core >= 0 && core < Parent::_num_clusters);
-            parts[i] = core;
-            _cluster_size[core] += txn_size;
+      uint64_t chosen_core = UINT32_MAX;
+      if(FLAGS_stdev_partitioner) {
+
+        /*
+         * Compute the mean and standard deviation of savings
+         */
+        double sum = 0, sum_sq = 0;
+        uint64_t min_core = UINT32_MAX, min_cluster_size = UINT64_MAX;
+        for (uint64_t s = 0; s < Parent::_num_clusters; s++) {
+          sum += (double)savings[s];
+          sum_sq += (double)savings[s] * (double)savings[s];
+          if(_cluster_size[s] < min_cluster_size) {
+            min_cluster_size = _cluster_size[s];
+            min_core = s;
+          }
+        }
+        double mean = sum / Parent::_num_clusters;
+        double sq_mean = sum_sq / Parent::_num_clusters;
+        double std_dev = sqrt(sq_mean - mean * mean);
+
+
+        /*
+         * Greedily allot the core with maximum savings if the chosen
+         * core is *significantly* better.
+         */
+        for (uint64_t s = 0; s < Parent::_num_clusters && !allotted; s++) {
+          auto core = sorted[s];
+          double diff_ratio;
+          if(std_dev > 0) {
+             diff_ratio = (savings[core] - mean) / (1 + std_dev);
+          } else {
+            diff_ratio = 0;
+          }
+
+          if (diff_ratio > 1.0) {
+            // Putting it in core makes some difference
+            if (_cluster_size[core] + txn_size < max_cluster_size) {
+              chosen_core = core;
+              allotted = true;
+            }
+          } else {
+            // Put it in the cluster with smallest size
+            chosen_core = min_core;
             allotted = true;
-            break;
+          }
+        }
+      } else {
+
+        /*
+         * Put it in the core with the maximum savings and
+         * that satisfies the size constraint.
+         */
+        for (uint64_t s = 0; s < Parent::_num_clusters && !allotted; s++) {
+          auto core = sorted[s];
+          if (_cluster_size[core] + txn_size < max_cluster_size) {
+            chosen_core = core;
+            allotted = true;
           }
         }
       }
+
       assert(allotted);
+      parts[i] = chosen_core;
+      _cluster_size[chosen_core] += txn_size;
+
     }
 
     delete[] sorted;

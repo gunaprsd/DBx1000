@@ -416,8 +416,30 @@ void HeuristicPartitioner1::init_data_partition() {
     // Random allocation of data items
     for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
-        info->assigned_core = _rand.nextInt64(0) % _num_clusters;
+        info->assigned_core = -1;
     }
+
+	for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+		auto rwset = &(graph_info->txn_info[i].rwset);
+
+		// clear savings array of txn
+		idx_t chosen_core = _rand.nextInt64(0) % _num_clusters;
+
+		for (auto j = 0u; j < rwset->num_accesses; j++) {
+			auto key = rwset->accesses[j].key;
+			auto info = &(graph_info->data_info[key]);
+			auto core = info->assigned_core;
+			if(core != -1) {
+				chosen_core = core;
+			}
+		}
+
+		for (auto j = 0u; j < rwset->num_accesses; j++) {
+			auto key = rwset->accesses[j].key;
+			auto info = &(graph_info->data_info[key]);
+			info->assigned_core = chosen_core;
+		}
+	}
 }
 
 void HeuristicPartitioner1::do_partition() {

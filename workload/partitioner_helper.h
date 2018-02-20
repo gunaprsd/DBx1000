@@ -87,7 +87,6 @@ struct TableInfo {
     void print(string name) {
         printf("%s-%-25s: %lu\n", name.c_str(), "Total-Accesses", num_total_accesses);
         printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data", num_accessed_data);
-        printf("%s-%-25s: ", name.c_str(), "Txn-Cross-Access-Histogram");
         /*for (; stop_index > 0u; stop_index--) {
             if (txn_cross_access_histogram[stop_index - 1] > 0) {
                 break;

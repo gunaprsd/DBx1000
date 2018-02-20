@@ -74,8 +74,7 @@ void BasePartitioner::compute_cluster_info() {
 
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         auto txn_info = &(graph_info->txn_info[i]);
-	    auto rwset = &(txn_info->rwset);
-        cluster_info->cluster_size[txn_info->assigned_core] += rwset->num_accesses;
+        cluster_info->cluster_size[txn_info->assigned_core]++;
     }
 }
 

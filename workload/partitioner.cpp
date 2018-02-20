@@ -319,7 +319,11 @@ void AccessGraphPartitioner::do_partition() {
 HeuristicPartitioner1::HeuristicPartitioner1(uint32_t num_clusters)
     : BasePartitioner(num_clusters) {}
 
-void HeuristicPartitioner1::internal_txn_partition(uint64_t iteration) {
+/*
+ * Reassign transactions to cores based on assigned core of data
+ * items. Also, update core_weights for data items appropriately.
+ */
+void HeuristicPartitioner1::internal_txn_partition() {
     // change this to ensure that core_weights array for
     // data items are updated properly
     iteration++;
@@ -333,7 +337,6 @@ void HeuristicPartitioner1::internal_txn_partition(uint64_t iteration) {
 
     uint64_t *sorted = new uint64_t[_num_clusters];
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-
         auto rwset = &(graph_info->txn_info[i].rwset);
 
         // clear savings array of txn
@@ -345,10 +348,10 @@ void HeuristicPartitioner1::internal_txn_partition(uint64_t iteration) {
             auto info = &(graph_info->data_info[key]);
             auto core = info->assigned_core;
             if (rwset->accesses[j].access_type == RD) {
-                graph_info->txn_info[i].savings[core] += 1 + info->write_txns.size();
+                graph_info->txn_info[i].savings[core] += (1 + info->write_txns.size());
             } else {
                 graph_info->txn_info[i].savings[core] +=
-                    1 + (info->read_txns.size() + info->write_txns.size());
+                        (1 + (info->read_txns.size() + info->write_txns.size()));
             }
         }
 
@@ -390,7 +393,7 @@ void HeuristicPartitioner1::internal_txn_partition(uint64_t iteration) {
     delete[] sorted;
 }
 
-void HeuristicPartitioner1::internal_data_partition(uint64_t iteration) {
+void HeuristicPartitioner1::internal_data_partition() {
     uint64_t *core_weights = new uint64_t[_num_clusters];
     for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
@@ -422,9 +425,9 @@ void HeuristicPartitioner1::do_partition() {
     for (uint32_t i = 0; i < FLAGS_iterations; i++) {
         start_time = get_server_clock();
         // cluster txn based on data allocation.
-        internal_txn_partition(i);
+        internal_txn_partition();
         // cluster data based on transaction allocation
-        internal_data_partition(i);
+        internal_data_partition();
         end_time = get_server_clock();
         runtime_info->partition_duration += DURATION(end_time, start_time);
 

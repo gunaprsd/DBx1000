@@ -164,8 +164,8 @@ template <typename T> class OfflineScheduler {
     void create_graph_info(uint64_t iteration, uint64_t start, uint64_t end) {
         graph_info->reset();
         // Create the basic access graph
-	idx_t batch_size = (end - start);
-        for (uint64_t i = 0; i < batch_size; i++) {
+	    idx_t batch_size = (end - start);
+        for (idx_t i = 0; i < batch_size; i++) {
             Query<T> *query = &batch[i + start];
             graph_info->txn_info[i].reset(i, iteration);
             ReadWriteSet *rwset = &graph_info->txn_info[i].rwset;

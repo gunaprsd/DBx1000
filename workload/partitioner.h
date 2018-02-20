@@ -58,8 +58,8 @@ class HeuristicPartitioner1 : public BasePartitioner {
   public:
 	HeuristicPartitioner1(uint32_t num_clusters);
   protected:
-    virtual void internal_txn_partition(uint64_t iteration);
-    virtual void internal_data_partition(uint64_t iteration);
+    virtual void internal_txn_partition();
+    virtual void internal_data_partition();
     virtual void init_data_partition();
     virtual void do_partition() override;
 };

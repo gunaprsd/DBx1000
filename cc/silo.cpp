@@ -47,7 +47,7 @@ txn_man::validate_silo()
 				rc = Abort;
 				goto final;
 			}	
-		}	
+		}
 #if ISOLATION_LEVEL != REPEATABLE_READ
 		for (int i = 0; i < row_cnt - wr_cnt; i ++) {
 			Access * access = accesses[ read_set[i] ];

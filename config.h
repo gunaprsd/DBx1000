@@ -4,6 +4,8 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
+#define MAX_NUM_ACCESSES 30
+#define MAX_NUM_CORES 30
 #define NOGRAPHITE 1
 #define THREAD_CNT 4
 #define PART_CNT 2
@@ -44,7 +46,7 @@
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL,
 // TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
-#define CC_ALG SILO
+#define CC_ALG VLL
 #define ISOLATION_LEVEL SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.

@@ -46,8 +46,7 @@ void Row_ts::return_req_list(TsReqEntry * list) {
 	}
 }
 
-void Row_ts::buffer_req(TsType type, txn_man * txn, row_t * row)
-{
+void Row_ts::buffer_req(TsType type, txn_man * txn, row_t * row) {
 	TsReqEntry * req_entry = get_req_entry();
 	assert(req_entry != NULL);
 	req_entry->txn = txn;

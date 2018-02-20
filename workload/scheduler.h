@@ -2,163 +2,202 @@
 #define DBX1000_SCHEDULER_H
 
 #include "loader.h"
-#include "partitioner.h"
 #include "parser.h"
+#include "partitioner.h"
 
 template <typename T> class OfflineScheduler {
-public:
-  OfflineScheduler(string input_folder_path, uint32_t num_threads,
-                   uint64_t max_batch_size, string output_folder_path)
-      : _input_folder_path(input_folder_path),
-        _output_folder_path(output_folder_path), _num_threads(num_threads),
-        _max_batch_size(max_batch_size),
-        _loader(input_folder_path, num_threads), _partitioner(nullptr) {
-    _loader.load();
-    _original_queries = _loader.get_queries_matrix();
-    _partitioned_queries = nullptr;
-    if(FLAGS_parttype == "access_graph") {
-      _partitioner = new AccessGraphPartitioner<T>(num_threads);
-    } else if(FLAGS_parttype == "approx") {
-      _partitioner = new ApproximateGraphPartitioner<T>(num_threads);
-    } else if(FLAGS_parttype == "conflict_graph") {
-      _partitioner = new ConflictGraphPartitioner<T>(num_threads);
-    } else {
-      assert(false);
+  public:
+    OfflineScheduler(string input_folder_path, uint32_t num_threads, uint64_t max_batch_size,
+                     string output_folder_path)
+        : _input_folder_path(input_folder_path), _output_folder_path(output_folder_path),
+          _num_threads(num_threads), _max_batch_size(max_batch_size), partitioner(nullptr) {
+
+        // load query matrix into memory
+        ParallelWorkloadLoader<T> loader(input_folder_path, num_threads);
+        loader.load();
+        auto queries = loader.get_queries_matrix();
+        // copy everything into a single array
+        batch_size = queries->num_cols * queries->num_rows;
+        batch = new Query<T>[batch_size];
+        auto ptr = batch;
+        for (uint32_t i = 0; i < queries->num_cols; i++) {
+            memcpy(ptr, queries->queries[i], sizeof(Query<T>) * queries->num_rows);
+            ptr += queries->num_rows;
+        }
+        // release everything
+        loader.release();
+
+        if (FLAGS_parttype == "access_graph") {
+            partitioner = new AccessGraphPartitioner(num_threads);
+        } else if (FLAGS_parttype == "approx") {
+            partitioner = new ApproximateGraphPartitioner(num_threads);
+        } else if (FLAGS_parttype == "conflict_graph") {
+            partitioner = new ConflictGraphPartitioner(num_threads);
+        } else {
+            assert(false);
+        }
+
+        clusters = new vector<Query<T> *>[_num_threads];
+        offset = 0;
+
+	    graph_info = new GraphInfo(AccessIterator<T>::get_max_key(), max_batch_size);
+	    cluster_info = new ClusterInfo(num_threads, AccessIterator<T>::get_num_tables());
+	    runtime_info = new RuntimeInfo();
+    }
+    void schedule() {
+        auto thread = new pthread_t();
+        auto data = new ThreadLocalData();
+
+        data->fields[0] = (uint64_t)this;
+        data->fields[1] = (uint64_t)0;
+        pthread_create(thread, nullptr, schedule_helper, reinterpret_cast<void *>(data));
+        pthread_join(*thread, nullptr);
+
+        delete thread;
+        delete data;
     }
 
-    _temp = new vector<Query<T> *>[_num_threads];
-    _temp_sizes = new size_t[_num_threads];
-    for (uint32_t i = 0; i < _num_threads; i++) {
-      _temp_sizes[i] = 0;
-    }
+  protected:
+    void do_schedule() {
+        uint64_t iteration = 0;
+        while (offset < batch_size) {
+            uint64_t size = min(_max_batch_size, (batch_size - offset));
 
-    _current_frame_offset = 0;
-    _max_frame_offset = _original_queries->num_rows;
-    _frame_height = _max_batch_size / _num_threads;
-    assert(_max_batch_size % _num_threads == 0);
-  }
+	        auto start = get_server_clock();
+            create_graph_info(iteration, offset, offset + size);
+			auto end = get_server_clock();
+	        runtime_info->rwset_duration += DURATION(end, start);
+			printf("************** (Batch %lu) Input Information ***************\n", iteration + 1);
+	        graph_info->print();
 
-  void schedule() {
-    auto thread = new pthread_t();
-    auto data = new ThreadLocalData();
 
-    data->fields[0] = (uint64_t)this;
-    data->fields[1] = (uint64_t)0;
-    pthread_create(thread, nullptr, schedule_helper,
-                   reinterpret_cast<void *>(data));
-    pthread_join(*thread, nullptr);
+	        partitioner->partition(graph_info, cluster_info, runtime_info);
+			printf("****************** (Batch %lu) Cluster Information **************\n", iteration + 1);
+	        cluster_info->print();
 
-    delete thread;
-    delete data;
-  }
+            for (uint64_t i = 0; i < size; i++) {
+                auto query = &batch[offset + i];
+                clusters[graph_info->txn_info[i].assigned_core].push_back(query);
+            }
 
-protected:
-  void do_schedule() {
-    vector<idx_t> partitions;
+            // Update temp array size parameters
+            offset += size;
+            iteration++;
+        }
 
-    while (_current_frame_offset < _max_frame_offset) {
-      uint64_t cframe_start = _current_frame_offset;
-      uint64_t cframe_end =
-          min(_current_frame_offset + _frame_height, _max_frame_offset);
+	    printf("*************** Final Runtime Information *************\n");
+	    runtime_info->print();
 
-      // Create batch from current frame and invoke partitioner
-      QueryBatch<T> batch(_original_queries, cframe_start, cframe_end);
-      _partitioner->partition(&batch, partitions);
+        // write back onto arrays
+        auto queries = new Query<T> *[_num_threads];
+        auto sizes = new uint64_t[_num_threads];
+        for (uint32_t i = 0; i < _num_threads; i++) {
+            sizes[i] = clusters[i].size();
+            queries[i] = reinterpret_cast<Query<T> *>(_mm_malloc(sizeof(Query<T>) * sizes[i], 64));
+            uint32_t coffset = 0;
+            for (auto query : clusters[i]) {
+                auto tquery = reinterpret_cast<Query<T> *>(query);
+                memcpy(&queries[i][coffset], tquery, sizeof(Query<T>));
+                coffset++;
+            }
+        }
 
-      // Shuffle queries into temp array
-      uint64_t size = batch.size();
-      for (uint64_t i = 0; i < size; i++) {
-        auto query = batch[i];
-        _temp[partitions[i]].push_back(query);
-      }
+        // Write back onto files
+        ensure_folder_exists(_output_folder_path);
+        for (auto i = 0u; i < _num_threads; i++) {
+            auto file_name = get_workload_file_name(_output_folder_path, i);
+            FILE *file = fopen(file_name.c_str(), "w");
+            if (file == nullptr) {
+                printf("Unable to open file %s\n", file_name.c_str());
+                exit(0);
+            }
 
-      // Update temp array size parameters
-      for (uint32_t i = 0; i < _num_threads; i++) {
-        _temp_sizes[i] = _temp[i].size();
-      }
-
-      partitions.clear();
-      _current_frame_offset += _frame_height;
-    }
-
-    size_t min_batch_size = UINT64_MAX;
-    size_t max_batch_size = 0;
-    for (uint32_t i = 0; i < _num_threads; i++) {
-      min_batch_size = min(min_batch_size, _temp_sizes[i]);
-      max_batch_size = max(max_batch_size, _temp_sizes[i]);
-    }
-    PRINT_INFO(lu, "Min-Batch-Size", min_batch_size);
-    PRINT_INFO(lu, "Max-Batch-Size", max_batch_size);
-
-    // write back onto arrays
-    _partitioned_queries = new Query<T> *[_num_threads];
-    for (uint32_t i = 0; i < _num_threads; i++) {
-      _partitioned_queries[i] = reinterpret_cast<Query<T> *>(
-          _mm_malloc(sizeof(Query<T>) * _temp[i].size(), 64));
-      uint32_t offset = 0;
-      for (auto query : _temp[i]) {
-        auto tquery = reinterpret_cast<Query<T> *>(query);
-        memcpy(&_partitioned_queries[i][offset], tquery, sizeof(Query<T>));
-        offset++;
-      }
-    }
-
-    // Write back onto files
-    ensure_folder_exists(_output_folder_path);
-    for (auto i = 0u; i < _num_threads; i++) {
-      auto file_name = get_workload_file_name(_output_folder_path, i);
-      FILE *file = fopen(file_name.c_str(), "w");
-      if (file == nullptr) {
-        printf("Unable to open file %s\n", file_name.c_str());
-        exit(0);
-      }
-
-      Query<T> *thread_queries = _partitioned_queries[i];
-      auto size = _temp_sizes[i];
-      fwrite(thread_queries, sizeof(Query<T>), size, file);
-      fflush(file);
-      fclose(file);
+            Query<T> *thread_queries = queries[i];
+            auto size = sizes[i];
+            fwrite(thread_queries, sizeof(Query<T>), size, file);
+            fflush(file);
+            fclose(file);
 
 #ifdef PRINT_CLUSTERED_FILE
-      auto txt_file_name = file_name.substr(0, file_name.length() - 4);
-      txt_file_name += ".txt";
-      FILE *txt_file = fopen(txt_file_name.c_str(), "w");
-      if (txt_file == nullptr) {
-        printf("Unable to open file %s\n", txt_file_name.c_str());
-        exit(0);
-      }
+            auto txt_file_name = file_name.substr(0, file_name.length() - 4);
+            txt_file_name += ".txt";
+            FILE *txt_file = fopen(txt_file_name.c_str(), "w");
+            if (txt_file == nullptr) {
+                printf("Unable to open file %s\n", txt_file_name.c_str());
+                exit(0);
+            }
 
-      for (uint64_t j = 0; j < _temp_sizes[i]; j++) {
-        print_query(txt_file, &_partitioned_queries[i][j]);
-      }
-      fflush(txt_file);
-      fclose(txt_file);
+            for (uint64_t j = 0; j < _temp_sizes[i]; j++) {
+                print_query(txt_file, &_partitioned_queries[i][j]);
+            }
+            fflush(txt_file);
+            fclose(txt_file);
 #endif
+        }
     }
-  }
+    static void *schedule_helper(void *ptr) {
+        set_affinity(1);
+        auto data = reinterpret_cast<ThreadLocalData *>(ptr);
+        auto scheduler = reinterpret_cast<OfflineScheduler *>(data->fields[0]);
+        scheduler->do_schedule();
+        return nullptr;
+    }
+    const string _input_folder_path;
+    const string _output_folder_path;
+    const uint32_t _num_threads;
+    const uint64_t _max_batch_size;
+    BasePartitioner *partitioner;
+    vector<Query<T> *> *clusters;
+    Query<T> *batch;
+    uint64_t batch_size;
+    uint64_t offset;
+    GraphInfo *graph_info;
+	ClusterInfo* cluster_info;
+	RuntimeInfo* runtime_info;
 
-  static void *schedule_helper(void *ptr) {
-    set_affinity(1);
-    auto data = reinterpret_cast<ThreadLocalData *>(ptr);
-    auto scheduler = reinterpret_cast<OfflineScheduler *>(data->fields[0]);
-    //auto thread_id = (uint32_t)((uint64_t)data->fields[1]);
-    scheduler->do_schedule();
-    return nullptr;
-  }
+    void create_graph_info(uint64_t iteration, uint64_t start, uint64_t end) {
+        graph_info->reset();
+        // Create the basic access graph
+        for (uint64_t i = 0; i < (end - start); i++) {
+            Query<T> *query = &batch[i + start];
+            graph_info->txn_info[i].reset(i, iteration);
+            ReadWriteSet *rwset = &graph_info->txn_info[i].rwset;
+            query->obtain_rw_set(rwset);
+            graph_info->num_txn_nodes++;
 
-  const string _input_folder_path;
-  const string _output_folder_path;
-  const uint32_t _num_threads;
-  const uint64_t _max_batch_size;
-  ParallelWorkloadLoader<T> _loader;
-  BasePartitioner<T>* _partitioner;
-  QueryMatrix<T> *_original_queries;
-  Query<T> **_partitioned_queries;
-  vector<Query<T> *> *_temp;
-  size_t *_temp_sizes;
-  uint64_t _current_frame_offset;
-  uint64_t _max_frame_offset;
-  uint64_t _frame_height;
+            for (uint32_t j = 0; j < rwset->num_accesses; j++) {
+                auto info = &graph_info->data_info[rwset->accesses[j].key];
+                if (info->epoch != iteration) {
+                    // Seeing the data item for the first time
+                    // in this batch - initialize appropriately
+                    idx_t data_id = graph_info->num_data_nodes;
+                    info->reset(data_id, iteration, rwset->accesses[j].table_id);
+                    graph_info->data_inv_idx.push_back(rwset->accesses[j].key);
+                    graph_info->num_data_nodes++;
+                }
+
+                // Add txn to read or write list of data item
+                if (rwset->accesses[j].access_type == RD) {
+                    info->read_txns.push_back(i);
+                } else {
+                    info->write_txns.push_back(i);
+                }
+            }
+
+            graph_info->num_edges += rwset->num_accesses;
+            ACCUMULATE_MIN(graph_info->min_txn_degree, rwset->num_accesses);
+            ACCUMULATE_MAX(graph_info->max_txn_degree, rwset->num_accesses);
+        }
+
+        // Compute data min and max degrees
+        assert((size_t)graph_info->num_data_nodes == graph_info->data_inv_idx.size());
+        for (size_t i = 0; i < graph_info->num_data_nodes; i++) {
+            auto info = &graph_info->data_info[graph_info->data_inv_idx[i]];
+            auto data_degree = info->read_txns.size() + info->write_txns.size();
+            ACCUMULATE_MIN(graph_info->min_data_degree, data_degree);
+            ACCUMULATE_MAX(graph_info->max_data_degree, data_degree);
+        }
+    }
 };
 
 #endif // DBX1000_SCHEDULER_H

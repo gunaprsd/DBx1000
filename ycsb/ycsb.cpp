@@ -49,3 +49,11 @@ uint32_t AccessIterator<ycsb_params>::max_access_per_txn(uint32_t table_id) {
     return 0;
   }
 }
+
+template<>
+void Query<ycsb_params>::obtain_rw_set(ReadWriteSet* rwset) {
+  rwset->num_accesses = 0;
+  for(uint32_t i = 0; i < params.request_cnt; i++) {
+    rwset->add_access(0, YCSBUtility::get_hash(params.requests[i].key), params.requests[i].rtype);
+  }
+}

@@ -1,7 +1,7 @@
 PROJECT(DBx1000)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
-SET(CMAKE_C_COMPILER gcc)
-SET(CMAKE_C_COMPILER g++)
+SET(CMAKE_C_COMPILER /usr/bin/cc)
+SET(CMAKE_C_COMPILER /usr/bin/c++)
 SET(CMAKE_CXX_STANDARD 11)
 
 ADD_DEFINITIONS(-DNOGRAPHITE=1)
@@ -106,7 +106,8 @@ SET(SRC_LIST cc/occ.h
         workload/loader.h
         ycsb/ycsb.cpp
         workload/scheduler.h system/parser.h
-        workload/partitioner_helper.h)
+        workload/partitioner_helper.h
+        workload/partitioner.cpp)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})

@@ -8,10 +8,12 @@
       <w>allign</w>
       <w>byname</w>
       <w>cframe</w>
+      <w>coffset</w>
       <w>cpos</w>
       <w>cvtx</w>
       <w>dest</w>
       <w>edgecut</w>
+      <w>ginfo</w>
       <w>hekaton</w>
       <w>hstore</w>
       <w>initia</w>
@@ -27,11 +29,16 @@
       <w>parallelize</w>
       <w>paritioning</w>
       <w>partitioner</w>
+      <w>preprocessing</w>
       <w>rint</w>
       <w>ruint</w>
+      <w>rwset</w>
       <w>sigmod</w>
       <w>tictoc</w>
+      <w>tinfo</w>
+      <w>tparams</w>
       <w>tpwgts</w>
+      <w>tquery</w>
       <w>txncnt</w>
       <w>txnids</w>
       <w>ubvec</w>

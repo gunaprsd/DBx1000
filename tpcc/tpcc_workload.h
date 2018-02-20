@@ -17,8 +17,8 @@ public:
 
 protected:
   void per_thread_generate(uint64_t thread_id) override;
-  void gen_payment_request(uint64_t thread_id, tpcc_payment_params *params);
-  void gen_new_order_request(uint64_t thread_id, tpcc_new_order_params *params);
+  void gen_payment_request(uint64_t thread_id, tpcc_query *params);
+  void gen_new_order_request(uint64_t thread_id, tpcc_query *params);
 
   TPCCBenchmarkConfig config;
   TPCCHelper helper;

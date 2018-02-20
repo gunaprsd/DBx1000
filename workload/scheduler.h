@@ -164,7 +164,8 @@ template <typename T> class OfflineScheduler {
     void create_graph_info(uint64_t iteration, uint64_t start, uint64_t end) {
         graph_info->reset();
         // Create the basic access graph
-        for (uint64_t i = 0; i < (end - start); i++) {
+	idx_t batch_size = (end - start);
+        for (uint64_t i = 0; i < batch_size; i++) {
             Query<T> *query = &batch[i + start];
             graph_info->txn_info[i].reset(i, iteration);
             ReadWriteSet *rwset = &graph_info->txn_info[i].rwset;
@@ -178,7 +179,7 @@ template <typename T> class OfflineScheduler {
                 if (info->epoch != iteration) {
                     // Seeing the data item for the first time
                     // in this batch - initialize appropriately
-                    idx_t data_id = graph_info->num_data_nodes;
+                    idx_t data_id = batch_size + graph_info->num_data_nodes;
                     info->epoch = iteration;
                     info->iteration = 0;
                     info->reset(data_id, iteration, table_id);

@@ -34,7 +34,6 @@ void BasePartitioner::compute_cluster_info() {
     cluster_info->objective = 0;
     for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
-        assert(info->iteration == iteration);
         uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0;
         uint64_t max_c = 0, chosen_c = UINT64_MAX;
         for (uint64_t c = 0; c < _num_clusters; c++) {

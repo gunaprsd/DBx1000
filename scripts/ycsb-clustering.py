@@ -6,9 +6,9 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes =  [100]
-for cores in [15]:
-    for parts in [15]:
+sizes =  [256000]
+for cores in [4]:
+    for parts in [4]:
         for size_per_thread in sizes:
             if parts != cores:
                 continue
@@ -57,7 +57,7 @@ def partition(start, end, type_tag):
             command += ' -output_folder=' + data_folder + "/" + seed_tag + '_' + type_tag + ' \\\n'
             command += ' -task=partition \\\n'
             command += ' -parttype=' + type_tag + '\\\n'
-            command += ' -ufactor=2000 \\\n'
+            command += ' -ufactor=100 \\\n'
             command += ' -iterations=30 \\\n'
             command += ' -stdev_partitioner'
             command += ' >> ' + log_file

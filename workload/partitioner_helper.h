@@ -56,7 +56,7 @@ struct TableInfo {
     uint32_t id;
     uint64_t num_accessed_data;
     uint64_t num_total_accesses;
-    uint64_t txn_cross_access_histogram[MAX_NUM_ACCESSES];
+    //uint64_t txn_cross_access_histogram[MAX_NUM_ACCESSES];
     uint64_t data_core_degree_histogram[MAX_NUM_CORES];
 
     TableInfo() {}
@@ -67,9 +67,9 @@ struct TableInfo {
         for (uint64_t i = 0; i < MAX_NUM_CORES; i++) {
             data_core_degree_histogram[i] = 0;
         }
-        for (uint64_t i = 0; i < MAX_NUM_ACCESSES; i++) {
+        /*for (uint64_t i = 0; i < MAX_NUM_ACCESSES; i++) {
             txn_cross_access_histogram[i] = 0;
-        }
+        }*/
     }
 
     void reset() {
@@ -79,17 +79,16 @@ struct TableInfo {
             data_core_degree_histogram[i] = 0;
         }
 
-        for (uint64_t i = 0; i < MAX_NUM_ACCESSES; i++) {
+        /*for (uint64_t i = 0; i < MAX_NUM_ACCESSES; i++) {
             txn_cross_access_histogram[i] = 0;
-        }
+        }*/
     }
 
     void print(string name) {
         printf("%s-%-25s: %lu\n", name.c_str(), "Total-Accesses", num_total_accesses);
         printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data", num_accessed_data);
         printf("%s-%-25s: ", name.c_str(), "Txn-Cross-Access-Histogram");
-        uint64_t stop_index = MAX_NUM_ACCESSES;
-        for (; stop_index > 0u; stop_index--) {
+        /*for (; stop_index > 0u; stop_index--) {
             if (txn_cross_access_histogram[stop_index - 1] > 0) {
                 break;
             }
@@ -97,10 +96,10 @@ struct TableInfo {
         for (uint64_t i = 0; i < stop_index; i++) {
             printf("%lu, ", txn_cross_access_histogram[i]);
         }
-        printf("\n");
+        printf("\n");*/
 
         printf("%s-%-25s: ", name.c_str(), "Data-Core-Degree-Histogram");
-        stop_index = MAX_NUM_CORES;
+        uint64_t stop_index = MAX_NUM_CORES;
         for (; stop_index > 0u; stop_index--) {
             if (data_core_degree_histogram[stop_index - 1] > 0.01) {
                 break;

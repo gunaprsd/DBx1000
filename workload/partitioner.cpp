@@ -30,11 +30,11 @@ void BasePartitioner::partition(uint64_t _id, GraphInfo *_graph_info, ClusterInf
  * according to transaction to core allocation.
  */
 void BasePartitioner::compute_cluster_info() {
-  cluster_info->reset();
-  cluster_info->objective = 0;
+    cluster_info->reset();
+    cluster_info->objective = 0;
     for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
-	assert(info->iteration == iteration);
+        assert(info->iteration == iteration);
         uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0;
         uint64_t max_c = 0, chosen_c = UINT64_MAX;
         for (uint64_t c = 0; c < _num_clusters; c++) {
@@ -74,7 +74,8 @@ void BasePartitioner::compute_cluster_info() {
 
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         auto txn_info = &(graph_info->txn_info[i]);
-        cluster_info->cluster_size[txn_info->assigned_core] += txn_info->rwset.num_accesses;
+	    auto rwset = &(txn_info->rwset);
+        cluster_info->cluster_size[txn_info->assigned_core] += rwset->num_accesses;
     }
 }
 
@@ -93,7 +94,7 @@ void BasePartitioner::assign_txn_clusters(idx_t *parts) {
     // values that it may contain.
     iteration++;
 
-    //memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
+    // memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
 
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         auto chosen_core = parts[i];
@@ -115,7 +116,7 @@ void BasePartitioner::assign_txn_clusters(idx_t *parts) {
         }
 
         // update cluster size info
-        //cluster_info->cluster_size[chosen_core] += graph_info->txn_info[i].rwset.num_accesses;
+        // cluster_info->cluster_size[chosen_core] += graph_info->txn_info[i].rwset.num_accesses;
     }
 }
 
@@ -329,7 +330,7 @@ void HeuristicPartitioner1::internal_txn_partition(uint64_t iteration) {
     memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
 
     double max_cluster_size =
-            ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
+        ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
     // double max_cluster_size = UINT64_MAX;
 
     uint64_t *sorted = new uint64_t[_num_clusters];
@@ -349,16 +350,16 @@ void HeuristicPartitioner1::internal_txn_partition(uint64_t iteration) {
                 graph_info->txn_info[i].savings[core] += 1 + info->write_txns.size();
             } else {
                 graph_info->txn_info[i].savings[core] +=
-                        1 + (info->read_txns.size() + info->write_txns.size());
+                    1 + (info->read_txns.size() + info->write_txns.size());
             }
         }
 
         sort_helper(sorted, graph_info->txn_info[i].savings, _num_clusters);
 
         /*
-        * Find earliest core with maximum savings and
-        * that satisfies the size constraint.
-        */
+         * Find earliest core with maximum savings and
+         * that satisfies the size constraint.
+         */
         bool allotted = false;
         uint64_t chosen_core = UINT32_MAX;
         for (uint64_t s = 0; s < _num_clusters && !allotted; s++) {
@@ -431,7 +432,8 @@ void HeuristicPartitioner1::do_partition() {
 
         // compute the cluster info
         compute_cluster_info();
-        printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id, iteration - 2);
+        printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id,
+               iteration - 2);
         cluster_info->print();
     }
 }
@@ -448,7 +450,7 @@ void HeuristicPartitioner2::internal_txn_partition(uint64_t iteration) {
     memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
 
     double max_cluster_size =
-            ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
+        ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
     // double max_cluster_size = UINT64_MAX;
 
     uint64_t *sorted = new uint64_t[_num_clusters];
@@ -467,16 +469,16 @@ void HeuristicPartitioner2::internal_txn_partition(uint64_t iteration) {
                 graph_info->txn_info[i].savings[core] += 1 + info->write_txns.size();
             } else {
                 graph_info->txn_info[i].savings[core] +=
-                        1 + (info->read_txns.size() + info->write_txns.size());
+                    1 + (info->read_txns.size() + info->write_txns.size());
             }
         }
 
         sort_helper(sorted, graph_info->txn_info[i].savings, _num_clusters);
 
         /*
-        * Find earliest core with maximum savings and
-        * that satisfies the size constraint.
-        */
+         * Find earliest core with maximum savings and
+         * that satisfies the size constraint.
+         */
         bool allotted = false;
         uint64_t chosen_core = UINT32_MAX;
         double sum = 0, sum_sq = 0;
@@ -495,9 +497,9 @@ void HeuristicPartitioner2::internal_txn_partition(uint64_t iteration) {
         double std_dev = sqrt(sq_mean - mean * mean);
 
         /*
-		 * Greedily allot the core with maximum savings if the chosen
-		 * core is *significantly* better.
-		 */
+         * Greedily allot the core with maximum savings if the chosen
+         * core is *significantly* better.
+         */
         for (uint64_t s = 0; s < _num_clusters && !allotted; s++) {
             auto core = sorted[s];
             double diff_ratio;

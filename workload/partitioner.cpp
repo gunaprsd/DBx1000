@@ -331,9 +331,9 @@ void HeuristicPartitioner1::internal_txn_partition() {
     // clear cluster size info
     memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
 
-    double max_cluster_size =
-        ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
-    // double max_cluster_size = UINT64_MAX;
+    //double max_cluster_size =
+    //    ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
+    double max_cluster_size = UINT64_MAX;
 
     uint64_t *sorted = new uint64_t[_num_clusters];
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
@@ -355,6 +355,9 @@ void HeuristicPartitioner1::internal_txn_partition() {
             }
         }
 
+	for(auto j = 0u; j < _num_clusters; j++) {
+	  sorted[j] = j;
+	}
         sort_helper(sorted, graph_info->txn_info[i].savings, _num_clusters);
 
         /*

@@ -172,15 +172,17 @@ template <typename T> class OfflineScheduler {
             graph_info->num_txn_nodes++;
 
             for (uint32_t j = 0; j < rwset->num_accesses; j++) {
-                auto info = &graph_info->data_info[rwset->accesses[j].key];
+	            auto table_id = rwset->accesses[j].table_id;
+	            auto key = rwset->accesses[j].key;
+                auto info = &graph_info->data_info[key];
                 if (info->epoch != iteration) {
                     // Seeing the data item for the first time
                     // in this batch - initialize appropriately
                     idx_t data_id = graph_info->num_data_nodes;
                     info->epoch = iteration;
                     info->iteration = 0;
-                    info->reset(data_id, iteration, rwset->accesses[j].table_id);
-                    graph_info->data_inv_idx.push_back(rwset->accesses[j].key);
+                    info->reset(data_id, iteration, table_id);
+                    graph_info->data_inv_idx.push_back(key);
                     graph_info->num_data_nodes++;
                 }
 

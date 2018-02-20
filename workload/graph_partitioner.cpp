@@ -23,15 +23,15 @@ void METISGraphPartitioner::compute_partitions(METIS_CSRGraph *graph,
       reinterpret_cast<idx_t *>(malloc(sizeof(idx_t) * METIS_NOPTIONS));
 
   METIS_SetDefaultOptions(options);
-  options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY;
+  /*options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY;
   options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
   options[METIS_OPTION_CTYPE] = METIS_CTYPE_RM;
   options[METIS_OPTION_RTYPE] = METIS_RTYPE_FM;
+  options[METIS_OPTION_DBGLVL] = METIS_DBG_TIME;
+  */
+  options[METIS_OPTION_MINCONN] = 1;
   options[METIS_OPTION_UFACTOR] = FLAGS_ufactor;
   options[METIS_OPTION_SEED] = FLAGS_seed;
-  options[METIS_OPTION_DBGLVL] = METIS_DBG_TIME;
-  options[METIS_OPTION_MINCONN] = 1;
-  printf("ufactor: %u\n", FLAGS_ufactor);
 
   // Do the compute_partitions
   int result =

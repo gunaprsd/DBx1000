@@ -28,6 +28,7 @@ struct ReadWriteSet {
         accesses[num_accesses].table_id = tid;
         accesses[num_accesses].key = key;
         accesses[num_accesses].access_type = access_type;
+	num_accesses++;
     }
 };
 

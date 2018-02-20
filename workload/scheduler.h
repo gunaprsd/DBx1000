@@ -30,11 +30,11 @@ template <typename T> class OfflineScheduler {
             partitioner = new AccessGraphPartitioner(num_threads);
         } else if (FLAGS_parttype == "conflict_graph") {
             partitioner = new ConflictGraphPartitioner(num_threads);
-        }  else if (FLAGS_parttype == "heuristic1") {
+        } else if (FLAGS_parttype == "heuristic1") {
             partitioner = new HeuristicPartitioner1(num_threads);
-        }  else if (FLAGS_parttype == "heuristic2") {
+        } else if (FLAGS_parttype == "heuristic2") {
             partitioner = new HeuristicPartitioner2(num_threads);
-        }  else if (FLAGS_parttype == "heuristic3") {
+        } else if (FLAGS_parttype == "heuristic3") {
             partitioner = new HeuristicPartitioner3(num_threads);
         } else {
             assert(false);
@@ -43,9 +43,10 @@ template <typename T> class OfflineScheduler {
         clusters = new vector<Query<T> *>[_num_threads];
         offset = 0;
 
-	    graph_info = new GraphInfo(AccessIterator<T>::get_max_key(), max_batch_size);
-	    cluster_info = new ClusterInfo(num_threads, AccessIterator<T>::get_num_tables());
-	    runtime_info = new RuntimeInfo();
+        graph_info = new GraphInfo(AccessIterator<T>::get_max_key(), max_batch_size);
+        cluster_info = new ClusterInfo(num_threads, AccessIterator<T>::get_num_tables());
+	cluster_info->initialize();
+	runtime_info = new RuntimeInfo();
     }
     void schedule() {
         auto thread = new pthread_t();
@@ -62,22 +63,22 @@ template <typename T> class OfflineScheduler {
 
   protected:
     void do_schedule() {
-        uint64_t iteration = 0;
+        uint64_t iteration = 1;
         while (offset < batch_size) {
             uint64_t size = min(_max_batch_size, (batch_size - offset));
 
-	        auto start = get_server_clock();
+            auto start = get_server_clock();
             create_graph_info(iteration, offset, offset + size);
-			auto end = get_server_clock();
-	        runtime_info->rwset_duration += DURATION(end, start);
-			printf("************** (Batch %lu) Input Information ***************\n", iteration + 1);
-	        graph_info->print();
+            auto end = get_server_clock();
+            runtime_info->rwset_duration += DURATION(end, start);
+            printf("************** (Batch %lu) Input Information ***************\n", iteration);
+            graph_info->print();
 
+            partitioner->partition(iteration, graph_info, cluster_info, runtime_info);
 
-	        partitioner->partition(iteration + 1, graph_info, cluster_info, runtime_info);
-
-			printf("****************** (Batch %lu) Cluster Information **************\n", iteration + 1);
-	        cluster_info->print();
+            printf("****************** (Batch %lu) Cluster Information **************\n",
+                   iteration);
+            cluster_info->print();
 
             for (uint64_t i = 0; i < size; i++) {
                 auto query = &batch[offset + i];
@@ -89,8 +90,8 @@ template <typename T> class OfflineScheduler {
             iteration++;
         }
 
-	    printf("*************** Final Runtime Information *************\n");
-	    runtime_info->print();
+        printf("*************** Final Runtime Information *************\n");
+        runtime_info->print();
 
         // write back onto arrays
         auto queries = new Query<T> *[_num_threads];
@@ -157,8 +158,8 @@ template <typename T> class OfflineScheduler {
     uint64_t batch_size;
     uint64_t offset;
     GraphInfo *graph_info;
-	ClusterInfo* cluster_info;
-	RuntimeInfo* runtime_info;
+    ClusterInfo *cluster_info;
+    RuntimeInfo *runtime_info;
 
     void create_graph_info(uint64_t iteration, uint64_t start, uint64_t end) {
         graph_info->reset();

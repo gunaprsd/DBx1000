@@ -20,7 +20,9 @@ void BasePartitioner::partition(uint64_t _id, GraphInfo *_graph_info, ClusterInf
 
     // do_partition must assign core_weights to data node
     // and assigned_core for each txn node.
+    iteration++;
     do_partition();
+    compute_cluster_info();
 }
 
 /*
@@ -28,12 +30,11 @@ void BasePartitioner::partition(uint64_t _id, GraphInfo *_graph_info, ClusterInf
  * according to transaction to core allocation.
  */
 void BasePartitioner::compute_cluster_info() {
-    cluster_info->reset();
-
-    cluster_info->objective = 0;
+  cluster_info->reset();
+  cluster_info->objective = 0;
     for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
-
+	assert(info->iteration == iteration);
         uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0;
         uint64_t max_c = 0, chosen_c = UINT64_MAX;
         for (uint64_t c = 0; c < _num_clusters; c++) {
@@ -71,10 +72,10 @@ void BasePartitioner::compute_cluster_info() {
         table_info->data_core_degree_histogram[num_c - 1]++;
     }
 
-    /*for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         auto txn_info = &(graph_info->txn_info[i]);
         cluster_info->cluster_size[txn_info->assigned_core] += txn_info->rwset.num_accesses;
-    }*/
+    }
 }
 
 void BasePartitioner::init_random_partition() {
@@ -92,7 +93,7 @@ void BasePartitioner::assign_txn_clusters(idx_t *parts) {
     // values that it may contain.
     iteration++;
 
-    memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
+    //memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
 
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         auto chosen_core = parts[i];
@@ -114,7 +115,7 @@ void BasePartitioner::assign_txn_clusters(idx_t *parts) {
         }
 
         // update cluster size info
-        cluster_info->cluster_size[chosen_core] += graph_info->txn_info[i].rwset.num_accesses;
+        //cluster_info->cluster_size[chosen_core] += graph_info->txn_info[i].rwset.num_accesses;
     }
 }
 
@@ -547,4 +548,3 @@ HeuristicPartitioner3::HeuristicPartitioner3(uint32_t num_clusters)
 void HeuristicPartitioner3::init_data_partition() {
     // TODO do something!!
 }
-

@@ -56,28 +56,30 @@ struct TableInfo {
     uint32_t id;
     uint64_t num_accessed_data;
     uint64_t num_total_accesses;
-    vector<uint64_t> txn_cross_access_histogram;
-    vector<uint64_t> data_core_degree_histogram;
+    uint64_t txn_cross_access_histogram[MAX_NUM_ACCESSES];
+    uint64_t data_core_degree_histogram[MAX_NUM_CORES];
 
     TableInfo() {}
-    void initialize(uint32_t _id, uint64_t max_core_degree, uint64_t max_txn_access) {
+    void initialize(uint32_t _id) {
         id = _id;
-        for (uint64_t i = 0; i < max_core_degree; i++) {
-            data_core_degree_histogram.push_back(0);
+        num_accessed_data = 0;
+        num_total_accesses = 0;
+        for (uint64_t i = 0; i < MAX_NUM_CORES; i++) {
+            data_core_degree_histogram[i] = 0;
         }
-        for (uint64_t i = 0; i < max_txn_access; i++) {
-            txn_cross_access_histogram.push_back(0);
+        for (uint64_t i = 0; i < MAX_NUM_ACCESSES; i++) {
+            txn_cross_access_histogram[i] = 0;
         }
     }
 
     void reset() {
         num_accessed_data = 0;
         num_total_accesses = 0;
-        for (uint64_t i = 0; i < data_core_degree_histogram.size(); i++) {
+        for (uint64_t i = 0; i < MAX_NUM_CORES; i++) {
             data_core_degree_histogram[i] = 0;
         }
 
-        for (uint64_t i = 0; i < txn_cross_access_histogram.size(); i++) {
+        for (uint64_t i = 0; i < MAX_NUM_ACCESSES; i++) {
             txn_cross_access_histogram[i] = 0;
         }
     }
@@ -86,7 +88,7 @@ struct TableInfo {
         printf("%s-%-25s: %lu\n", name.c_str(), "Total-Accesses", num_total_accesses);
         printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data", num_accessed_data);
         printf("%s-%-25s: ", name.c_str(), "Txn-Cross-Access-Histogram");
-        uint64_t stop_index = txn_cross_access_histogram.size();
+        uint64_t stop_index = MAX_NUM_ACCESSES;
         for (; stop_index > 0u; stop_index--) {
             if (txn_cross_access_histogram[stop_index - 1] > 0) {
                 break;
@@ -98,7 +100,7 @@ struct TableInfo {
         printf("\n");
 
         printf("%s-%-25s: ", name.c_str(), "Data-Core-Degree-Histogram");
-        stop_index = data_core_degree_histogram.size();
+        stop_index = MAX_NUM_CORES;
         for (; stop_index > 0u; stop_index--) {
             if (data_core_degree_histogram[stop_index - 1] > 0.01) {
                 break;
@@ -133,18 +135,10 @@ struct GraphInfo {
     TxnNodeInfo *txn_info;
     DataNodeInfo *data_info;
     vector<uint64_t> data_inv_idx;
-    GraphInfo(uint64_t max_data_nodes, uint64_t max_txn_nodes) :
-            num_txn_nodes(0),
-            num_data_nodes(0),
-            num_edges(0),
-            min_data_degree(UINT64_MAX),
-            max_data_degree(0),
-            min_txn_degree(UINT64_MAX),
-            max_txn_degree(0),
-            txn_info(nullptr),
-            data_info(nullptr),
-            data_inv_idx()
-    {
+    GraphInfo(uint64_t max_data_nodes, uint64_t max_txn_nodes)
+        : num_txn_nodes(0), num_data_nodes(0), num_edges(0), min_data_degree(UINT64_MAX),
+          max_data_degree(0), min_txn_degree(UINT64_MAX), max_txn_degree(0), txn_info(nullptr),
+          data_info(nullptr), data_inv_idx() {
         txn_info = new TxnNodeInfo[max_txn_nodes];
         data_info = new DataNodeInfo[max_data_nodes];
         reset();
@@ -179,21 +173,23 @@ struct ClusterInfo {
     uint64_t cluster_size[MAX_NUM_CORES];
     TableInfo table_info[MAX_NUM_TABLES];
     ClusterInfo(uint32_t num_clusters_, uint32_t num_tables_)
-        : num_clusters(num_clusters_),
-          num_tables(num_tables_),
-          objective(0),
-          table_info()
-    {
+        : num_clusters(num_clusters_), num_tables(num_tables_), objective(0), table_info() {
         reset();
     }
 
     void initialize() {
-        reset();
+        objective = 0;
+        for (uint32_t i = 0; i < num_clusters; i++) {
+            cluster_size[i] = 0;
+        }
+        for (uint32_t i = 0; i < num_tables; i++) {
+            table_info[i].initialize(i);
+        }
     }
 
     void reset() {
         objective = 0;
-        for(uint32_t i = 0; i < num_clusters; i++) {
+        for (uint32_t i = 0; i < num_clusters; i++) {
             cluster_size[i] = 0;
         }
         for (uint32_t i = 0; i < num_tables; i++) {
@@ -204,7 +200,7 @@ struct ClusterInfo {
     void print() {
         PRINT_INFO(lu, "Objective", objective);
         printf("%-30s: ", "Cluster-Size");
-        for(uint32_t i = 0; i < num_clusters; i++) {
+        for (uint32_t i = 0; i < num_clusters; i++) {
             printf("%lu, ", cluster_size[i]);
         }
         printf("\n");

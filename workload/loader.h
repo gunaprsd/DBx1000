@@ -18,11 +18,11 @@ template <typename T> class ParallelWorkloadLoader {
     }
     void release() {
         // Implemented by derived class
-        for(uint32_t i = 0; i < _num_threads; i++) {
-          delete[] _queries[i];
+        for (uint32_t i = 0; i < _num_threads; i++) {
+            delete[] _queries[i];
         }
-      delete[] _queries;
-      delete[] _array_sizes;
+        delete[] _queries;
+        delete[] _array_sizes;
     }
     void load() {
         auto threads = new pthread_t[_num_threads];
@@ -44,11 +44,9 @@ template <typename T> class ParallelWorkloadLoader {
         delete[] threads;
         delete[] data;
     }
-
     virtual QueryIterator<T> *get_queries_list(uint64_t thread_id) {
         return new QueryIterator<T>(_queries[thread_id], _array_sizes[thread_id]);
     }
-
     virtual QueryMatrix<T> *get_queries_matrix() {
         // Can create a query matrix only with equal number of elements in each
         // array
@@ -63,7 +61,7 @@ template <typename T> class ParallelWorkloadLoader {
   protected:
     virtual void per_thread_load(uint32_t thread_id, FILE *file) {
         fseek(file, 0, SEEK_END);
-        size_t bytes_to_read = ftell(file);
+        size_t bytes_to_read = static_cast<size_t>(ftell(file));
         fseek(file, 0, SEEK_SET);
 
         _array_sizes[thread_id] = bytes_to_read / sizeof(Query<T>);
@@ -73,7 +71,6 @@ template <typename T> class ParallelWorkloadLoader {
             fread(_queries[thread_id], sizeof(Query<T>), _array_sizes[thread_id], file);
         assert(bytes_read == _array_sizes[thread_id]);
     }
-
     static void *load_helper(void *ptr) {
         auto data = reinterpret_cast<ThreadLocalData *>(ptr);
         auto loader = reinterpret_cast<ParallelWorkloadLoader *>(data->fields[0]);

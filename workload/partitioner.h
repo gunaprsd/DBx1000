@@ -10,7 +10,7 @@
 
 class BasePartitioner {
   public:
-    void partition(GraphInfo *_graph_info, ClusterInfo *_cluster_info, RuntimeInfo *_runtime_info);
+    void partition(uint64_t id, GraphInfo *_graph_info, ClusterInfo *_cluster_info, RuntimeInfo *_runtime_info);
   protected:
     uint32_t _num_clusters;
     GraphInfo *graph_info;
@@ -18,7 +18,9 @@ class BasePartitioner {
     RuntimeInfo *runtime_info;
     RandomNumberGenerator _rand;
 	uint64_t iteration;
+	uint64_t id;
     BasePartitioner(uint32_t num_clusters);
+	void sort_helper(uint64_t *index, uint64_t *value, uint64_t size);
 	void init_random_partition();
 	void assign_txn_clusters(idx_t* parts);
     void compute_cluster_info();
@@ -47,21 +49,33 @@ class AccessGraphPartitioner : public BasePartitioner {
     vector<idx_t> adjwgt;
     vector<idx_t> xadj;
     vector<idx_t> adjncy;
-    vector<idx_t> vsize;
     void add_txn_nodes();
     void add_data_nodes();
     void do_partition() override;
 };
 
-class ApproximateGraphPartitioner : public BasePartitioner {
+class HeuristicPartitioner1 : public BasePartitioner {
   public:
-    ApproximateGraphPartitioner(uint32_t num_clusters);
+	HeuristicPartitioner1(uint32_t num_clusters);
   protected:
-    void internal_txn_partition(uint64_t iteration);
-    void internal_data_partition(uint64_t iteration);
-    void init_data_partition();
-    void sort_helper(uint64_t *index, uint64_t *value, uint64_t size);
-    void do_partition() override;
+    virtual void internal_txn_partition(uint64_t iteration);
+    virtual void internal_data_partition(uint64_t iteration);
+    virtual void init_data_partition();
+    virtual void do_partition() override;
+};
+
+class HeuristicPartitioner2 : public HeuristicPartitioner1 {
+public:
+	HeuristicPartitioner2(uint32_t num_clusters);
+protected:
+	virtual void internal_txn_partition(uint64_t iteration);
+};
+
+class HeuristicPartitioner3 : public HeuristicPartitioner2 {
+public:
+	HeuristicPartitioner3(uint32_t num_clusters);
+protected:
+	void init_data_partition();
 };
 
 #endif // DBX1000_PARTITIONER_H

@@ -173,40 +173,43 @@ struct GraphInfo {
 };
 
 struct ClusterInfo {
-    uint32_t num_clusters;
-    uint32_t num_tables;
+    const uint32_t num_clusters;
+    const uint32_t num_tables;
     uint64_t objective;
-    vector<TableInfo *> table_info;
+    uint64_t cluster_size[MAX_NUM_CORES];
+    TableInfo table_info[MAX_NUM_TABLES];
     ClusterInfo(uint32_t num_clusters_, uint32_t num_tables_)
         : num_clusters(num_clusters_),
           num_tables(num_tables_),
           objective(0),
-          table_info() {
-        for (uint32_t i = 0; i < num_tables; i++) {
-            table_info.push_back(new TableInfo());
-            table_info[i]->initialize(i, num_clusters, MAX_NUM_ACCESSES);
-        }
+          table_info()
+    {
+        reset();
     }
 
     void initialize() {
-        table_info.clear();
-        for (uint32_t i = 0; i < num_tables; i++) {
-            table_info.push_back(new TableInfo());
-            table_info[i]->initialize(i, num_clusters, MAX_NUM_ACCESSES);
-        }
+        reset();
     }
 
     void reset() {
         objective = 0;
-        for (auto tinfo : table_info) {
-            tinfo->reset();
+        for(uint32_t i = 0; i < num_clusters; i++) {
+            cluster_size[i] = 0;
+        }
+        for (uint32_t i = 0; i < num_tables; i++) {
+            table_info[i].reset();
         }
     }
 
     void print() {
         PRINT_INFO(lu, "Objective", objective);
-        for (auto tinfo : table_info) {
-            tinfo->print("Table" + std::to_string(tinfo->id));
+        printf("%-30s: ", "Cluster-Size");
+        for(uint32_t i = 0; i < num_clusters; i++) {
+            printf("%lu, ", cluster_size[i]);
+        }
+        printf("\n");
+        for (uint32_t i = 0; i < num_tables; i++) {
+            table_info[i].print("Table" + std::to_string(table_info[i].id));
         }
     }
 };

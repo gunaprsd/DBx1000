@@ -1,28 +1,37 @@
 #include "partitioner.h"
 
-BasePartitioner::BasePartitioner(uint32_t num_clusters) : _num_clusters(num_clusters), _rand(1), iteration(1) {
+BasePartitioner::BasePartitioner(uint32_t num_clusters)
+    : _num_clusters(num_clusters), _rand(1), iteration(1) {
     _rand.seed(0, FLAGS_seed + 125);
 }
 
-void BasePartitioner::partition(GraphInfo *_graph_info, ClusterInfo *_cluster_info,
+void BasePartitioner::partition(uint64_t _id, GraphInfo *_graph_info, ClusterInfo *_cluster_info,
                                 RuntimeInfo *_runtime_info) {
+    id = _id;
     graph_info = _graph_info;
     cluster_info = _cluster_info;
     runtime_info = _runtime_info;
+    iteration = 1;
 
-	init_random_partition();
-	printf("********** Random Clustering ************\n");
-	compute_cluster_info();
-	cluster_info->print();
+    init_random_partition();
+    compute_cluster_info();
+    printf("********** (Batch %lu) Random Cluster Information ************\n", id);
+    cluster_info->print();
 
+    // do_partition must assign core_weights to data node
+    // and assigned_core for each txn node.
     do_partition();
 }
 
+/*
+ * Assumes that core_weights for data items are set
+ * according to transaction to core allocation.
+ */
 void BasePartitioner::compute_cluster_info() {
     cluster_info->reset();
+
     cluster_info->objective = 0;
-    for (size_t i = 0; i < graph_info->data_inv_idx.size(); i++) {
-        auto key = graph_info->data_inv_idx[i];
+    for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
 
         uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0;
@@ -38,10 +47,6 @@ void BasePartitioner::compute_cluster_info() {
             }
         }
 
-        // Update data information - core and if single-core-only
-        info->single_core = (num_c == 1);
-        info->assigned_core = chosen_c;
-
         /*
          * Update objective info
          * ---------------------
@@ -55,40 +60,82 @@ void BasePartitioner::compute_cluster_info() {
          */
         cluster_info->objective += ((sum_c * sum_c) - sum_c_sq) / 2;
 
+        // Update data information - core and if single-core-only
+        info->single_core = (num_c == 1);
+        info->assigned_core = chosen_c;
+
         // update table wise info
-        auto table_info = cluster_info->table_info[info->tid];
+        auto table_info = &cluster_info->table_info[info->tid];
         table_info->num_accessed_data++;
         table_info->num_total_accesses += sum_c;
         table_info->data_core_degree_histogram[num_c - 1]++;
     }
+
+    /*for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        auto txn_info = &(graph_info->txn_info[i]);
+        cluster_info->cluster_size[txn_info->assigned_core] += txn_info->rwset.num_accesses;
+    }*/
 }
 
 void BasePartitioner::init_random_partition() {
-	idx_t * parts = new idx_t[graph_info->num_txn_nodes];
-	for(uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-		parts[i] = _rand.nextInt64(0) % _num_clusters;
-	}
-	assign_txn_clusters(parts);
-	delete[] parts;
+    idx_t *parts = new idx_t[graph_info->num_txn_nodes];
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        parts[i] = _rand.nextInt64(0) % _num_clusters;
+    }
+    assign_txn_clusters(parts);
+    delete[] parts;
 }
 
 void BasePartitioner::assign_txn_clusters(idx_t *parts) {
-	iteration++;
-	for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-		auto chosen_core = parts[i];
-		graph_info->txn_info[i].assigned_core = chosen_core;
-		auto query = &(graph_info->txn_info[i].rwset);
-		for (auto j = 0u; j < query->num_accesses; j++) {
-			auto info = &(graph_info->data_info[query->accesses[j].key]);
-			if (info->iteration != iteration) {
-				for (auto k = 0u; k < _num_clusters; k++) {
-					info->core_weights[k] = 0;
-				}
-				info->iteration = iteration;
-			}
-			info->core_weights[chosen_core]++;
-		}
-	}
+    // increase iteration so that we are able to update
+    // core_weights appropriately and not confuse with old
+    // values that it may contain.
+    iteration++;
+
+    memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
+
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        auto chosen_core = parts[i];
+        // assign the core to txn
+        graph_info->txn_info[i].assigned_core = chosen_core;
+
+        // update core_weights of data nodes
+        auto rwset = &(graph_info->txn_info[i].rwset);
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
+            if (info->iteration != iteration) {
+                // first time we are seeing this data item
+                // reset the core_weights
+                memset(info->core_weights, 0, sizeof(uint64_t) * MAX_NUM_CORES);
+                info->iteration = iteration;
+            }
+            info->core_weights[chosen_core]++;
+        }
+
+        // update cluster size info
+        cluster_info->cluster_size[chosen_core] += graph_info->txn_info[i].rwset.num_accesses;
+    }
+}
+
+void BasePartitioner::sort_helper(uint64_t *index, uint64_t *value, uint64_t size) {
+    for (uint64_t i = 0; i < size; i++) {
+        index[i] = i;
+    }
+
+    for (uint64_t i = 1; i < size; i++) {
+        for (uint64_t j = 0; j < size - i; j++) {
+            if (value[index[j + 1]] > value[index[j]]) {
+                auto temp = index[j + 1];
+                index[j + 1] = index[j];
+                index[j] = temp;
+            }
+        }
+    }
+
+    for (uint64_t i = 0; i < size - 1; i++) {
+        assert(value[index[i]] >= value[index[i + 1]]);
+    }
 }
 
 ConflictGraphPartitioner::ConflictGraphPartitioner(uint32_t num_clusters)
@@ -113,7 +160,7 @@ void ConflictGraphPartitioner::create_graph() {
                 for (auto l = 0u; l < rw2->num_accesses; l++) {
                     bool conflict = !((rw1->accesses[k].access_type == RD) &&
                                       (rw2->accesses[l].access_type == RD));
-                    if (rw1->accesses[k].key == rw2->accesses[l].key && conflict) {
+                    if (conflict && (rw1->accesses[k].key == rw2->accesses[l].key)) {
                         edge_weight++;
                     }
                 }
@@ -131,7 +178,6 @@ void ConflictGraphPartitioner::create_graph() {
 }
 
 void ConflictGraphPartitioner::do_partition() {
-
     xadj.reserve(graph_info->num_txn_nodes + 1);
     vwgt.reserve(graph_info->num_txn_nodes);
     adjncy.reserve(2 * graph_info->num_edges);
@@ -140,7 +186,7 @@ void ConflictGraphPartitioner::do_partition() {
     auto start_time = get_server_clock();
     create_graph();
     auto end_time = get_server_clock();
-    runtime_info->preprocessing_duration = DURATION(end_time, start_time);
+    runtime_info->preprocessing_duration += DURATION(end_time, start_time);
 
     idx_t *parts = new idx_t[graph_info->num_txn_nodes];
     auto graph = new METIS_CSRGraph();
@@ -155,27 +201,30 @@ void ConflictGraphPartitioner::do_partition() {
     start_time = get_server_clock();
     METISGraphPartitioner::compute_partitions(graph, _num_clusters, parts);
     end_time = get_server_clock();
-    runtime_info->partition_duration = DURATION(end_time, start_time);
+    runtime_info->partition_duration += DURATION(end_time, start_time);
 
-	assign_txn_clusters(parts);
+    // assign the cores to txn based on this parts array
+    assign_txn_clusters(parts);
 
     xadj.clear();
     vwgt.clear();
     adjncy.clear();
     adjwgt.clear();
 
-	delete[] parts;
+    delete[] parts;
 }
 
 AccessGraphPartitioner::AccessGraphPartitioner(uint32_t num_clusters)
-    : BasePartitioner(num_clusters), vwgt(), adjwgt(), xadj(), adjncy(), vsize() {}
+    : BasePartitioner(num_clusters), vwgt(), adjwgt(), xadj(), adjncy() {}
 
 void AccessGraphPartitioner::add_txn_nodes() {
     ReadWriteSet *rwset;
     for (auto i = 0u; i < graph_info->num_txn_nodes; i++) {
         rwset = &(graph_info->txn_info[i].rwset);
+
         for (auto j = 0u; j < rwset->num_accesses; j++) {
-            auto info = &(graph_info->data_info[rwset->accesses[j].key]);
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
 
             idx_t wt = 1;
             if (!FLAGS_unit_weights) {
@@ -200,8 +249,7 @@ void AccessGraphPartitioner::add_txn_nodes() {
 }
 
 void AccessGraphPartitioner::add_data_nodes() {
-    for (size_t i = 0; i < graph_info->data_inv_idx.size(); i++) {
-        auto key = graph_info->data_inv_idx[i];
+    for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
 
         // insert txn edges
@@ -234,7 +282,6 @@ void AccessGraphPartitioner::do_partition() {
     auto total_num_vertices = graph_info->num_txn_nodes + graph_info->num_data_nodes;
     xadj.reserve(total_num_vertices + 1);
     vwgt.reserve(total_num_vertices);
-    vsize.reserve(total_num_vertices);
     adjncy.reserve(2 * graph_info->num_edges);
     adjwgt.reserve(2 * graph_info->num_edges);
 
@@ -243,7 +290,7 @@ void AccessGraphPartitioner::do_partition() {
     add_txn_nodes();
     add_data_nodes();
     auto end_time = get_server_clock();
-    runtime_info->preprocessing_duration = DURATION(end_time, start_time);
+    runtime_info->preprocessing_duration += DURATION(end_time, start_time);
 
     auto graph = new METIS_CSRGraph();
     graph->nvtxs = total_num_vertices;
@@ -255,128 +302,85 @@ void AccessGraphPartitioner::do_partition() {
     graph->ncon = 1;
 
     auto all_parts = new idx_t[total_num_vertices];
-    for (uint64_t i = 0; i < total_num_vertices; i++) {
-        all_parts[i] = -1;
-    }
-
     start_time = get_server_clock();
     METISGraphPartitioner::compute_partitions(graph, _num_clusters, all_parts);
     end_time = get_server_clock();
-    runtime_info->partition_duration = DURATION(end_time, start_time);
+    runtime_info->partition_duration += DURATION(end_time, start_time);
 
     assign_txn_clusters(all_parts);
 
-    delete[] all_parts;
     xadj.clear();
     vwgt.clear();
     adjncy.clear();
     adjwgt.clear();
+    delete[] all_parts;
 }
 
-ApproximateGraphPartitioner::ApproximateGraphPartitioner(uint32_t num_clusters)
+HeuristicPartitioner1::HeuristicPartitioner1(uint32_t num_clusters)
     : BasePartitioner(num_clusters) {}
 
-void ApproximateGraphPartitioner::internal_txn_partition(uint64_t iteration) {
-    assert(_num_clusters < MAX_NUM_CORES);
-    auto _cluster_size = new uint64_t[_num_clusters];
-    memset(_cluster_size, 0, sizeof(uint64_t) * _num_clusters);
+void HeuristicPartitioner1::internal_txn_partition(uint64_t iteration) {
+    // change this to ensure that core_weights array for
+    // data items are updated properly
+    iteration++;
+
+    // clear cluster size info
+    memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
 
     double max_cluster_size =
-        ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
+            ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
     // double max_cluster_size = UINT64_MAX;
 
     uint64_t *sorted = new uint64_t[_num_clusters];
-
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
 
-        auto query = &(graph_info->txn_info[i].rwset);
+        auto rwset = &(graph_info->txn_info[i].rwset);
+
+        // clear savings array of txn
         memset(graph_info->txn_info[i].savings, 0, sizeof(uint64_t) * MAX_NUM_CORES);
 
-        for (auto j = 0u; j < query->num_accesses; j++) {
-            auto info = &(graph_info->data_info[query->accesses[j].key]);
+        // compute savings array
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
             auto core = info->assigned_core;
-            if (query->accesses[j].access_type == RD) {
+            if (rwset->accesses[j].access_type == RD) {
                 graph_info->txn_info[i].savings[core] += 1 + info->write_txns.size();
             } else {
                 graph_info->txn_info[i].savings[core] +=
-                    1 + (info->read_txns.size() + info->write_txns.size());
+                        1 + (info->read_txns.size() + info->write_txns.size());
             }
         }
 
         sort_helper(sorted, graph_info->txn_info[i].savings, _num_clusters);
 
+        /*
+        * Find earliest core with maximum savings and
+        * that satisfies the size constraint.
+        */
         bool allotted = false;
         uint64_t chosen_core = UINT32_MAX;
-        if (FLAGS_stdev_partitioner) {
-
-            /*
-             * Compute the mean and standard deviation of savings
-             */
-            double sum = 0, sum_sq = 0;
-            uint64_t min_core = UINT32_MAX, min_cluster_size = UINT64_MAX;
-            for (uint64_t s = 0; s < _num_clusters; s++) {
-                double saving = (double)graph_info->txn_info[i].savings[s];
-                sum += saving;
-                sum_sq += saving * saving;
-                if (_cluster_size[s] < min_cluster_size) {
-                    min_cluster_size = _cluster_size[s];
-                    min_core = s;
-                }
-            }
-            double mean = sum / _num_clusters;
-            double sq_mean = sum_sq / _num_clusters;
-            double std_dev = sqrt(sq_mean - mean * mean);
-
-            /*
-             * Greedily allot the core with maximum savings if the chosen
-             * core is *significantly* better.
-             */
-            for (uint64_t s = 0; s < _num_clusters && !allotted; s++) {
-                auto core = sorted[s];
-                double diff_ratio;
-                if (std_dev > 0) {
-                    diff_ratio = (graph_info->txn_info[i].savings[core] - mean) / (1 + std_dev);
-                } else {
-                    diff_ratio = 0;
-                }
-
-                if (diff_ratio > 1.0) {
-                    // Putting it in core makes some difference
-                    if (_cluster_size[core] + query->num_accesses < max_cluster_size) {
-                        chosen_core = core;
-                        allotted = true;
-                    }
-                } else {
-                    // Put it in the cluster with smallest size
-                    chosen_core = min_core;
-                    allotted = true;
-                }
-            }
-        } else {
-
-            /*
-             * Put it in the core with the maximum savings and
-             * that satisfies the size constraint.
-             */
-            for (uint64_t s = 0; s < _num_clusters && !allotted; s++) {
-                auto core = sorted[s];
-                if (_cluster_size[core] + query->num_accesses < max_cluster_size) {
-                    chosen_core = core;
-                    allotted = true;
-                }
+        for (uint64_t s = 0; s < _num_clusters && !allotted; s++) {
+            auto core = sorted[s];
+            if (cluster_info->cluster_size[core] + rwset->num_accesses < max_cluster_size) {
+                chosen_core = core;
+                allotted = true;
             }
         }
-
         assert(allotted);
-        graph_info->txn_info[i].assigned_core = chosen_core;
-        _cluster_size[chosen_core] += query->num_accesses;
 
-        for (auto j = 0u; j < query->num_accesses; j++) {
-            auto info = &(graph_info->data_info[query->accesses[j].key]);
+        // assign core
+        graph_info->txn_info[i].assigned_core = chosen_core;
+
+        // update cluster size
+        cluster_info->cluster_size[chosen_core] += rwset->num_accesses;
+
+        // update core_weights array of all data items touched by txn
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
             if (info->iteration != iteration) {
-                for (auto k = 0u; k < _num_clusters; k++) {
-                    info->core_weights[k] = 0;
-                }
+                memset(info->core_weights, 0, sizeof(uint64_t) * _num_clusters);
                 info->iteration = iteration;
             }
             info->core_weights[chosen_core]++;
@@ -386,10 +390,9 @@ void ApproximateGraphPartitioner::internal_txn_partition(uint64_t iteration) {
     delete[] sorted;
 }
 
-void ApproximateGraphPartitioner::internal_data_partition(uint64_t iteration) {
+void HeuristicPartitioner1::internal_data_partition(uint64_t iteration) {
     uint64_t *core_weights = new uint64_t[_num_clusters];
-    for (size_t i = 0; i < graph_info->data_inv_idx.size(); i++) {
-        auto key = graph_info->data_inv_idx[i];
+    for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
         uint64_t max_c = 0;
         uint64_t chosen_c = 0;
@@ -403,40 +406,145 @@ void ApproximateGraphPartitioner::internal_data_partition(uint64_t iteration) {
     }
 }
 
-void ApproximateGraphPartitioner::init_data_partition() {
-    // TODO do something!!
-}
-
-void ApproximateGraphPartitioner::sort_helper(uint64_t *index, uint64_t *value, uint64_t size) {
-    for (uint64_t i = 0; i < size; i++) {
-        index[i] = i;
-    }
-
-    for (uint64_t i = 1; i < size; i++) {
-        for (uint64_t j = 0; j < size - i; j++) {
-            if (value[index[j + 1]] > value[index[j]]) {
-                auto temp = index[j + 1];
-                index[j + 1] = index[j];
-                index[j] = temp;
-            }
-        }
-    }
-
-    for (uint64_t i = 0; i < size - 1; i++) {
-        assert(value[index[i]] >= value[index[i + 1]]);
+void HeuristicPartitioner1::init_data_partition() {
+    // Random allocation of data items
+    for (auto key : graph_info->data_inv_idx) {
+        auto info = &(graph_info->data_info[key]);
+        info->assigned_core = _rand.nextInt64(0) % _num_clusters;
     }
 }
 
-void ApproximateGraphPartitioner::do_partition()  {
+void HeuristicPartitioner1::do_partition() {
+    // random allocation
     init_data_partition();
+
     uint64_t start_time, end_time;
     for (uint32_t i = 0; i < FLAGS_iterations; i++) {
         start_time = get_server_clock();
-        // partition data based on transaction allocation
-        internal_data_partition(i);
-        // partition txn based on data allocation.
+        // cluster txn based on data allocation.
         internal_txn_partition(i);
+        // cluster data based on transaction allocation
+        internal_data_partition(i);
         end_time = get_server_clock();
         runtime_info->partition_duration += DURATION(end_time, start_time);
+
+        // compute the cluster info
+        compute_cluster_info();
+        printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id, iteration - 2);
+        cluster_info->print();
     }
 }
+
+HeuristicPartitioner2::HeuristicPartitioner2(uint32_t num_clusters)
+    : HeuristicPartitioner1(num_clusters) {}
+
+void HeuristicPartitioner2::internal_txn_partition(uint64_t iteration) {
+    // change this to ensure that core_weights array for
+    // data items are updated properly
+    iteration++;
+
+    // clear cluster size info
+    memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
+
+    double max_cluster_size =
+            ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
+    // double max_cluster_size = UINT64_MAX;
+
+    uint64_t *sorted = new uint64_t[_num_clusters];
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        auto rwset = &(graph_info->txn_info[i].rwset);
+
+        // clear savings array of txn
+        memset(graph_info->txn_info[i].savings, 0, sizeof(uint64_t) * MAX_NUM_CORES);
+
+        // compute savings array
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
+            auto core = info->assigned_core;
+            if (rwset->accesses[j].access_type == RD) {
+                graph_info->txn_info[i].savings[core] += 1 + info->write_txns.size();
+            } else {
+                graph_info->txn_info[i].savings[core] +=
+                        1 + (info->read_txns.size() + info->write_txns.size());
+            }
+        }
+
+        sort_helper(sorted, graph_info->txn_info[i].savings, _num_clusters);
+
+        /*
+        * Find earliest core with maximum savings and
+        * that satisfies the size constraint.
+        */
+        bool allotted = false;
+        uint64_t chosen_core = UINT32_MAX;
+        double sum = 0, sum_sq = 0;
+        uint64_t min_core = UINT32_MAX, min_cluster_size = UINT64_MAX;
+        for (uint64_t s = 0; s < _num_clusters; s++) {
+            double saving = (double)graph_info->txn_info[i].savings[s];
+            sum += saving;
+            sum_sq += saving * saving;
+            if (cluster_info->cluster_size[s] < min_cluster_size) {
+                min_cluster_size = cluster_info->cluster_size[s];
+                min_core = s;
+            }
+        }
+        double mean = sum / _num_clusters;
+        double sq_mean = sum_sq / _num_clusters;
+        double std_dev = sqrt(sq_mean - mean * mean);
+
+        /*
+		 * Greedily allot the core with maximum savings if the chosen
+		 * core is *significantly* better.
+		 */
+        for (uint64_t s = 0; s < _num_clusters && !allotted; s++) {
+            auto core = sorted[s];
+            double diff_ratio;
+            if (std_dev > 0) {
+                diff_ratio = (graph_info->txn_info[i].savings[core] - mean) / (1 + std_dev);
+            } else {
+                diff_ratio = 0;
+            }
+
+            if (diff_ratio > 1.0) {
+                // Putting it in core makes some difference
+                if (cluster_info->cluster_size[core] + rwset->num_accesses < max_cluster_size) {
+                    chosen_core = core;
+                    allotted = true;
+                }
+            } else {
+                // Put it in the cluster with smallest size
+                chosen_core = min_core;
+                allotted = true;
+            }
+        }
+        assert(allotted);
+
+        // assign core
+        graph_info->txn_info[i].assigned_core = chosen_core;
+
+        // update cluster size
+        cluster_info->cluster_size[chosen_core] += rwset->num_accesses;
+
+        // update core_weights array of all data items touched by txn
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
+            if (info->iteration != iteration) {
+                memset(info->core_weights, 0, sizeof(uint64_t) * _num_clusters);
+                info->iteration = iteration;
+            }
+            info->core_weights[chosen_core]++;
+        }
+    }
+
+    delete[] sorted;
+}
+
+HeuristicPartitioner3::HeuristicPartitioner3(uint32_t num_clusters)
+    : HeuristicPartitioner2(num_clusters) {}
+
+void HeuristicPartitioner3::init_data_partition() {
+    // TODO do something!!
+}
+

@@ -11,7 +11,6 @@ template <typename T> class OfflineScheduler {
                      string output_folder_path)
         : _input_folder_path(input_folder_path), _output_folder_path(output_folder_path),
           _num_threads(num_threads), _max_batch_size(max_batch_size), partitioner(nullptr) {
-
         // load query matrix into memory
         ParallelWorkloadLoader<T> loader(input_folder_path, num_threads);
         loader.load();
@@ -29,10 +28,14 @@ template <typename T> class OfflineScheduler {
 
         if (FLAGS_parttype == "access_graph") {
             partitioner = new AccessGraphPartitioner(num_threads);
-        } else if (FLAGS_parttype == "approx") {
-            partitioner = new ApproximateGraphPartitioner(num_threads);
         } else if (FLAGS_parttype == "conflict_graph") {
             partitioner = new ConflictGraphPartitioner(num_threads);
+        }  else if (FLAGS_parttype == "heuristic1") {
+            partitioner = new HeuristicPartitioner1(num_threads);
+        }  else if (FLAGS_parttype == "heuristic2") {
+            partitioner = new HeuristicPartitioner2(num_threads);
+        }  else if (FLAGS_parttype == "heuristic3") {
+            partitioner = new HeuristicPartitioner3(num_threads);
         } else {
             assert(false);
         }
@@ -71,7 +74,8 @@ template <typename T> class OfflineScheduler {
 	        graph_info->print();
 
 
-	        partitioner->partition(graph_info, cluster_info, runtime_info);
+	        partitioner->partition(iteration + 1, graph_info, cluster_info, runtime_info);
+
 			printf("****************** (Batch %lu) Cluster Information **************\n", iteration + 1);
 	        cluster_info->print();
 
@@ -135,6 +139,7 @@ template <typename T> class OfflineScheduler {
 #endif
         }
     }
+
     static void *schedule_helper(void *ptr) {
         set_affinity(1);
         auto data = reinterpret_cast<ThreadLocalData *>(ptr);
@@ -171,6 +176,8 @@ template <typename T> class OfflineScheduler {
                     // Seeing the data item for the first time
                     // in this batch - initialize appropriately
                     idx_t data_id = graph_info->num_data_nodes;
+                    info->epoch = iteration;
+                    info->iteration = 0;
                     info->reset(data_id, iteration, rwset->accesses[j].table_id);
                     graph_info->data_inv_idx.push_back(rwset->accesses[j].key);
                     graph_info->num_data_nodes++;

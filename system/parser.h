@@ -57,5 +57,5 @@ DECLARE_string(output_folder);
 DECLARE_uint32(ufactor);
 DECLARE_uint32(iterations);
 DECLARE_bool(stdev_partitioner);
-
+DECLARE_uint32(kmeans_dim);
 #endif //SYSTEM_PARSER_H__

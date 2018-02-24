@@ -85,4 +85,14 @@ class HeuristicPartitioner3 : public HeuristicPartitioner2 {
     void init_data_partition();
 };
 
+class KMeansPartitioner : public BasePartitioner {
+public:
+	KMeansPartitioner(uint32_t num_clusters);
+protected:
+	void do_partition();
+	void do_iteration();
+	const uint32_t dim;
+	double* txn;
+	double* means;
+};
 #endif // DBX1000_PARTITIONER_H

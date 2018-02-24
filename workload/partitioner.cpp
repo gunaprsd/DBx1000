@@ -591,3 +591,127 @@ HeuristicPartitioner3::HeuristicPartitioner3(uint32_t num_clusters)
 void HeuristicPartitioner3::init_data_partition() {
     // TODO do something!!
 }
+
+KMeansPartitioner::KMeansPartitioner(uint32_t num_clusters)
+        : BasePartitioner(num_clusters), dim(FLAGS_kmeans_dim) {
+}
+
+void KMeansPartitioner::do_partition() {
+    txn = new double[dim * graph_info->num_txn_nodes];
+    means = new double[dim * _num_clusters];
+
+    //initialize with txn vectors
+    for(uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        for(uint64_t j = 0; j < dim; j++) {
+            txn[i * dim + j] = 0;
+        }
+    }
+    for(uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        auto rwset = &(graph_info->txn_info[i].rwset);
+        for(uint64_t j = 0; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto part = key % dim;
+            txn[i * dim + part] += 1;
+        }
+    }
+
+    // initialize means
+    for(uint64_t i = 0; i < _num_clusters; i++) {
+        uint64_t chosen = _rand.nextInt64(0) % graph_info->num_txn_nodes;
+        for(uint64_t j = 0; j < dim; j++) {
+            means[i * dim + j] = txn[chosen * dim + j];
+        }
+    }
+
+    for(uint32_t i = 0; i < FLAGS_iterations; i++) {
+        auto start_time = get_server_clock();
+        do_iteration();
+        auto end_time = get_server_clock();
+        runtime_info->partition_duration += DURATION(end_time, start_time);
+
+        // compute the cluster info
+        compute_cluster_info();
+        if (!converged) {
+            printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id,
+                   iteration - 2);
+            cluster_info->print();
+        }
+    }
+    delete txn;
+}
+
+void KMeansPartitioner::do_iteration() {
+    double duration = 0;
+    double start_time, end_time;
+    assert(!converged);
+    // change this to ensure that core_weights array for
+    // data items are updated properly
+    iteration++;
+
+    // data structure to store updated mean
+    auto counts = new uint64_t[_num_clusters];
+    auto other_means = new double[_num_clusters * dim];
+    for(uint64_t k = 0; k < _num_clusters; k++) {
+        counts[k] = 0;
+        other_means[k] = 0;
+    }
+
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        uint32_t chosen_core = 0;
+        double min_distance = UINT64_MAX;
+
+        start_time = get_server_clock();
+        for(uint32_t j = 0; j < _num_clusters; j++) {
+            double diff, distance = 0;
+            for(uint64_t k = 0; k < dim; k++) {
+                diff = (txn[i * dim + k] - means[j * dim + k]);
+                distance += (diff * diff);
+            }
+
+            if(distance < min_distance) {
+                min_distance = distance;
+                chosen_core = j;
+            }
+        }
+
+        // assign core
+        graph_info->txn_info[i].assigned_core = chosen_core;
+
+        // update cluster size
+        auto rwset = &(graph_info->txn_info[i].rwset);
+        cluster_info->cluster_size[chosen_core] += rwset->num_accesses;
+
+        counts[chosen_core]++;
+        for(uint64_t k = 0; k < dim; k++) {
+            other_means[chosen_core * dim + k] += txn[i * dim + k];
+        }
+
+        end_time = get_server_clock();
+        duration += DURATION(end_time, start_time);
+
+        // update core_weights array of all data items touched by txn
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
+            if (info->iteration != iteration) {
+                memset(info->core_weights, 0, sizeof(uint64_t) * _num_clusters);
+                info->iteration = iteration;
+            }
+            info->core_weights[chosen_core]++;
+        }
+    }
+
+    for(uint64_t i = 0; i < _num_clusters; i++) {
+        if(counts[i] > 0) {
+            for(uint64_t k = 0; k < dim; k++) {
+                other_means[i * dim + k] /= counts[i];
+            }
+        }
+    }
+    memcpy(means, other_means, sizeof(double) * _num_clusters * dim);
+
+    delete counts;
+    delete other_means;
+
+    PRINT_INFO(lf, "Iteration-Duration", duration);
+}

@@ -10,19 +10,23 @@
 
 class BasePartitioner {
   public:
-    void partition(uint64_t id, GraphInfo *_graph_info, ClusterInfo *_cluster_info, RuntimeInfo *_runtime_info);
+    void partition(uint64_t id, GraphInfo *_graph_info, ClusterInfo *_cluster_info,
+                   RuntimeInfo *_runtime_info);
+
   protected:
+    uint64_t old_objective_value;
+    bool converged;
     uint32_t _num_clusters;
     GraphInfo *graph_info;
     ClusterInfo *cluster_info;
     RuntimeInfo *runtime_info;
     RandomNumberGenerator _rand;
-	uint64_t iteration;
-	uint64_t id;
+    uint64_t iteration;
+    uint64_t id;
     BasePartitioner(uint32_t num_clusters);
-	void sort_helper(uint64_t *index, uint64_t *value, uint64_t size);
-	void init_random_partition();
-	void assign_txn_clusters(idx_t* parts);
+    void sort_helper(uint64_t *index, uint64_t *value, uint64_t size);
+    void init_random_partition();
+    void assign_txn_clusters(idx_t *parts);
     void compute_cluster_info();
     virtual void do_partition() = 0;
 };
@@ -56,7 +60,8 @@ class AccessGraphPartitioner : public BasePartitioner {
 
 class HeuristicPartitioner1 : public BasePartitioner {
   public:
-	HeuristicPartitioner1(uint32_t num_clusters);
+    HeuristicPartitioner1(uint32_t num_clusters);
+
   protected:
     virtual void internal_txn_partition();
     virtual void internal_data_partition();
@@ -65,17 +70,19 @@ class HeuristicPartitioner1 : public BasePartitioner {
 };
 
 class HeuristicPartitioner2 : public HeuristicPartitioner1 {
-public:
-	HeuristicPartitioner2(uint32_t num_clusters);
-protected:
-	virtual void internal_txn_partition(uint64_t iteration);
+  public:
+    HeuristicPartitioner2(uint32_t num_clusters);
+
+  protected:
+    virtual void internal_txn_partition(uint64_t iteration);
 };
 
 class HeuristicPartitioner3 : public HeuristicPartitioner2 {
-public:
-	HeuristicPartitioner3(uint32_t num_clusters);
-protected:
-	void init_data_partition();
+  public:
+    HeuristicPartitioner3(uint32_t num_clusters);
+
+  protected:
+    void init_data_partition();
 };
 
 #endif // DBX1000_PARTITIONER_H

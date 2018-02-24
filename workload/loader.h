@@ -57,6 +57,20 @@ template <typename T> class ParallelWorkloadLoader {
 
         return new QueryMatrix<T>(_queries, _num_threads, size);
     }
+    virtual void get_queries(Query<T> *&batch, uint64_t &batch_size) {
+        // copy everything into a single array
+        batch_size = 0;
+        for (uint32_t i = 0; i < _num_threads; i++) {
+            batch_size += _array_sizes[i];
+        }
+
+        batch = new Query<T>[batch_size];
+        auto ptr = batch;
+        for (uint32_t i = 0; i < _num_threads; i++) {
+            memcpy(ptr, _queries[i], sizeof(Query<T>) * _array_sizes[i]);
+            ptr += _array_sizes[i];
+        }
+    }
 
   protected:
     virtual void per_thread_load(uint32_t thread_id, FILE *file) {

@@ -14,17 +14,9 @@ template <typename T> class OfflineScheduler {
         // load query matrix into memory
         ParallelWorkloadLoader<T> loader(input_folder_path, num_threads);
         loader.load();
-        auto queries = loader.get_queries_matrix();
-        // copy everything into a single array
-        batch_size = queries->num_cols * queries->num_rows;
-        batch = new Query<T>[batch_size];
-        auto ptr = batch;
-        for (uint32_t i = 0; i < queries->num_cols; i++) {
-            memcpy(ptr, queries->queries[i], sizeof(Query<T>) * queries->num_rows);
-            ptr += queries->num_rows;
-        }
-        // release everything
+	loader.get_queries(batch, batch_size);
         loader.release();
+	assert(batch != nullptr);
 
         if (FLAGS_parttype == "access_graph") {
             partitioner = new AccessGraphPartitioner(num_threads);

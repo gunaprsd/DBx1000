@@ -18,7 +18,7 @@
 #define PAGE_SIZE 4096
 #define CL_SIZE 64
 // CPU_FREQ is used to get accurate timing info
-#define CPU_FREQ 2 // in GHz/s
+#define CPU_FREQ 1.28 // in GHz/s
 
 // # of transactions to run for warmup
 #define WARMUP 0

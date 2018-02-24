@@ -1,7 +1,8 @@
 #include "partitioner.h"
 
 BasePartitioner::BasePartitioner(uint32_t num_clusters)
-    : _num_clusters(num_clusters), _rand(1), iteration(1) {
+    : old_objective_value(0), converged(false), _num_clusters(num_clusters), _rand(1),
+      iteration(1) {
     _rand.seed(0, FLAGS_seed + 125);
 }
 
@@ -30,6 +31,7 @@ void BasePartitioner::partition(uint64_t _id, GraphInfo *_graph_info, ClusterInf
  * according to transaction to core allocation.
  */
 void BasePartitioner::compute_cluster_info() {
+    old_objective_value = cluster_info->objective;
     cluster_info->reset();
     cluster_info->objective = 0;
     for (auto key : graph_info->data_inv_idx) {
@@ -74,6 +76,10 @@ void BasePartitioner::compute_cluster_info() {
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         auto txn_info = &(graph_info->txn_info[i]);
         cluster_info->cluster_size[txn_info->assigned_core]++;
+    }
+
+    if (old_objective_value == cluster_info->objective) {
+        converged = true;
     }
 }
 
@@ -324,6 +330,10 @@ HeuristicPartitioner1::HeuristicPartitioner1(uint32_t num_clusters)
  * items. Also, update core_weights for data items appropriately.
  */
 void HeuristicPartitioner1::internal_txn_partition() {
+    double compute_savings_duration = 0;
+    double data_reallocation_duration = 0;
+
+    assert(!converged);
     // change this to ensure that core_weights array for
     // data items are updated properly
     iteration++;
@@ -331,9 +341,9 @@ void HeuristicPartitioner1::internal_txn_partition() {
     // clear cluster size info
     memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
 
-    //double max_cluster_size =
-    //    ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
-    double max_cluster_size = UINT64_MAX;
+    double max_cluster_size =
+        ((1000 + FLAGS_ufactor) * graph_info->num_edges) / (_num_clusters * 1000.0);
+    // double max_cluster_size = UINT64_MAX;
 
     uint64_t *sorted = new uint64_t[_num_clusters];
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
@@ -342,6 +352,7 @@ void HeuristicPartitioner1::internal_txn_partition() {
         // clear savings array of txn
         memset(graph_info->txn_info[i].savings, 0, sizeof(uint64_t) * MAX_NUM_CORES);
 
+        uint64_t savings_compute_stime = get_server_clock();
         // compute savings array
         for (auto j = 0u; j < rwset->num_accesses; j++) {
             auto key = rwset->accesses[j].key;
@@ -351,13 +362,15 @@ void HeuristicPartitioner1::internal_txn_partition() {
                 graph_info->txn_info[i].savings[core] += (1 + info->write_txns.size());
             } else {
                 graph_info->txn_info[i].savings[core] +=
-                        (1 + (info->read_txns.size() + info->write_txns.size()));
+                    (1 + (info->read_txns.size() + info->write_txns.size()));
             }
         }
+        uint64_t savings_compute_etime = get_server_clock();
+        compute_savings_duration += DURATION(savings_compute_etime, savings_compute_stime);
 
-	for(auto j = 0u; j < _num_clusters; j++) {
-	  sorted[j] = j;
-	}
+        for (auto j = 0u; j < _num_clusters; j++) {
+            sorted[j] = j;
+        }
         sort_helper(sorted, graph_info->txn_info[i].savings, _num_clusters);
 
         /*
@@ -381,6 +394,7 @@ void HeuristicPartitioner1::internal_txn_partition() {
         // update cluster size
         cluster_info->cluster_size[chosen_core] += rwset->num_accesses;
 
+        uint64_t data_reallocation_stime = get_server_clock();
         // update core_weights array of all data items touched by txn
         for (auto j = 0u; j < rwset->num_accesses; j++) {
             auto key = rwset->accesses[j].key;
@@ -391,12 +405,17 @@ void HeuristicPartitioner1::internal_txn_partition() {
             }
             info->core_weights[chosen_core]++;
         }
+        uint64_t data_reallocation_etime = get_server_clock();
+        data_reallocation_duration += DURATION(data_reallocation_etime, data_reallocation_stime);
     }
 
     delete[] sorted;
+    PRINT_INFO(lf, "Compute-Savings-Duration", compute_savings_duration);
+    PRINT_INFO(lf, "Data-Reallocation-Duration", data_reallocation_duration);
 }
 
 void HeuristicPartitioner1::internal_data_partition() {
+    auto start_time = get_server_clock();
     uint64_t *core_weights = new uint64_t[_num_clusters];
     for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
@@ -410,6 +429,9 @@ void HeuristicPartitioner1::internal_data_partition() {
         }
         info->assigned_core = chosen_c;
     }
+    auto end_time = get_server_clock();
+    auto duration = DURATION(end_time, start_time);
+    PRINT_INFO(lf, "Data-Core-Computation", duration);
 }
 
 void HeuristicPartitioner1::init_data_partition() {
@@ -419,27 +441,18 @@ void HeuristicPartitioner1::init_data_partition() {
         info->assigned_core = -1;
     }
 
-	for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-		auto rwset = &(graph_info->txn_info[i].rwset);
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        auto rwset = &(graph_info->txn_info[i].rwset);
 
-		// clear savings array of txn
-		idx_t chosen_core = _rand.nextInt64(0) % _num_clusters;
-
-		for (auto j = 0u; j < rwset->num_accesses; j++) {
-			auto key = rwset->accesses[j].key;
-			auto info = &(graph_info->data_info[key]);
-			auto core = info->assigned_core;
-			if(core != -1) {
-				chosen_core = core;
-			}
-		}
-
-		for (auto j = 0u; j < rwset->num_accesses; j++) {
-			auto key = rwset->accesses[j].key;
-			auto info = &(graph_info->data_info[key]);
-			info->assigned_core = chosen_core;
-		}
-	}
+        idx_t chosen_core = i % _num_clusters;
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
+            if (info->assigned_core == -1) {
+                info->assigned_core = chosen_core;
+            }
+        }
+    }
 }
 
 void HeuristicPartitioner1::do_partition() {
@@ -447,7 +460,7 @@ void HeuristicPartitioner1::do_partition() {
     init_data_partition();
 
     uint64_t start_time, end_time;
-    for (uint32_t i = 0; i < FLAGS_iterations; i++) {
+    for (uint32_t i = 0; i < FLAGS_iterations && !converged; i++) {
         start_time = get_server_clock();
         // cluster txn based on data allocation.
         internal_txn_partition();
@@ -458,9 +471,11 @@ void HeuristicPartitioner1::do_partition() {
 
         // compute the cluster info
         compute_cluster_info();
-        printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id,
-               iteration - 2);
-        cluster_info->print();
+        if (!converged) {
+            printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id,
+                   iteration - 2);
+            cluster_info->print();
+        }
     }
 }
 

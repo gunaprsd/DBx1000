@@ -28,7 +28,9 @@ template <typename T> class OfflineScheduler {
             partitioner = new HeuristicPartitioner2(num_threads);
         } else if (FLAGS_parttype == "heuristic3") {
             partitioner = new HeuristicPartitioner3(num_threads);
-        } else {
+        } else if (FLAGS_parttype == "kmeans") {
+            partitioner = new KMeansPartitioner(num_threads);
+	} else {
             assert(false);
         }
 

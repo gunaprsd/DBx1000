@@ -623,7 +623,7 @@ void KMeansPartitioner::do_partition() {
         }
     }
 
-    for(uint32_t i = 0; i < FLAGS_iterations; i++) {
+    for(uint32_t i = 0; i < FLAGS_iterations && !converged; i++) {
         auto start_time = get_server_clock();
         do_iteration();
         auto end_time = get_server_clock();

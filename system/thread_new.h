@@ -12,45 +12,43 @@
 #define QUEUE_SIZE 100
 using namespace std;
 
-template<typename T>
-class Queue {
-	Query<T>* items[QUEUE_SIZE];
-	int32_t head, tail;
+template <typename T> class Queue {
+    Query<T> *items[QUEUE_SIZE];
+    int32_t head, tail;
 
-public:
-	Queue() {
-		head = 0; tail = 0;
-		for(uint32_t i = 0; i < QUEUE_SIZE; i++) {
-			items[i] = nullptr;
-		}
-	}
+  public:
+    Queue() {
+        head = 0;
+        tail = 0;
+        for (uint32_t i = 0; i < QUEUE_SIZE; i++) {
+            items[i] = nullptr;
+        }
+    }
 
-	void clear() {
-		head = tail = 0;
-	}
+    void clear() { head = tail = 0; }
 
-	bool pop(Query<T>*& query) {
-		if(head == tail) {
-			query = nullptr;
-			return false;
-		} else {
-			assert(head > tail);
-			query = items[tail % QUEUE_SIZE];
-			tail++;
-			return true;
-		}
-	}
+    bool pop(Query<T> *&query) {
+        if (head == tail) {
+            query = nullptr;
+            return false;
+        } else {
+            assert(head > tail);
+            query = items[tail % QUEUE_SIZE];
+            tail++;
+            return true;
+        }
+    }
 
-	bool push(Query<T>*  query) {
-		if((head - tail) < QUEUE_SIZE) {
-			items[head % QUEUE_SIZE] = query;
-			head++;
-			return true;
-		} else {
-			// done with size
-			return false;
-		}
-	}
+    bool push(Query<T> *query) {
+        if ((head - tail) < QUEUE_SIZE) {
+            items[head % QUEUE_SIZE] = query;
+            head++;
+            return true;
+        } else {
+            // done with size
+            return false;
+        }
+    }
 };
 template <typename T> class CCThread {
   public:
@@ -67,12 +65,12 @@ template <typename T> class CCThread {
         uint64_t cnt = 0;
         while (!query_iterator->done()) {
             Query<T> *query = query_iterator->next();
-	        query->core = 0;
+            query->core = 0;
             query->obtain_rw_set(&rwset);
             query->num_links = rwset.num_accesses;
             for (uint64_t i = 0; i < rwset.num_accesses; i++) {
                 bool added = false;
-	            query->links[i].next = nullptr;
+                query->links[i].next = nullptr;
                 BaseQuery **outgoing_loc = &(query->links[i].next);
                 BaseQuery **incoming_loc =
                     reinterpret_cast<BaseQuery **>(db->data_next_pointer[rwset.accesses[i].key]);
@@ -83,7 +81,7 @@ template <typename T> class CCThread {
                         added = true;
                         cnt++;
                         if (incoming_loc != 0) {
-	                        assert(*incoming_loc == nullptr);
+                            assert(*incoming_loc == nullptr);
                             *incoming_loc = query;
                         }
                     }
@@ -105,26 +103,25 @@ template <typename T> class CCThread {
         Query<T> *m_query = nullptr;
         uint64_t thd_txn_id = 0;
 
-	    Queue<T> bfqueue;
+        Queue<T> bfqueue;
 
         ThreadQueue<T> *query_queue = nullptr;
         query_queue = new ThreadQueue<T>();
         query_queue->initialize(thread_id, query_iterator, FLAGS_abort_buffer);
-	    bool next_query_chosen = false;
+        bool next_query_chosen = false;
         while (!query_queue->done() || next_query_chosen) {
             // Step 1: Obtain a query from the query queue
-	        // next query has not been chosen!
-	        if(!next_query_chosen) {
-		        while(!query_queue->done()) {
-			        m_query = query_queue->next_query();
-			        if(ATOM_CAS(m_query->core, 0, thread_id + 1)) {
-				        next_query_chosen = true;
-				        break;
-			        }
-		        }
-	        }
+            // next query has not been chosen!
+            if (!next_query_chosen) {
+                while (!query_queue->done()) {
+                    m_query = query_queue->next_query();
+                    if (ATOM_CAS(m_query->core, 0, thread_id + 1)) {
+                        break;
+                    }
+                }
+            }
 
-	        ts_t start_time = get_sys_clock();
+            ts_t start_time = get_sys_clock();
             INC_STATS(thread_id, time_query, get_sys_clock() - start_time);
 
             // Step 2: Prepare the transaction manager
@@ -180,32 +177,32 @@ template <typename T> class CCThread {
                 stats.abort(thread_id);
             }
 
-	        if(rc == RCOK) {
-		        // Since this txn went through, let's enqueue
-		        // its connected txns
-		        for(int64_t i = 0; i < m_query->num_links; i++) {
-			        if(m_query->links[i].next != 0) {
-				        if(!bfqueue.push((Query<T>*)m_query->links[i].next)) {
-					        break;
-				        }
-			        }
-		        }
+            if (rc == RCOK) {
+                // Since this txn went through, let's enqueue
+                // its connected txns
+                for (int64_t i = 0; i < m_query->num_links; i++) {
+                    if (m_query->links[i].next != 0) {
+                        if (!bfqueue.push((Query<T> *)m_query->links[i].next)) {
+                            break;
+                        }
+                    }
+                }
 
-		        // pick one from bfqueue
-				while(true) {
-					if(bfqueue.pop(m_query)) {
-						if(ATOM_CAS(m_query->core, 0, thread_id + 1)) {
-							next_query_chosen = true;
-							break;
-						}
-					} else {
-						break;
-					}
-				}
-	        } else {
-				bfqueue.clear();
-		        next_query_chosen = false;
-	        }
+                // pick one from bfqueue
+                while (true) {
+                    if (bfqueue.pop(m_query)) {
+                        if (ATOM_CAS(m_query->core, 0, thread_id + 1)) {
+                            next_query_chosen = true;
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                bfqueue.clear();
+                next_query_chosen = false;
+            }
         }
 
         delete query_queue;

@@ -8,16 +8,18 @@
 #include "thread_queue.h"
 #include "txn.h"
 #include "vll.h"
+#include <functional>
 #include <queue>
+#include <tuple>
 #define QUEUE_SIZE 100
 using namespace std;
 
-template <typename T> class Queue {
+template <typename T> class BFSQueue {
     Query<T> *items[QUEUE_SIZE];
     int32_t head, tail;
 
   public:
-    Queue() {
+    BFSQueue() {
         head = 0;
         tail = 0;
         for (uint32_t i = 0; i < QUEUE_SIZE; i++) {
@@ -50,6 +52,64 @@ template <typename T> class Queue {
         }
     }
 };
+typedef tuple<uint64_t, BaseQuery *> ptype;
+auto cmp = [](ptype t1, ptype t2) { return get<0>(t1) < get<0>(t2); };
+
+template <typename T> class TimedAbortBuffer {
+    priority_queue<ptype, vector<ptype>, decltype(cmp)> priorityQueue;
+    RandomNumberGenerator gen;
+
+  public:
+    TimedAbortBuffer() : priorityQueue(cmp), gen(1) {}
+
+    void add_query(Query<T> *query) {
+        uint64_t penalty = 0;
+        if (ABORT_PENALTY != 0) {
+            double r = gen.nextDouble(0);
+            penalty = static_cast<uint64_t>(r * FLAGS_abort_penalty);
+        }
+        uint64_t ready_time = get_sys_clock() + penalty;
+        auto t = make_tuple(ready_time, (BaseQuery *)query);
+        priorityQueue.push(t);
+    }
+
+    bool get_ready_query(Query<T> *&query) {
+        if (priorityQueue.empty()) {
+            query = nullptr;
+            return false;
+        } else {
+
+            // ensure you wait and get a query from buffer
+            // if it is getting filled up beyond buffer size
+            while (priorityQueue.size() >= (size_t)FLAGS_abort_buffer_size) {
+                auto current_time = get_sys_clock();
+                auto top_time = get<0>(priorityQueue.top());
+                if (current_time < top_time) {
+                    usleep(top_time - current_time);
+                } else {
+                    query = reinterpret_cast<Query<T> *>(get<1>(priorityQueue.top()));
+                    priorityQueue.pop();
+                    return true;
+                }
+            }
+
+            // remove a query from buffer only if it is ready
+            auto current_time = get_sys_clock();
+            auto top_time = get<0>(priorityQueue.top());
+            if (top_time < current_time) {
+                query = reinterpret_cast<Query<T> *>(get<1>(priorityQueue.top()));
+                priorityQueue.pop();
+                return true;
+            } else {
+                query = nullptr;
+                return false;
+            }
+        }
+    }
+
+    bool empty() { return priorityQueue.empty(); }
+};
+
 template <typename T> class CCThread {
   public:
     void initialize(uint32_t id, Database *db, QueryIterator<T> *query_list,
@@ -57,6 +117,11 @@ template <typename T> class CCThread {
         this->thread_id = id;
         this->db = db;
         this->query_iterator = query_list;
+	    this->manager = db->get_txn_man(thread_id);
+        this->bfs_queue = new BFSQueue<T>();
+        this->abort_buffer = new TimedAbortBuffer<T>();
+	    glob_manager->set_txn_man(manager);
+	    stats.init(thread_id);
     }
 
     void connect() {
@@ -92,49 +157,20 @@ template <typename T> class CCThread {
         query_iterator->reset();
     }
 
-    RC run() {
-        stats.init(thread_id);
-        set_affinity(thread_id);
-
+    RC run_query(txn_man* m_txn, Query<T>* m_query) {
         RC rc = RCOK;
-        txn_man *m_txn = db->get_txn_man(thread_id);
-        glob_manager->set_txn_man(m_txn);
+        ts_t start_time = get_sys_clock();
+        INC_STATS(thread_id, time_query, get_sys_clock() - start_time);
 
-        Query<T> *m_query = nullptr;
-        uint64_t thd_txn_id = 0;
+        // Step 2: Prepare the transaction manager
+        global_txn_id = thread_id + thread_txn_id * FLAGS_threads;
+        thread_txn_id++;
+        m_txn->reset(global_txn_id);
 
-        Queue<T> bfqueue;
-
-        ThreadQueue<T> *query_queue = nullptr;
-        query_queue = new ThreadQueue<T>();
-        query_queue->initialize(thread_id, query_iterator, FLAGS_abort_buffer);
-        bool next_query_chosen = false;
-        while (!query_queue->done() || next_query_chosen) {
-            // Step 1: Obtain a query from the query queue
-            // next query has not been chosen!
-            if (!next_query_chosen) {
-                while (!query_queue->done()) {
-                    m_query = query_queue->next_query();
-                    if (ATOM_CAS(m_query->core, 0, thread_id + 1)) {
-                        break;
-                    }
-                }
-            }
-
-            ts_t start_time = get_sys_clock();
-            INC_STATS(thread_id, time_query, get_sys_clock() - start_time);
-
-            // Step 2: Prepare the transaction manager
-            uint64_t global_txn_id = thread_id + thd_txn_id * FLAGS_threads;
-            thd_txn_id++;
-            m_txn->reset(global_txn_id);
-
-            // Step 3: Execute the transaction
-            rc = RCOK;
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
-            rc = m_txn->run_txn(m_query);
+        rc = m_txn->run_txn(m_query);
 #elif CC_ALG == OCC
-            m_txn->start_ts = get_next_ts();
+        m_txn->start_ts = get_next_ts();
             rc = m_txn->run_txn(m_query);
 #elif CC_ALG == TIMESTAMP
             rc = m_txn->run_txn(m_query);
@@ -158,61 +194,99 @@ template <typename T> class CCThread {
 #elif CC_ALG == SILO
             rc = m_txn->run_txn(m_query);
 #endif
+        ts_t end_time = get_sys_clock();
 
-            // Step 4: Return status to query queue
-            query_queue->return_status(rc);
+        // Step 5: Update statistics
+        uint64_t duration = end_time - start_time;
+        INC_STATS(thread_id, run_time, duration);
+        INC_STATS(thread_id, latency, duration);
+        if (rc == RCOK) {
+            INC_STATS(thread_id, txn_cnt, 1);
+            stats.commit(thread_id);
+        } else if (rc == Abort) {
+            INC_STATS(thread_id, time_abort, duration);
+            INC_STATS(thread_id, abort_cnt, 1);
+            stats.abort(thread_id);
+        }
+        return rc;
+    }
 
-            ts_t end_time = get_sys_clock();
+    RC run() {
+        auto rc = RCOK;
+        auto chosen_query = static_cast<Query<T> *>(nullptr);
+        bool done = false;
+        bool prev_query_successful = false;
 
-            // Step 5: Update statistics
-            uint64_t duration = end_time - start_time;
-            INC_STATS(thread_id, run_time, duration);
-            INC_STATS(thread_id, latency, duration);
-            if (rc == RCOK) {
-                INC_STATS(thread_id, txn_cnt, 1);
-                stats.commit(thread_id);
-            } else if (rc == Abort) {
-                INC_STATS(thread_id, time_abort, duration);
-                INC_STATS(thread_id, abort_cnt, 1);
-                stats.abort(thread_id);
+        while(!done) {
+            /*
+             * We have three places to look for the next query.
+             * 1. First priority is for abort buffer.
+             *
+             * 2. If the previous query was successful and bfs_queue
+             * is not empty, we execute the next query in the queue.
+             *
+             * 3. If there was an abort, then we clear the bfs_queue
+             * and pick one up either from the query_iterator.
+             */
+
+            chosen_query = nullptr;
+            if(!abort_buffer->get_ready_query(chosen_query)) {
+                // no query in abort buffer
+                if(prev_query_successful) {
+                    bfs_queue->pop(chosen_query);
+                } else {
+                    bfs_queue->clear();
+                }
             }
 
-            if (rc == RCOK) {
-                // Since this txn went through, let's enqueue
-                // its connected txns
-                for (int64_t i = 0; i < m_query->num_links; i++) {
-                    if (m_query->links[i].next != 0) {
-                        if (!bfqueue.push((Query<T> *)m_query->links[i].next)) {
-                            break;
-                        }
-                    }
+            // if nothing obtained from abort buffer or
+            // bfs queue, then get the next txn in input queue
+            if(chosen_query == nullptr) {
+                if(query_iterator->done()) {
+	                if(abort_buffer->empty()) {
+		                done = true;
+	                }
+                    continue;
+                } else {
+                    chosen_query = query_iterator->next();
                 }
+            }
 
-                // pick one from bfqueue
-                while (true) {
-                    if (bfqueue.pop(m_query)) {
-                        if (ATOM_CAS(m_query->core, 0, thread_id + 1)) {
-                            next_query_chosen = true;
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
+            assert(chosen_query != nullptr);
+
+            // set core of txn
+            if (!ATOM_CAS(chosen_query->core, 0, thread_id + 1)) {
+                // already handled by another core, skip!
+                continue;
+            }
+
+
+            // execute query
+            rc = run_query(manager, chosen_query);
+
+            // add to abort buffer queue, if aborted
+            if(rc == Abort) {
+                abort_buffer->add_query(chosen_query);
+                prev_query_successful = false;
+            } else if(rc == RCOK) {
+                prev_query_successful = true;
             } else {
-                bfqueue.clear();
-                next_query_chosen = false;
+                assert(false);
             }
         }
 
-        delete query_queue;
         return FINISH;
     }
 
   private:
     uint64_t thread_id;
+    uint64_t global_txn_id;
+    uint64_t thread_txn_id;
     Database *db;
     QueryIterator<T> *query_iterator;
+	txn_man* manager;
+    TimedAbortBuffer<T>* abort_buffer;
+    BFSQueue<T>* bfs_queue;
     ts_t _curr_ts;
     ts_t get_next_ts() {
         if (g_ts_batch_alloc) {
@@ -284,6 +358,7 @@ template <typename T> class Scheduler {
         auto data = (ThreadLocalData *)ptr;
         auto executor = (Scheduler *)data->fields[0];
         auto thread_id = data->fields[1];
+	    set_affinity(thread_id);
 
         executor->_threads[thread_id].run();
         return nullptr;

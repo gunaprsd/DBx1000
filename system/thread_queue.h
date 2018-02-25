@@ -196,7 +196,7 @@ protected:
   Query<T> *_previous_query;
   RC _previous_query_status;
 
-  // Main Queue fields
+  // Main BFSQueue fields
   QueryIterator<T> *_query_list;
 
   // Abort buffer fields

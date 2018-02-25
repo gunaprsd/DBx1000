@@ -177,3 +177,30 @@ YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config,
     _threads[i].initialize(i, &_db, _loader.get_queries_list(i), true);
   }
 }
+
+
+YCSBExecutor2::YCSBExecutor2(const YCSBBenchmarkConfig &config,
+                           const string &folder_path, uint64_t num_threads)
+        : Scheduler<ycsb_params>(folder_path, num_threads), _db(config),
+          _loader(folder_path, num_threads) {
+
+  // Build database in parallel
+  _db.initialize(FLAGS_load_parallelism);
+  _db.load();
+
+  // Load workload in parallel
+  _loader.load();
+
+  // Initialize each thread
+
+  uint64_t size = AccessIterator<ycsb_params>::get_max_key();
+  _db.data_next_pointer = new uint64_t[size];
+  for(uint64_t i = 0; i < size; i++) {
+    _db.data_next_pointer[i] = 0;
+  }
+
+  for (uint32_t i = 0; i < _num_threads; i++) {
+    _threads[i].initialize(i, &_db, _loader.get_queries_list(i), true);
+  }
+}
+

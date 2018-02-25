@@ -36,7 +36,7 @@ void execute_ycsb_benchmark() {
                                     FLAGS_size_per_thread, FLAGS_output_folder);
     generator.generate();
   } else if (FLAGS_task == "execute") {
-    YCSBExecutor executor(config, FLAGS_input_folder, FLAGS_threads);
+    YCSBExecutor2 executor(config, FLAGS_input_folder, FLAGS_threads);
     executor.execute();
     executor.release();
   }

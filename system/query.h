@@ -9,10 +9,17 @@ enum QueryType { YCSB_QUERY, TPCC_PAYMENT_QUERY, TPCC_NEW_ORDER_QUERY };
  * All queries derive from BaseQuery.
  * It mainly specifies the type of the query.
  */
-struct BaseQuery {
-    QueryType type;
+struct Link {
+    BaseQuery* next;
+    double weight;
 };
 
+struct BaseQuery {
+    QueryType type;
+    int64_t core;
+    int64_t num_links;
+    Link links[MAX_NUM_ACCESSES];
+};
 
 struct AccessRecord {
     uint32_t table_id;
@@ -77,7 +84,9 @@ template <typename T> class QueryIterator {
     }
     bool done() const { return (_current == _num_queries); }
     ~QueryIterator() = default;
-
+    void reset() {
+        _current = 0;
+    }
   protected:
     Query<T> *const _queries;
     const uint64_t _num_queries;

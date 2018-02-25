@@ -7,6 +7,7 @@
 #include "generator.h"
 #include "loader.h"
 #include "thread.h"
+#include "thread_new.h"
 #include "ycsb_database.h"
 
 class YCSBWorkloadGenerator : public ParallelWorkloadGenerator<ycsb_params> {
@@ -35,5 +36,16 @@ protected:
   YCSBDatabase _db;
   YCSBWorkloadLoader _loader;
 };
+
+class YCSBExecutor2 : public Scheduler<ycsb_params> {
+public:
+	YCSBExecutor2(const YCSBBenchmarkConfig &_config, const string &folder_path,
+	             uint64_t num_threads);
+protected:
+	YCSBDatabase _db;
+	YCSBWorkloadLoader _loader;
+};
+
+
 
 #endif // YCSB_YCSB_WORKLOAD_H_

@@ -148,6 +148,7 @@ public:
       stats.print();
     }
   }
+
   virtual void release() {}
 
 protected:

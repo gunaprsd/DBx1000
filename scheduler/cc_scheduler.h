@@ -1,29 +1,24 @@
-
-#ifndef DBX1000_THREAD_NEW_H
-#define DBX1000_THREAD_NEW_H
+#ifndef DBX1000_CC_SCHEDULER_H
+#define DBX1000_CC_SCHEDULER_H
 
 #include "database.h"
+#include "loader.h"
 #include "distributions.h"
-#include "manager.h"
 #include "query.h"
-#include "txn.h"
-#include "vll.h"
 #include "thread.h"
-
-
-template<typename T>
-class IOnlineScheduler {
-public:
-	virtual void schedule(ParallelWorkloadLoader<T>* loader) = 0;
-};
-
+#include "simple_scheduler.h"
 
 template <typename T>
-class SimpleScheduler : public IOnlineScheduler<T> {
+class CCScheduler : public IOnlineScheduler<T> {
   public:
-    SimpleScheduler(uint64_t num_threads) {
+	CCScheduler(uint64_t num_threads) {
         _num_threads = num_threads;
         _threads = (WorkerThread<T> *)_mm_malloc(sizeof(WorkerThread<T>) * _num_threads, 64);
+		uint64_t size = AccessIterator<ycsb_params>::get_max_key();
+		data_next_pointer = new uint64_t[size];
+		for (uint64_t i = 0; i < size; i++) {
+			data_next_pointer[i] = 0;
+		}
     }
 
 	void submit_queries() {
@@ -90,22 +85,59 @@ class SimpleScheduler : public IOnlineScheduler<T> {
     static void *submit_helper(void *ptr) {
         // Threads must be initialize before
         auto data = (ThreadLocalData *)ptr;
-        auto scheduler = (SimpleScheduler *)data->fields[0];
+        auto scheduler = (CCScheduler<T> *)data->fields[0];
         auto thread_id = data->fields[1];
 
+	    uint64_t cnt = 0;
         QueryIterator<T>* iterator = scheduler->_loader->get_queries_list(thread_id);
+	    uint32_t chosen_core = UINT32_MAX;
 	    while(!iterator->done()) {
 		    Query<T>* query = iterator->next();
-		    scheduler->_threads[thread_id].submit_query(query);
-	    }
+		    ReadWriteSet rwset;
+		    query->obtain_rw_set(&rwset);
+			query->num_links = rwset.num_accesses;
 
+		    for (uint64_t i = 0; i < rwset.num_accesses; i++) {
+			    bool added = false;
+			    BaseQuery **outgoing_loc = &(query->links[i].next);
+			    BaseQuery **incoming_loc =
+					    reinterpret_cast<BaseQuery **>(scheduler->data_next_pointer[rwset.accesses[i].key]);
+			    if (incoming_loc != 0) {
+				    chosen_core = static_cast<uint32_t>((*incoming_loc)->core);
+				    break;
+			    }
+		    }
+
+		    ((atomic<uint32_t>*)& (query->core))->store(chosen_core);
+
+		    for (uint64_t i = 0; i < rwset.num_accesses; i++) {
+			    bool added = false;
+			    BaseQuery **outgoing_loc = &(query->links[i].next);
+			    BaseQuery **incoming_loc =
+					    reinterpret_cast<BaseQuery **>(scheduler->data_next_pointer[rwset.accesses[i].key]);
+			    while (!added) {
+				    BaseQuery ***incoming_loc_loc = &incoming_loc;
+				    if (__sync_bool_compare_and_swap(incoming_loc_loc, incoming_loc,
+				                                     outgoing_loc)) {
+					    added = true;
+					    cnt++;
+					    if (incoming_loc != 0) {
+						    *incoming_loc = query;
+					    }
+				    }
+			    }
+		    }
+
+		    scheduler->_threads[chosen_core].submit_query(query);
+	    }
         return nullptr;
     }
 
     uint64_t _num_threads;
     WorkerThread<T> *_threads;
 	ParallelWorkloadLoader<T>* _loader;
+	uint64_t* data_next_pointer;
 };
 
 
-#endif // DBX1000_THREAD_NEW_H
+#endif //DBX1000_CC_SCHEDULER_H

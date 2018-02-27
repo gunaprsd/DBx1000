@@ -110,7 +110,7 @@ SET(SRC_LIST cc/occ.h
         parser.h
         workload/partitioner_helper.h
         workload/partitioner.cpp
-        scheduler/simple_scheduler.h scheduler/abort_buffer.h)
+        scheduler/simple_scheduler.h scheduler/abort_buffer.h scheduler/cc_scheduler.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})

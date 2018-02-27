@@ -20,7 +20,7 @@ public:
   void load();
   virtual void initialize(uint64_t num_threads = INIT_PARALLELISM);
   virtual txn_man *get_txn_man(uint64_t thread_id) = 0;
-	uint64_t* data_next_pointer;
+
 protected:
   RC initialize_schema(string schema_file);
   static void *run_helper(void *ptr);

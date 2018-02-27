@@ -25,9 +25,11 @@ VLLMan vll_man;
 
 bool volatile warmup_finish = false;
 bool volatile enable_thread_mem_pool = false;
+#ifdef __linux__
 pthread_barrier_t warmup_bar;
 #ifndef NOGRAPHITE
 carbon_barrier_t enable_barrier;
+#endif
 #endif
 
 ts_t g_abort_penalty = ABORT_PENALTY;

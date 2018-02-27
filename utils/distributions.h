@@ -20,6 +20,7 @@ class RandomNumberGenerator {
 public:
   explicit RandomNumberGenerator(uint64_t num_dists) {
     _num_dists = num_dists;
+#ifdef __linux__
     _buffers = new drand48_data *[num_dists];
     _latches = new pthread_mutex_t[num_dists];
     for (uint64_t i = 0; i < num_dists; i++) {
@@ -27,39 +28,56 @@ public:
           _mm_malloc(sizeof(drand48_data), 64));
       pthread_mutex_init(&_latches[i], NULL);
     }
+#endif
   }
   ~RandomNumberGenerator() {
+#ifdef __linux
     for (uint64_t i = 0; i < _num_dists; i++) {
       pthread_mutex_destroy(&_latches[i]);
       free(_buffers[i]);
     }
     delete[] _buffers;
     delete[] _latches;
+#endif
   }
   uint64_t nextInt64(uint64_t dist_id) {
+#ifdef __linux__
     int64_t rint64;
     pthread_mutex_lock(&_latches[dist_id]);
     lrand48_r(_buffers[dist_id], &rint64);
     pthread_mutex_unlock(&_latches[dist_id]);
     return static_cast<uint64_t>(rint64);
+#elif __APPLE__
+	return static_cast<uint64_t>(lrand48());
+#endif
   }
   double nextDouble(uint64_t dist_id) {
+#ifdef __linux__
     double rdouble;
     pthread_mutex_lock(&_latches[dist_id]);
     drand48_r(_buffers[dist_id], &rdouble);
     pthread_mutex_unlock(&_latches[dist_id]);
     return rdouble;
+#elif __APPLE__
+	return drand48();
+#endif
   }
   void seed(uint64_t dist_id, uint64_t value) {
+#ifdef __linux__
     pthread_mutex_lock(&_latches[dist_id]);
     srand48_r((long)value + FLAGS_seed, _buffers[dist_id]);
     pthread_mutex_unlock(&_latches[dist_id]);
+#elif __APPLE__
+	srand(static_cast<unsigned int>(value));
+#endif
   }
 
 protected:
   uint64_t _num_dists;
+#ifdef __linux__
   drand48_data **_buffers;
   pthread_mutex_t *_latches;
+#endif
 };
 
 /*

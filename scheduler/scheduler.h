@@ -205,4 +205,11 @@ template <typename T> class OfflineScheduler {
     }
 };
 
+template<typename T>
+class IOnlineScheduler {
+public:
+    virtual void schedule(ParallelWorkloadLoader<T>* loader) = 0;
+    virtual void execute() = 0;
+};
+
 #endif // DBX1000_SCHEDULER_H

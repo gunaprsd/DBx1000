@@ -11,6 +11,7 @@
 #include <functional>
 #include <queue>
 #include <tuple>
+#include "distributions.h"
 #define QUEUE_SIZE 100
 using namespace std;
 
@@ -52,6 +53,7 @@ template <typename T> class BFSQueue {
         }
     }
 };
+
 typedef tuple<uint64_t, BaseQuery *> ptype;
 auto cmp = [](ptype t1, ptype t2) { return get<0>(t1) < get<0>(t2); };
 
@@ -126,15 +128,30 @@ template <typename T> class CCThread {
 
     void connect() {
         ReadWriteSet rwset;
+        RandomNumberGenerator rng(1);
+        rng.seed(0, thread_id + 1);
         query_iterator->reset();
         uint64_t cnt = 0;
         while (!query_iterator->done()) {
             Query<T> *query = query_iterator->next();
-            query->core = 0;
+            query->core = rng.nextInt64(0) % FLAGS_threads;
             query->obtain_rw_set(&rwset);
             query->num_links = rwset.num_accesses;
+            // identify the core
+            for (uint64_t i = 0; i < rwset.num_accesses; i++) {
+                query->links[i].next = nullptr;
+                BaseQuery **incoming_loc =
+                        reinterpret_cast<BaseQuery **>(db->data_next_pointer[rwset.accesses[i].key]);
+                if(incoming_loc != 0) {
+                    BaseQuery* txn = *incoming_loc;
+                    query->core = txn->core;
+                    break;
+                }
+            }
+
             for (uint64_t i = 0; i < rwset.num_accesses; i++) {
                 bool added = false;
+                //bool added = false;
                 query->links[i].next = nullptr;
                 BaseQuery **outgoing_loc = &(query->links[i].next);
                 BaseQuery **incoming_loc =
@@ -143,7 +160,7 @@ template <typename T> class CCThread {
                     BaseQuery ***incoming_loc_loc = &incoming_loc;
                     if (__sync_bool_compare_and_swap(incoming_loc_loc, incoming_loc,
                                                      outgoing_loc)) {
-                        added = true;
+                        //added = true;
                         cnt++;
                         if (incoming_loc != 0) {
                             assert(*incoming_loc == nullptr);

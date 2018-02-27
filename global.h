@@ -67,9 +67,11 @@ extern VLLMan vll_man;
 
 extern bool volatile warmup_finish;
 extern bool volatile enable_thread_mem_pool;
+#ifdef __linux__
 extern pthread_barrier_t warmup_bar;
 #ifndef NOGRAPHITE
 extern carbon_barrier_t enable_barrier;
+#endif
 #endif
 
 /******************************************/
@@ -155,7 +157,7 @@ struct ThreadLocalData {
 #define WRITE_PARTITIONS_TO_FILE false
 #define PRINT_PARTITION_SUMMARY true
 
-class BaseQuery;
+struct BaseQuery;
 void print_query(FILE *file, BaseQuery *query);
 
 

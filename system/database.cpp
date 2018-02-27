@@ -103,7 +103,7 @@ RC Database::initialize_schema(string schema_file) {
       }
 
 #if INDEX_STRUCT == IDX_HASH
-      index->init(part_cnt, tables[tname], size);
+	    index->init(part_cnt, tables[tname], size);
 #else
       index->init(part_cnt, tables[tname]);
 #endif

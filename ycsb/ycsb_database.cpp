@@ -24,9 +24,15 @@ void YCSBDatabase::initialize(uint64_t num_threads) {
     path = string(cpath);
     path += "/tests/apps/dbms/schema.txt";
   }
+
   Database::initialize_schema(path);
   the_table = tables["MAIN_TABLE"];
   the_index = indexes["MAIN_INDEX"];
+  uint64_t size = AccessIterator<ycsb_params>::get_max_key();
+  data_next_pointer = new uint64_t[size];
+  for (uint64_t i = 0; i < size; i++) {
+    data_next_pointer[i] = 0;
+  }
 }
 
 uint64_t YCSBDatabase::key_to_part(uint64_t key) {

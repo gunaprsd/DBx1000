@@ -21,6 +21,8 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/cc)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/storage)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/system)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/workload)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/scheduler)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/utils)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib/include)
 
 SET(SRC_LIST cc/occ.h
@@ -45,22 +47,22 @@ SET(SRC_LIST cc/occ.h
         storage/table.h
         storage/index_btree.h
         storage/row.h
-        system/helper.h
+        helper.h
         system/query.h
-        system/global.h
+        global.h
         system/manager.h
         system/txn.h
-        system/thread_queue.h
-        system/thread.h
+        scheduler/thread_queue.h
+        scheduler/thread.h
         system/database.h
-        system/stats.h
-        system/mem_alloc.h
+        utils/stats.h
+        utils/mem_alloc.h
         tpcc/tpcc_utility.h
         tpcc/tpcc.h
         tpcc/tpcc_database.h
         tpcc/tpcc_const.h
         tpcc/tpcc_workload.h
-        workload/distributions.h
+        utils/distributions.h
         workload/graph_partitioner.h
         workload/generator.h
         ycsb/ycsb_workload.h
@@ -86,15 +88,15 @@ SET(SRC_LIST cc/occ.h
         storage/row.cpp
         storage/index_btree.cpp
         storage/catalog.cpp
-        system/stats.cpp
+        utils/stats.cpp
         system/txn.cpp
-        system/mem_alloc.cpp
-        system/helper.cpp
+        utils/mem_alloc.cpp
+        helper.cpp
         system/manager.cpp
         system/database.cpp
-        system/global.cpp
-        system/parser.cpp
-        system/main.cpp
+        global.cpp
+        parser.cpp
+        main.cpp
         tpcc/tpcc_database.cpp
         tpcc/tpcc_workload.cpp
         tpcc/tpcc_utility.cpp
@@ -105,9 +107,11 @@ SET(SRC_LIST cc/occ.h
         workload/partitioner.h
         workload/loader.h
         ycsb/ycsb.cpp
-        workload/scheduler.h system/parser.h
+        scheduler/scheduler.h
+        parser.h
         workload/partitioner_helper.h
-        workload/partitioner.cpp system/thread_new.h)
+        workload/partitioner.cpp
+        scheduler/thread_new.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})

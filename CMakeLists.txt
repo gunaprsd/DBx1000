@@ -52,7 +52,6 @@ SET(SRC_LIST cc/occ.h
         global.h
         system/manager.h
         system/txn.h
-        scheduler/thread_queue.h
         scheduler/thread.h
         system/database.h
         utils/stats.h
@@ -107,13 +106,13 @@ SET(SRC_LIST cc/occ.h
         workload/partitioner.h
         workload/loader.h
         ycsb/ycsb.cpp
-        scheduler/scheduler.h
+        scheduler/offline_scheduler.h
         parser.h
         workload/partitioner_helper.h
         workload/partitioner.cpp
-        scheduler/thread_new.h)
+        scheduler/simple_scheduler.h scheduler/abort_buffer.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})
-TARGET_LINK_LIBRARIES(rundb rt pthread metis)
+TARGET_LINK_LIBRARIES(rundb rt pthread metis tbb)
 TARGET_LINK_LIBRARIES(rundb gflags)

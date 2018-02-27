@@ -5,7 +5,7 @@
 #include "mem_alloc.h"
 #include "parser.h"
 #include "partitioner.h"
-#include "scheduler.h"
+#include "offline_scheduler.h"
 #include "thread.h"
 #include "tpcc_database.h"
 #include "tpcc_workload.h"
@@ -36,7 +36,7 @@ void execute_ycsb_benchmark() {
                                     FLAGS_size_per_thread, FLAGS_output_folder);
     generator.generate();
   } else if (FLAGS_task == "execute") {
-    YCSBExecutor2 executor(config, FLAGS_input_folder, FLAGS_threads);
+    YCSBExecutor executor(config, FLAGS_input_folder, FLAGS_threads);
     executor.execute();
     executor.release();
   }

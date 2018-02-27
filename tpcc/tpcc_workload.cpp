@@ -1,4 +1,5 @@
 #include "tpcc_workload.h"
+#include "simple_scheduler.h"
 
 TPCCWorkloadGenerator::TPCCWorkloadGenerator(const TPCCBenchmarkConfig &_config,
                                              uint64_t num_threads, uint64_t size_per_thread,
@@ -152,7 +153,7 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thread_id, tpcc_query
 
 TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config, const string &folder_path,
                            uint64_t num_threads)
-    : BenchmarkExecutor<tpcc_params>(folder_path, num_threads), _db(config),
+    : _db(config),
       _loader(folder_path, num_threads) {
 
     // Build database in parallel
@@ -163,7 +164,13 @@ TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config, const string &fold
     _loader.load();
 
     // Initialize each thread
-    for (uint32_t i = 0; i < _num_threads; i++) {
-        _threads[i].initialize(i, &_db, _loader.get_queries_list(i), true);
-    }
+    _scheduler = new SimpleScheduler<tpcc_params>(num_threads);
+}
+
+void TPCCExecutor::execute() {
+    _scheduler->schedule(&_loader);
+}
+
+void TPCCExecutor::release() {
+    _loader.release();
 }

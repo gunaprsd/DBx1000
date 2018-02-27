@@ -5,7 +5,8 @@
 #include "parser.h"
 #include "partitioner.h"
 
-template <typename T> class OfflineScheduler {
+template <typename T>
+class OfflineScheduler {
   public:
     OfflineScheduler(string input_folder_path, uint32_t num_threads, uint64_t max_batch_size,
                      string output_folder_path)
@@ -42,6 +43,7 @@ template <typename T> class OfflineScheduler {
 	cluster_info->initialize();
 	runtime_info = new RuntimeInfo();
     }
+
     void schedule() {
         auto thread = new pthread_t();
         auto data = new ThreadLocalData();
@@ -135,26 +137,6 @@ template <typename T> class OfflineScheduler {
         }
     }
 
-    static void *schedule_helper(void *ptr) {
-        set_affinity(1);
-        auto data = reinterpret_cast<ThreadLocalData *>(ptr);
-        auto scheduler = reinterpret_cast<OfflineScheduler *>(data->fields[0]);
-        scheduler->do_schedule();
-        return nullptr;
-    }
-    const string _input_folder_path;
-    const string _output_folder_path;
-    const uint32_t _num_threads;
-    const uint64_t _max_batch_size;
-    BasePartitioner *partitioner;
-    vector<Query<T> *> *clusters;
-    Query<T> *batch;
-    uint64_t batch_size;
-    uint64_t offset;
-    GraphInfo *graph_info;
-    ClusterInfo *cluster_info;
-    RuntimeInfo *runtime_info;
-
     void create_graph_info(uint64_t iteration, uint64_t start, uint64_t end) {
         graph_info->reset();
         // Create the basic access graph
@@ -203,13 +185,26 @@ template <typename T> class OfflineScheduler {
             ACCUMULATE_MAX(graph_info->max_data_degree, data_degree);
         }
     }
-};
 
-template<typename T>
-class IOnlineScheduler {
-public:
-    virtual void schedule(ParallelWorkloadLoader<T>* loader) = 0;
-    virtual void execute() = 0;
+    static void *schedule_helper(void *ptr) {
+        set_affinity(1);
+        auto data = reinterpret_cast<ThreadLocalData *>(ptr);
+        auto scheduler = reinterpret_cast<OfflineScheduler *>(data->fields[0]);
+        scheduler->do_schedule();
+        return nullptr;
+    }
+    const string _input_folder_path;
+    const string _output_folder_path;
+    const uint32_t _num_threads;
+    const uint64_t _max_batch_size;
+    BasePartitioner *partitioner;
+    vector<Query<T> *> *clusters;
+    Query<T> *batch;
+    uint64_t batch_size;
+    uint64_t offset;
+    GraphInfo *graph_info;
+    ClusterInfo *cluster_info;
+    RuntimeInfo *runtime_info;
 };
 
 #endif // DBX1000_SCHEDULER_H

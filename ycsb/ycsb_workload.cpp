@@ -155,8 +155,8 @@ void YCSBWorkloadGenerator::gen_multi_partition_requests(uint64_t thread_id, ycs
 }
 
 YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &folder_path,
-                           uint64_t num_threads)
-    : BenchmarkExecutor<ycsb_params>(folder_path, num_threads), _db(config),
+                             uint64_t num_threads)
+    : _db(config),
       _loader(folder_path, num_threads) {
 
     // Build database in parallel
@@ -166,28 +166,13 @@ YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &fold
     // Load workload in parallel
     _loader.load();
 
-    // Initialize each thread
-    for (uint32_t i = 0; i < _num_threads; i++) {
-        _threads[i].initialize(i, &_db, _loader.get_queries_list(i), true);
-    }
+    _scheduler = new SimpleScheduler<ycsb_params>(num_threads);
 }
 
-YCSBExecutor2::YCSBExecutor2(const YCSBBenchmarkConfig &config, const string &folder_path,
-                             uint64_t num_threads)
-    : Scheduler<ycsb_params>(folder_path, num_threads), _db(config),
-      _loader(folder_path, num_threads) {
+void YCSBExecutor::execute() {
+    _scheduler->schedule(&_loader);
+}
 
-    // Build database in parallel
-    _db.initialize(FLAGS_load_parallelism);
-    _db.load();
-
-    // Load workload in parallel
-    _loader.load();
-	Query<ycsb_params>* queries;
-	uint64_t num_queries;
-	_loader.get_queries(queries, num_queries);
+void YCSBExecutor::release() {
     _loader.release();
-
-
-
 }

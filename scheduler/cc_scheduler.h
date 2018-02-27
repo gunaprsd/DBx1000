@@ -6,8 +6,8 @@
 #include "loader.h"
 #include "query.h"
 #include "simple_scheduler.h"
-#include <atomic>
 #include "thread.h"
+#include <atomic>
 using namespace std;
 
 template <typename T> class CCScheduler : public IOnlineScheduler<T> {
@@ -94,6 +94,8 @@ template <typename T> class CCScheduler : public IOnlineScheduler<T> {
         auto thread_id = data->fields[1];
 
         uint64_t cnt = 0;
+	    RandomNumberGenerator gen(1);
+	    gen.seed(0, thread_id + 1);
         QueryIterator<T> *iterator = scheduler->_loader->get_queries_list(thread_id);
         int64_t chosen_core = -1;
         while (!iterator->done()) {
@@ -112,10 +114,12 @@ template <typename T> class CCScheduler : public IOnlineScheduler<T> {
             }
 
             if (chosen_core == -1) {
-	      query->core = chosen_core;
+                chosen_core = gen.nextInt64(0) % scheduler->_num_threads;
             }
+            assert(chosen_core >= 0 && chosen_core < (int64_t)scheduler->_num_threads);
+	        query->core = chosen_core;
 
-            for (uint64_t i = 0; i < rwset.num_accesses; i++) {
+	        for (uint64_t i = 0; i < rwset.num_accesses; i++) {
                 bool added = false;
                 BaseQuery **outgoing_loc = &(query->links[i].next);
                 BaseQuery **incoming_loc = reinterpret_cast<BaseQuery **>(

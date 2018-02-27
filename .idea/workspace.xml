@@ -2,8 +2,8 @@
 <project version="4">
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true" buildAllGenerated="true">
     <generated>
-      <config projectName="DBx1000" targetName="gflags_nothreads_static" />
       <config projectName="DBx1000" targetName="rundb" />
+      <config projectName="DBx1000" targetName="gflags_nothreads_static" />
     </generated>
   </component>
   <component name="CMakeSettings">
@@ -15,6 +15,7 @@
     <list default="true" id="c244eca0-0039-459c-b54d-e525f055ed8a" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/scheduler/cc_scheduler.h" afterPath="$PROJECT_DIR$/scheduler/cc_scheduler.h" />
+      <change beforePath="$PROJECT_DIR$/scheduler/thread.h" afterPath="$PROJECT_DIR$/scheduler/thread.h" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -30,24 +31,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="tpcc_workload.h" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tpcc/tpcc_workload.h">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="696">
-              <caret line="29" column="0" lean-forward="false" selection-start-line="29" selection-start-column="0" selection-end-line="29" selection-end-column="0" />
-              <folding>
-                <element signature="e#117#139#0" expanded="true" />
-                <element signature="e#295#913#1" expanded="false" />
-                <element signature="e#981#1281#1" expanded="false" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="tpcc_workload.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tpcc/tpcc_workload.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="480">
+            <state relative-caret-position="504">
               <caret line="169" column="5" lean-forward="false" selection-start-line="169" selection-start-column="5" selection-end-line="169" selection-end-column="5" />
               <folding>
                 <element signature="e#0#26#0" expanded="true" />
@@ -55,7 +42,7 @@
                 <element signature="e#876#1617#0" expanded="false" />
                 <element signature="e#1619#3487#0" expanded="false" />
                 <element signature="e#3489#5977#0" expanded="false" />
-                <element signature="e#5979#6423#0" expanded="false" />
+                <element signature="e#5979#6429#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -64,35 +51,21 @@
       <file leaf-file-name="simple_scheduler.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scheduler/simple_scheduler.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="10" column="19" lean-forward="false" selection-start-line="10" selection-start-column="19" selection-end-line="10" selection-end-column="19" />
-              <folding>
-                <element signature="e#60#81#0" expanded="true" />
-                <element signature="e#213#225#0" expanded="true" />
-                <element signature="e#336#348#0" expanded="true" />
-                <element signature="e#416#591#0" expanded="false" />
-                <element signature="e#594#986#0" expanded="false" />
-                <element signature="e#989#1378#0" expanded="false" />
-                <element signature="e#1384#1998#0" expanded="false" />
-                <element signature="e#2017#2356#0" expanded="false" />
-                <element signature="e#2362#2850#0" expanded="false" />
-              </folding>
+            <state relative-caret-position="583">
+              <caret line="98" column="50" lean-forward="false" selection-start-line="98" selection-start-column="50" selection-end-line="98" selection-end-column="50" />
+              <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="cc_scheduler.h" pinned="false" current-in-tab="false">
+      <file leaf-file-name="cc_scheduler.h" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/scheduler/cc_scheduler.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="456">
-              <caret line="84" column="42" lean-forward="false" selection-start-line="84" selection-start-column="42" selection-end-line="84" selection-end-column="42" />
+            <state relative-caret-position="667">
+              <caret line="117" column="13" lean-forward="false" selection-start-line="117" selection-start-column="13" selection-end-line="117" selection-end-column="13" />
               <folding>
-                <element signature="e#284#622#0" expanded="false" />
-                <element signature="e#625#1017#0" expanded="false" />
-                <element signature="e#1020#1409#0" expanded="false" />
-                <element signature="e#1415#2029#0" expanded="false" />
-                <element signature="e#2048#2387#0" expanded="false" />
-                <element signature="e#2393#4152#0" expanded="false" />
+                <element signature="e#63#84#0" expanded="true" />
+                <element signature="e#250#262#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -158,18 +131,26 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ycsb_workload.cpp" pinned="false" current-in-tab="true">
+      <file leaf-file-name="ycsb_workload.cpp" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ycsb/ycsb_workload.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="744">
-              <caret line="168" column="36" lean-forward="false" selection-start-line="168" selection-start-column="21" selection-end-line="168" selection-end-column="36" />
+            <state relative-caret-position="4032">
+              <caret line="169" column="24" lean-forward="false" selection-start-line="169" selection-start-column="24" selection-end-line="169" selection-end-column="24" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="thread.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/scheduler/thread.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="216">
+              <caret line="24" column="67" lean-forward="false" selection-start-line="24" selection-start-column="67" selection-end-line="24" selection-end-column="67" />
               <folding>
-                <element signature="e#84#793#0" expanded="false" />
-                <element signature="e#795#1181#0" expanded="false" />
-                <element signature="e#1183#1456#0" expanded="false" />
-                <element signature="e#1183#3436#0" expanded="false" />
-                <element signature="e#3438#6019#0" expanded="false" />
-                <element signature="e#6509#6564#0" expanded="false" />
+                <element signature="e#217#229#0" expanded="true" />
+                <element signature="e#265#635#0" expanded="false" />
+                <element signature="e#757#2257#0" expanded="false" />
+                <element signature="e#2976#3598#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -285,7 +266,6 @@
         <option value="$PROJECT_DIR$/ycsb/ycsb_workload.h" />
         <option value="$PROJECT_DIR$/ycsb/ycsb_workload.cpp" />
         <option value="$PROJECT_DIR$/tpcc/tpcc_workload.cpp" />
-        <option value="$PROJECT_DIR$/scheduler/thread.h" />
         <option value="$PROJECT_DIR$/scheduler/scheduler.h" />
         <option value="$PROJECT_DIR$/scheduler/offline_scheduler.h" />
         <option value="$PROJECT_DIR$/global.h" />
@@ -293,6 +273,7 @@
         <option value="$PROJECT_DIR$/scheduler/simple_scheduler.h" />
         <option value="$PROJECT_DIR$/system/database.h" />
         <option value="$PROJECT_DIR$/ycsb/ycsb_database.cpp" />
+        <option value="$PROJECT_DIR$/scheduler/thread.h" />
         <option value="$PROJECT_DIR$/scheduler/cc_scheduler.h" />
       </list>
     </option>
@@ -464,12 +445,12 @@
       <workItem from="1519527123525" duration="6577000" />
       <workItem from="1519537940943" duration="7808000" />
       <workItem from="1519685158260" duration="12687000" />
-      <workItem from="1519763061455" duration="1050000" />
+      <workItem from="1519763061455" duration="2482000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="289560000" />
+    <option name="totallyTimeSpent" value="290992000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="2560" height="1440" extended-state="0" />
@@ -481,7 +462,7 @@
       <window_info id="DB Execution Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32969216" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.21945867" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.21945867" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="FAQ Robot" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.08498809" sideWeight="0.4941349" order="0" side_tool="false" content_ui="combo" />
@@ -683,6 +664,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -748,6 +730,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="96">
           <caret line="7" column="3" lean-forward="false" selection-start-line="7" selection-start-column="3" selection-end-line="7" selection-end-column="3" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -814,6 +797,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="648">
           <caret line="38" column="16" lean-forward="false" selection-start-line="38" selection-start-column="16" selection-end-line="38" selection-end-column="16" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -848,6 +832,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="947">
           <caret line="53" column="20" lean-forward="false" selection-start-line="53" selection-start-column="20" selection-end-line="53" selection-end-column="20" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -866,23 +851,6 @@
           <folding>
             <element signature="e#63#82#0" expanded="false" />
             <element signature="e#356#368#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scheduler/thread.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" column="0" lean-forward="false" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
-          <folding>
-            <element signature="e#238#250#0" expanded="false" />
-            <element signature="e#312#324#0" expanded="false" />
-            <element signature="e#325#3953#1" expanded="false" />
-            <element signature="e#358#700#0" expanded="false" />
-            <element signature="e#706#781#0" expanded="false" />
-            <element signature="e#834#2335#0" expanded="false" />
-            <element signature="e#2341#2808#0" expanded="false" />
-            <element signature="e#2825#3707#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -951,7 +919,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/tpcc/tpcc_workload.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="480">
+        <state relative-caret-position="504">
           <caret line="169" column="5" lean-forward="false" selection-start-line="169" selection-start-column="5" selection-end-line="169" selection-end-column="5" />
           <folding>
             <element signature="e#0#26#0" expanded="true" />
@@ -959,25 +927,7 @@
             <element signature="e#876#1617#0" expanded="false" />
             <element signature="e#1619#3487#0" expanded="false" />
             <element signature="e#3489#5977#0" expanded="false" />
-            <element signature="e#5979#6423#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scheduler/simple_scheduler.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="10" column="19" lean-forward="false" selection-start-line="10" selection-start-column="19" selection-end-line="10" selection-end-column="19" />
-          <folding>
-            <element signature="e#60#81#0" expanded="true" />
-            <element signature="e#213#225#0" expanded="true" />
-            <element signature="e#336#348#0" expanded="true" />
-            <element signature="e#416#591#0" expanded="false" />
-            <element signature="e#594#986#0" expanded="false" />
-            <element signature="e#989#1378#0" expanded="false" />
-            <element signature="e#1384#1998#0" expanded="false" />
-            <element signature="e#2017#2356#0" expanded="false" />
-            <element signature="e#2362#2850#0" expanded="false" />
+            <element signature="e#5979#6429#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -1012,21 +962,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scheduler/cc_scheduler.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="456">
-          <caret line="84" column="42" lean-forward="false" selection-start-line="84" selection-start-column="42" selection-end-line="84" selection-end-column="42" />
-          <folding>
-            <element signature="e#284#622#0" expanded="false" />
-            <element signature="e#625#1017#0" expanded="false" />
-            <element signature="e#1020#1409#0" expanded="false" />
-            <element signature="e#1415#2029#0" expanded="false" />
-            <element signature="e#2048#2387#0" expanded="false" />
-            <element signature="e#2393#4152#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ycsb/ycsb_database.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="192">
@@ -1043,15 +978,40 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ycsb/ycsb_workload.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="744">
-          <caret line="168" column="36" lean-forward="false" selection-start-line="168" selection-start-column="21" selection-end-line="168" selection-end-column="36" />
+        <state relative-caret-position="4032">
+          <caret line="169" column="24" lean-forward="false" selection-start-line="169" selection-start-column="24" selection-end-line="169" selection-end-column="24" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scheduler/thread.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="216">
+          <caret line="24" column="67" lean-forward="false" selection-start-line="24" selection-start-column="67" selection-end-line="24" selection-end-column="67" />
           <folding>
-            <element signature="e#84#793#0" expanded="false" />
-            <element signature="e#795#1181#0" expanded="false" />
-            <element signature="e#1183#1456#0" expanded="false" />
-            <element signature="e#1183#3436#0" expanded="false" />
-            <element signature="e#3438#6019#0" expanded="false" />
-            <element signature="e#6509#6564#0" expanded="false" />
+            <element signature="e#217#229#0" expanded="true" />
+            <element signature="e#265#635#0" expanded="false" />
+            <element signature="e#757#2257#0" expanded="false" />
+            <element signature="e#2976#3598#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scheduler/simple_scheduler.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="583">
+          <caret line="98" column="50" lean-forward="false" selection-start-line="98" selection-start-column="50" selection-end-line="98" selection-end-column="50" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scheduler/cc_scheduler.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="667">
+          <caret line="117" column="13" lean-forward="false" selection-start-line="117" selection-start-column="13" selection-end-line="117" selection-end-column="13" />
+          <folding>
+            <element signature="e#63#84#0" expanded="true" />
+            <element signature="e#250#262#0" expanded="true" />
           </folding>
         </state>
       </provider>

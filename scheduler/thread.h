@@ -5,9 +5,9 @@
 #include "database.h"
 #include "manager.h"
 #include "query.h"
+#include "tbb/concurrent_queue.h"
 #include "txn.h"
 #include "vll.h"
-#include "tbb/concurrent_queue.h"
 
 template <typename T> class WorkerThread {
   public:
@@ -17,7 +17,7 @@ template <typename T> class WorkerThread {
         this->global_txn_id = thread_txn_id * FLAGS_threads + thread_id;
         this->db = db;
         this->manager = this->db->get_txn_man(thread_id);
-	this->done = false;
+        this->done = false;
         glob_manager->set_txn_man(manager);
         stats.init(thread_id);
     }
@@ -122,7 +122,7 @@ template <typename T> class WorkerThread {
     uint64_t thread_txn_id;
     ts_t current_timestamp;
     Database *db;
-    tbb::concurrent_queue<Query<T>*> input_queue;
+    tbb::concurrent_queue<Query<T> *> input_queue;
     TimedAbortBuffer<T> abort_buffer;
     txn_man *manager;
 };

@@ -1,41 +1,34 @@
 #ifndef DBX1000_THREAD_H
 #define DBX1000_THREAD_H
 
+#include "abort_buffer.h"
 #include "database.h"
 #include "manager.h"
 #include "query.h"
 #include "txn.h"
 #include "vll.h"
-#include "abort_buffer.h"
-#include <tbb/concurrent_queue.h>
-using namespace tbb;
+#include "tbb/concurrent_queue.h"
 
-template <typename T>
-using QueryPCQueue = concurrent_queue<Query<T> *>;
-
-template <typename T>
-class WorkerThread {
-public:
+template <typename T> class WorkerThread {
+  public:
     void initialize(uint32_t id, Database *db) {
         this->thread_id = id;
         this->thread_txn_id = 0;
         this->global_txn_id = thread_txn_id * FLAGS_threads + thread_id;
         this->db = db;
         this->manager = this->db->get_txn_man(thread_id);
+	this->done = false;
         glob_manager->set_txn_man(manager);
         stats.init(thread_id);
     }
 
-    void submit_query(Query<T> *query) {
-        input_queue.push(query);
-    }
+    void submit_query(Query<T> *query) { input_queue.push(query); }
 
     void ask_to_stop() { this->done = true; }
 
     void run() {
         auto rc = RCOK;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
-
         while (!done) {
             if (!abort_buffer.get_ready_query(chosen_query)) {
                 if (!input_queue.try_pop(chosen_query)) {
@@ -91,7 +84,7 @@ public:
         }
     }
 
-protected:
+  protected:
     RC run_query(Query<T> *query) {
         // Prepare transaction manager
         RC rc = RCOK;
@@ -129,7 +122,7 @@ protected:
     uint64_t thread_txn_id;
     ts_t current_timestamp;
     Database *db;
-    QueryPCQueue<T> input_queue;
+    tbb::concurrent_queue<Query<T>*> input_queue;
     TimedAbortBuffer<T> abort_buffer;
     txn_man *manager;
 };

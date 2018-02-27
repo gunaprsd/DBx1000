@@ -14,7 +14,7 @@ class CCScheduler : public IOnlineScheduler<T> {
 	CCScheduler(uint64_t num_threads) {
         _num_threads = num_threads;
         _threads = (WorkerThread<T> *)_mm_malloc(sizeof(WorkerThread<T>) * _num_threads, 64);
-		uint64_t size = AccessIterator<ycsb_params>::get_max_key();
+		uint64_t size = AccessIterator<T>::get_max_key();
 		data_next_pointer = new uint64_t[size];
 		for (uint64_t i = 0; i < size; i++) {
 			data_next_pointer[i] = 0;
@@ -90,7 +90,7 @@ class CCScheduler : public IOnlineScheduler<T> {
 
 	    uint64_t cnt = 0;
         QueryIterator<T>* iterator = scheduler->_loader->get_queries_list(thread_id);
-	    uint32_t chosen_core = UINT32_MAX;
+	    int64_t chosen_core = -1;
 	    while(!iterator->done()) {
 		    Query<T>* query = iterator->next();
 		    ReadWriteSet rwset;
@@ -103,12 +103,14 @@ class CCScheduler : public IOnlineScheduler<T> {
 			    BaseQuery **incoming_loc =
 					    reinterpret_cast<BaseQuery **>(scheduler->data_next_pointer[rwset.accesses[i].key]);
 			    if (incoming_loc != 0) {
-				    chosen_core = static_cast<uint32_t>((*incoming_loc)->core);
+				    chosen_core = (*incoming_loc)->core;
 				    break;
 			    }
 		    }
 
-		    ((atomic<uint32_t>*)& (query->core))->store(chosen_core);
+		    if(chosen_core == -1) {
+			    ((atomic<int64_t>*)& (query->core))->store(chosen_core);
+		    }
 
 		    for (uint64_t i = 0; i < rwset.num_accesses; i++) {
 			    bool added = false;

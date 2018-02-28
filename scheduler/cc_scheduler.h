@@ -10,6 +10,7 @@
 #include <atomic>
 using namespace std;
 
+
 template <typename T> class CCScheduler : public IOnlineScheduler<T> {
   public:
     CCScheduler(uint64_t num_threads, Database *db) {

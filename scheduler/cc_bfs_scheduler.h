@@ -11,6 +11,13 @@
 #include <atomic>
 using namespace std;
 
+/*
+ * The scheduling algorithm works as follows:
+ * The submit process tries to create a connected component out of the
+ * transactions. It submits only the first transaction that is
+ * in the connected component.
+ *
+ */
 template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
 public:
 	CCBFSScheduler(uint64_t num_threads, Database *db) {
@@ -81,7 +88,7 @@ protected:
 	static void *execute_helper(void *ptr) {
 		// Threads must be initialize before
 		auto data = (ThreadLocalData *)ptr;
-		auto executor = (CCScheduler<T> *)data->fields[0];
+		auto executor = (CCBFSScheduler<T> *)data->fields[0];
 		auto thread_id = data->fields[1];
 		set_affinity(thread_id);
 		executor->_threads[thread_id].run();
@@ -91,7 +98,7 @@ protected:
 	static void *submit_helper(void *ptr) {
 		// Threads must be initialize before
 		auto data = (ThreadLocalData *)ptr;
-		auto scheduler = (CCScheduler<T> *)data->fields[0];
+		auto scheduler = (CCBFSScheduler<T> *)data->fields[0];
 		auto thread_id = data->fields[1];
 
 		uint64_t cnt = 0;
@@ -104,22 +111,7 @@ protected:
 			ReadWriteSet rwset;
 			query->obtain_rw_set(&rwset);
 			query->num_links = rwset.num_accesses;
-
-			for (uint64_t i = 0; i < rwset.num_accesses; i++) {
-				BaseQuery **incoming_loc = reinterpret_cast<BaseQuery **>(
-						scheduler->data_next_pointer[rwset.accesses[i].key]);
-				if (incoming_loc != 0) {
-					chosen_core = (*incoming_loc)->core;
-					break;
-				}
-			}
-
-			if (chosen_core == -1) {
-				chosen_core = gen.nextInt64(0) % scheduler->_num_threads;
-			}
-			assert(chosen_core >= 0 && chosen_core < (int64_t)scheduler->_num_threads);
-			query->core = chosen_core;
-
+			bool first_in_cc = true;
 			for (uint64_t i = 0; i < rwset.num_accesses; i++) {
 				bool added = false;
 				BaseQuery **outgoing_loc = &(query->links[i].next);
@@ -133,12 +125,16 @@ protected:
 						cnt++;
 						if (incoming_loc != 0) {
 							*incoming_loc = query;
+							first_in_cc = false;
 						}
 					}
 				}
 			}
 
-			scheduler->_threads[chosen_core].submit_query(query);
+			if(first_in_cc) {
+				chosen_core = gen.nextInt64(0) % scheduler->_num_threads;
+				scheduler->_threads[chosen_core].submit_query(query);
+			}
 		}
 		return nullptr;
 	}

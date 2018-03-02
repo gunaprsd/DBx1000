@@ -95,4 +95,12 @@ protected:
 	double* txn;
 	double* means;
 };
+
+class ConnectedComponentPartitioner: public BasePartitioner {
+public:
+	explicit ConnectedComponentPartitioner(uint32_t num_clusters);
+protected:
+	void do_partition();
+};
+
 #endif // DBX1000_PARTITIONER_H

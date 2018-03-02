@@ -1,4 +1,7 @@
+#include <queue>
+#include <stack>
 #include "partitioner.h"
+using namespace std;
 
 BasePartitioner::BasePartitioner(uint32_t num_clusters)
     : old_objective_value(0), converged(false), _num_clusters(num_clusters), _rand(1),
@@ -714,4 +717,83 @@ void KMeansPartitioner::do_iteration() {
     delete other_means;
 
     PRINT_INFO(lf, "Iteration-Duration", duration);
+}
+
+ConnectedComponentPartitioner::ConnectedComponentPartitioner(uint32_t num_clusters) : BasePartitioner(num_clusters) {
+
+}
+
+void ConnectedComponentPartitioner::do_partition() {
+    idx_t visited_count = 0;
+    idx_t num_txn_nodes =  graph_info->num_txn_nodes;
+    idx_t num_nodes = graph_info->num_txn_nodes + graph_info->num_data_nodes;
+    idx_t unvisited_next_txn_node = 0;
+    idx_t chosen_core = 0;
+    while(visited_count < num_nodes) {
+        // Take the next unvisited txn node and add to bfs queue
+        queue<idx_t> nodes_queue;
+        nodes_queue.push(unvisited_next_txn_node);
+
+        while(!nodes_queue.empty()) {
+            // Take the next node in the bfs queue
+            idx_t node = nodes_queue.front();
+            nodes_queue.pop();
+
+            if(node > num_txn_nodes) {
+                // obtain data node info
+                idx_t inv_idx = node - graph_info->num_txn_nodes;
+                uint64_t key = graph_info->data_inv_idx[inv_idx];
+                auto info = &(graph_info->data_info[key]);
+
+                // mark visited and assign core
+                assert(info->iteration != iteration);
+                info->assigned_core = chosen_core;
+                info->iteration = iteration;
+
+                // add all unvisited children to queue
+                for(auto txn_id : info->read_txns) {
+                    if(graph_info->txn_info[txn_id].iteration != iteration) {
+                        nodes_queue.push(txn_id);
+                    }
+                }
+                for(auto txn_id : info->write_txns) {
+                    if(graph_info->txn_info[txn_id].iteration != iteration) {
+                        nodes_queue.push(txn_id);
+                    }
+                }
+            } else {
+                // obtain txn node info
+                auto info = &(graph_info->txn_info[node]);
+
+                // mark visited and assign core
+                assert(info->iteration != iteration);
+                info->assigned_core = chosen_core;
+                info->iteration = iteration;
+
+                // add all unvisited children
+                for(uint32_t i = 0; i < info->rwset.num_accesses; i++) {
+                    auto key = info->rwset.accesses[i].key;
+                    auto data_info = &(graph_info->data_info[key]);
+                    if(data_info->iteration != iteration) {
+                        for(uint64_t j = 0; j < _num_clusters; j++) {
+                            data_info->core_weights[j] = 0;
+                        }
+                        nodes_queue.push(data_info->id);
+                    }
+                    data_info->core_weights[chosen_core]++;
+                }
+            }
+
+            visited_count++;
+        }
+
+        if(visited_count < num_nodes) {
+            for(; unvisited_next_txn_node < num_txn_nodes; unvisited_next_txn_node++) {
+                if(graph_info->txn_info[unvisited_next_txn_node].iteration != iteration) {
+                    break;
+                }
+            }
+            chosen_core++;
+        }
+    }
 }

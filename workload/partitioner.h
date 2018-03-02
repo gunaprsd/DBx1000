@@ -12,7 +12,6 @@ class BasePartitioner {
   public:
     void partition(uint64_t id, GraphInfo *_graph_info, ClusterInfo *_cluster_info,
                    RuntimeInfo *_runtime_info);
-
   protected:
     uint64_t old_objective_value;
     bool converged;
@@ -31,6 +30,10 @@ class BasePartitioner {
     virtual void do_partition() = 0;
 };
 
+/*
+ * Construct the conflict graph and use METIS graph partitioner
+ * library to cluster the transaction nodes with the size constraints
+ */
 class ConflictGraphPartitioner : public BasePartitioner {
   public:
     ConflictGraphPartitioner(uint32_t num_clusters);
@@ -44,6 +47,11 @@ class ConflictGraphPartitioner : public BasePartitioner {
     void do_partition() override;
 };
 
+/*
+ * Construct the access graph and use METIS
+ * graph partitioning library to cluster both the
+ * transaction and data nodes with size constraints
+ */
 class AccessGraphPartitioner : public BasePartitioner {
   public:
     AccessGraphPartitioner(uint32_t num_clusters);
@@ -58,10 +66,17 @@ class AccessGraphPartitioner : public BasePartitioner {
     void do_partition() override;
 };
 
+/*
+ * Construct the bipartite access graph and use a two-step
+ * iterative algorithm to converge to a solution.
+ * 1. Initially data is allocated randomly.
+ * 2. Allot transaction based on which core yields maximum savings
+ * 3. Re-allot data items based on which core has maximum number of
+ * txns accessing it
+ */
 class HeuristicPartitioner1 : public BasePartitioner {
   public:
     HeuristicPartitioner1(uint32_t num_clusters);
-
   protected:
     virtual void internal_txn_partition();
     virtual void internal_data_partition();
@@ -69,22 +84,32 @@ class HeuristicPartitioner1 : public BasePartitioner {
     virtual void do_partition() override;
 };
 
+/*
+ * A variant of two step algorithm. Allot transaction also
+ * based on the impact of savings.
+ */
 class HeuristicPartitioner2 : public HeuristicPartitioner1 {
   public:
     HeuristicPartitioner2(uint32_t num_clusters);
-
   protected:
     virtual void internal_txn_partition(uint64_t iteration);
 };
 
-class HeuristicPartitioner3 : public HeuristicPartitioner2 {
+/*
+ * Another variant in which initial data partition is done
+ * more carefully.
+ */
+class HeuristicPartitioner3 : public HeuristicPartitioner1 {
   public:
     HeuristicPartitioner3(uint32_t num_clusters);
-
   protected:
     void init_data_partition();
 };
 
+/*
+ * A k-means partitioner that represents each transaction in a d-dimensional
+ * space and clusters them based on k-means clustering.
+ */
 class KMeansPartitioner : public BasePartitioner {
 public:
 	KMeansPartitioner(uint32_t num_clusters);
@@ -96,6 +121,10 @@ protected:
 	double* means;
 };
 
+/*
+ * Finds the connected components through a breadth-first search
+ * of the access graph.
+ */
 class ConnectedComponentPartitioner: public BasePartitioner {
 public:
 	explicit ConnectedComponentPartitioner(uint32_t num_clusters);

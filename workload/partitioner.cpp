@@ -439,22 +439,12 @@ void HeuristicPartitioner1::internal_data_partition() {
 
 void HeuristicPartitioner1::init_data_partition() {
     // Random allocation of data items
-    for (auto key : graph_info->data_inv_idx) {
+    RandomNumberGenerator gen(1);
+    gen.seed(0, FLAGS_seed);
+    for(auto key : graph_info->data_inv_idx) {
+        idx_t chosen_core = gen.nextInt64(0) % _num_clusters;
         auto info = &(graph_info->data_info[key]);
-        info->assigned_core = -1;
-    }
-
-    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-        auto rwset = &(graph_info->txn_info[i].rwset);
-
-        idx_t chosen_core = i % _num_clusters;
-        for (auto j = 0u; j < rwset->num_accesses; j++) {
-            auto key = rwset->accesses[j].key;
-            auto info = &(graph_info->data_info[key]);
-            if (info->assigned_core == -1) {
-                info->assigned_core = chosen_core;
-            }
-        }
+        info->assigned_core = chosen_core;
     }
 }
 
@@ -592,7 +582,23 @@ HeuristicPartitioner3::HeuristicPartitioner3(uint32_t num_clusters)
     : HeuristicPartitioner2(num_clusters) {}
 
 void HeuristicPartitioner3::init_data_partition() {
-    // TODO do something!!
+    for (auto key : graph_info->data_inv_idx) {
+        auto info = &(graph_info->data_info[key]);
+        info->assigned_core = -1;
+    }
+
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        auto rwset = &(graph_info->txn_info[i].rwset);
+
+        idx_t chosen_core = i % _num_clusters;
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
+            if (info->assigned_core == -1) {
+                info->assigned_core = chosen_core;
+            }
+        }
+    }
 }
 
 KMeansPartitioner::KMeansPartitioner(uint32_t num_clusters)

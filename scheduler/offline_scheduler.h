@@ -31,6 +31,8 @@ class OfflineScheduler {
             partitioner = new HeuristicPartitioner3(num_threads);
         } else if (FLAGS_parttype == "kmeans") {
             partitioner = new KMeansPartitioner(num_threads);
+	} else if (FLAGS_parttype == "connected_component") {
+            partitioner = new ConnectedComponentPartitioner(num_threads);
 	} else {
             assert(false);
         }

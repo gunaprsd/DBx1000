@@ -1,6 +1,6 @@
+#include "partitioner.h"
 #include <queue>
 #include <stack>
-#include "partitioner.h"
 using namespace std;
 
 BasePartitioner::BasePartitioner(uint32_t num_clusters)
@@ -596,22 +596,21 @@ void HeuristicPartitioner3::init_data_partition() {
 }
 
 KMeansPartitioner::KMeansPartitioner(uint32_t num_clusters)
-        : BasePartitioner(num_clusters), dim(FLAGS_kmeans_dim) {
-}
+    : BasePartitioner(num_clusters), dim(FLAGS_kmeans_dim) {}
 
 void KMeansPartitioner::do_partition() {
     txn = new double[dim * graph_info->num_txn_nodes];
     means = new double[dim * _num_clusters];
 
-    //initialize with txn vectors
-    for(uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-        for(uint64_t j = 0; j < dim; j++) {
+    // initialize with txn vectors
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        for (uint64_t j = 0; j < dim; j++) {
             txn[i * dim + j] = 0;
         }
     }
-    for(uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         auto rwset = &(graph_info->txn_info[i].rwset);
-        for(uint64_t j = 0; j < rwset->num_accesses; j++) {
+        for (uint64_t j = 0; j < rwset->num_accesses; j++) {
             auto key = rwset->accesses[j].key;
             auto part = key % dim;
             txn[i * dim + part] += 1;
@@ -619,14 +618,14 @@ void KMeansPartitioner::do_partition() {
     }
 
     // initialize means
-    for(uint64_t i = 0; i < _num_clusters; i++) {
+    for (uint64_t i = 0; i < _num_clusters; i++) {
         uint64_t chosen = _rand.nextInt64(0) % graph_info->num_txn_nodes;
-        for(uint64_t j = 0; j < dim; j++) {
+        for (uint64_t j = 0; j < dim; j++) {
             means[i * dim + j] = txn[chosen * dim + j];
         }
     }
 
-    for(uint32_t i = 0; i < FLAGS_iterations && !converged; i++) {
+    for (uint32_t i = 0; i < FLAGS_iterations && !converged; i++) {
         auto start_time = get_server_clock();
         do_iteration();
         auto end_time = get_server_clock();
@@ -654,7 +653,7 @@ void KMeansPartitioner::do_iteration() {
     // data structure to store updated mean
     auto counts = new uint64_t[_num_clusters];
     auto other_means = new double[_num_clusters * dim];
-    for(uint64_t k = 0; k < _num_clusters; k++) {
+    for (uint64_t k = 0; k < _num_clusters; k++) {
         counts[k] = 0;
         other_means[k] = 0;
     }
@@ -664,14 +663,14 @@ void KMeansPartitioner::do_iteration() {
         double min_distance = UINT64_MAX;
 
         start_time = get_server_clock();
-        for(uint32_t j = 0; j < _num_clusters; j++) {
+        for (uint32_t j = 0; j < _num_clusters; j++) {
             double diff, distance = 0;
-            for(uint64_t k = 0; k < dim; k++) {
+            for (uint64_t k = 0; k < dim; k++) {
                 diff = (txn[i * dim + k] - means[j * dim + k]);
                 distance += (diff * diff);
             }
 
-            if(distance < min_distance) {
+            if (distance < min_distance) {
                 min_distance = distance;
                 chosen_core = j;
             }
@@ -685,7 +684,7 @@ void KMeansPartitioner::do_iteration() {
         cluster_info->cluster_size[chosen_core] += rwset->num_accesses;
 
         counts[chosen_core]++;
-        for(uint64_t k = 0; k < dim; k++) {
+        for (uint64_t k = 0; k < dim; k++) {
             other_means[chosen_core * dim + k] += txn[i * dim + k];
         }
 
@@ -704,9 +703,9 @@ void KMeansPartitioner::do_iteration() {
         }
     }
 
-    for(uint64_t i = 0; i < _num_clusters; i++) {
-        if(counts[i] > 0) {
-            for(uint64_t k = 0; k < dim; k++) {
+    for (uint64_t i = 0; i < _num_clusters; i++) {
+        if (counts[i] > 0) {
+            for (uint64_t k = 0; k < dim; k++) {
                 other_means[i * dim + k] /= counts[i];
             }
         }
@@ -719,45 +718,49 @@ void KMeansPartitioner::do_iteration() {
     PRINT_INFO(lf, "Iteration-Duration", duration);
 }
 
-ConnectedComponentPartitioner::ConnectedComponentPartitioner(uint32_t num_clusters) : BasePartitioner(num_clusters) {
-
-}
+ConnectedComponentPartitioner::ConnectedComponentPartitioner(uint32_t num_clusters)
+    : BasePartitioner(num_clusters) {}
 
 void ConnectedComponentPartitioner::do_partition() {
+    uint64_t start_time = get_server_clock();
     idx_t visited_count = 0;
-    idx_t num_txn_nodes =  graph_info->num_txn_nodes;
+    idx_t num_txn_nodes = graph_info->num_txn_nodes;
     idx_t num_nodes = graph_info->num_txn_nodes + graph_info->num_data_nodes;
     idx_t unvisited_next_txn_node = 0;
     idx_t chosen_core = 0;
-    while(visited_count < num_nodes) {
+    while (visited_count < num_nodes) {
         // Take the next unvisited txn node and add to bfs queue
         queue<idx_t> nodes_queue;
         nodes_queue.push(unvisited_next_txn_node);
 
-        while(!nodes_queue.empty()) {
+        while (!nodes_queue.empty()) {
             // Take the next node in the bfs queue
             idx_t node = nodes_queue.front();
             nodes_queue.pop();
 
-            if(node > num_txn_nodes) {
+            if (node > num_txn_nodes) {
                 // obtain data node info
                 idx_t inv_idx = node - graph_info->num_txn_nodes;
                 uint64_t key = graph_info->data_inv_idx[inv_idx];
                 auto info = &(graph_info->data_info[key]);
 
                 // mark visited and assign core
-                assert(info->iteration != iteration);
+                if (info->iteration != iteration) {
+                    visited_count++;
+                } else {
+                    continue;
+                }
                 info->assigned_core = chosen_core;
                 info->iteration = iteration;
 
                 // add all unvisited children to queue
-                for(auto txn_id : info->read_txns) {
-                    if(graph_info->txn_info[txn_id].iteration != iteration) {
+                for (auto txn_id : info->read_txns) {
+                    if (graph_info->txn_info[txn_id].iteration != iteration) {
                         nodes_queue.push(txn_id);
                     }
                 }
-                for(auto txn_id : info->write_txns) {
-                    if(graph_info->txn_info[txn_id].iteration != iteration) {
+                for (auto txn_id : info->write_txns) {
+                    if (graph_info->txn_info[txn_id].iteration != iteration) {
                         nodes_queue.push(txn_id);
                     }
                 }
@@ -766,16 +769,20 @@ void ConnectedComponentPartitioner::do_partition() {
                 auto info = &(graph_info->txn_info[node]);
 
                 // mark visited and assign core
-                assert(info->iteration != iteration);
+                if (info->iteration != iteration) {
+                    visited_count++;
+                } else {
+                    continue;
+                }
                 info->assigned_core = chosen_core;
                 info->iteration = iteration;
 
                 // add all unvisited children
-                for(uint32_t i = 0; i < info->rwset.num_accesses; i++) {
+                for (uint32_t i = 0; i < info->rwset.num_accesses; i++) {
                     auto key = info->rwset.accesses[i].key;
                     auto data_info = &(graph_info->data_info[key]);
-                    if(data_info->iteration != iteration) {
-                        for(uint64_t j = 0; j < _num_clusters; j++) {
+                    if (data_info->iteration != iteration) {
+                        for (uint64_t j = 0; j < _num_clusters; j++) {
                             data_info->core_weights[j] = 0;
                         }
                         nodes_queue.push(data_info->id);
@@ -783,17 +790,17 @@ void ConnectedComponentPartitioner::do_partition() {
                     data_info->core_weights[chosen_core]++;
                 }
             }
-
-            visited_count++;
         }
 
-        if(visited_count < num_nodes) {
-            for(; unvisited_next_txn_node < num_txn_nodes; unvisited_next_txn_node++) {
-                if(graph_info->txn_info[unvisited_next_txn_node].iteration != iteration) {
+        if (visited_count < num_nodes) {
+            for (; unvisited_next_txn_node < num_txn_nodes; unvisited_next_txn_node++) {
+                if (graph_info->txn_info[unvisited_next_txn_node].iteration != iteration) {
                     break;
                 }
             }
             chosen_core++;
         }
     }
+    uint64_t end_time = get_server_clock();
+    runtime_info->partition_duration += DURATION(end_time, start_time);
 }

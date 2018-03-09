@@ -1,8 +1,12 @@
 #ifndef SYSTEM_QUERY_H__
 #define SYSTEM_QUERY_H__
 
+#define CONNNECTED_COMP_FIELDS
 #include "global.h"
+#include <tbb/concurrent_queue.h>
+#include <queue>
 
+using namespace tbb;
 enum QueryType { YCSB_QUERY, TPCC_PAYMENT_QUERY, TPCC_NEW_ORDER_QUERY };
 
 /*
@@ -35,7 +39,7 @@ struct ReadWriteSet {
         accesses[num_accesses].table_id = tid;
         accesses[num_accesses].key = key;
         accesses[num_accesses].access_type = access_type;
-	num_accesses++;
+	    num_accesses++;
     }
 };
 
@@ -45,6 +49,13 @@ struct ReadWriteSet {
 template <typename T>
 struct Query : public BaseQuery {
     T params;
+#ifdef CONNNECTED_COMP_FIELDS
+    pthread_mutex_t mutex;
+    bool done_with_this;
+    int64_t owner;
+    queue<Query<T>*>* txn_queue;
+    Query<T>* parent;
+#endif
     void obtain_rw_set(ReadWriteSet* rwset);
 };
 
@@ -138,4 +149,22 @@ template <typename T> class QueryBatch {
     uint64_t _frame_start, _frame_end;
 };
 
+template<typename T>
+Query<T> *find_root(Query<T> *node) {
+    if (node == nullptr) {
+        return nullptr;
+    } else {
+        auto parent = node->parent;
+        auto root = node;
+        while (parent != nullptr) {
+            root = parent;
+            parent = root->parent;
+        }
+        if (root->owner != -1) {
+            return root;
+        } else {
+            return nullptr;
+        }
+    }
+}
 #endif // SYSTEM_QUERY_H__

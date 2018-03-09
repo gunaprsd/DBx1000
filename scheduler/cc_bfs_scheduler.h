@@ -8,6 +8,7 @@
 #include "simple_scheduler.h"
 #include "thread.h"
 #include <atomic>
+
 using namespace std;
 
 /*
@@ -19,7 +20,7 @@ using namespace std;
  */
 template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
   public:
-    CCBFSScheduler(uint64_t num_threads, Database *db) {
+    CCBFSScheduler(uint64_t num_threads, Database *db): gen(num_threads) {
         _db = db;
         _num_threads = num_threads;
         _threads = new WorkerThread<T>[_num_threads];
@@ -34,44 +35,90 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
     }
 
     void submit_queries() {
-	    RandomNumberGenerator gen(1);
-	    gen.seed(0, FLAGS_seed);
-	    for(uint64_t thread_id = 0; thread_id < _num_threads; thread_id++) {
-		    uint64_t cnt = 0;
-		    QueryIterator<T> *iterator = _loader->get_queries_list(thread_id);
-		    int64_t chosen_core = -1;
-		    while (!iterator->done()) {
-			    Query<T> *query = iterator->next();
-			    ReadWriteSet rwset;
-			    query->obtain_rw_set(&rwset);
-			    query->num_links = rwset.num_accesses;
-			    bool first_in_cc = true;
-			    for (uint64_t i = 0; i < rwset.num_accesses; i++) {
-				    bool added = false;
-				    BaseQuery **outgoing_loc = &(query->links[i].next);
-				    while (!added) {
-					    BaseQuery ***incoming_loc_loc = reinterpret_cast<BaseQuery ***>(
-							    &data_next_pointer[rwset.accesses[i].key]);
-					    BaseQuery **incoming_loc = *incoming_loc_loc;
-					    if (__sync_bool_compare_and_swap(incoming_loc_loc, incoming_loc,
-					                                     outgoing_loc)) {
-						    added = true;
-						    cnt++;
-						    if (incoming_loc != 0) {
-							    *incoming_loc = query;
-							    first_in_cc = false;
-						    }
-					    }
-				    }
-			    }
+        for (uint64_t thread_id = 0; thread_id < _num_threads; thread_id++) {
+            QueryIterator<T> *iterator = _loader->get_queries_list(thread_id);
+            while (!iterator->done()) {
+                Query<T> *query = iterator->next();
+                ReadWriteSet rwset;
+                query->obtain_rw_set(&rwset);
+                schedule(query, rwset);
+            }
+        }
+    }
 
-			    if (first_in_cc) {
-				    chosen_core = gen.nextInt64(0) % _num_threads;
-				    _threads[chosen_core].submit_query(query);
-				    printf("Adding a query to core %ld\n", chosen_core);
-			    }
-		    }
-	    }
+    /*
+     * A root is considered invalid if
+     * 1. the owner has been set to -1
+     * 2. or if the Query<T>* value is nullptr
+     */
+
+    void schedule(Query<T> *new_query, const ReadWriteSet &rwset) {
+        uint64_t num_active_cc = 0;
+        uint64_t min_key = UINT64_MAX;
+        uint64_t min_key_index = UINT64_MAX;
+        for (uint64_t i = 0; i < rwset.num_accesses; i++) {
+            auto key = rwset.accesses[i].key;
+            auto current_key_cc = (Query<T> *)data_next_pointer[key];
+            root_cc[i] = find_root<T>(current_key_cc);
+            if (root_cc[i] != nullptr) {
+                num_active_cc++;
+                if (key < min_key) {
+                    min_key_index = i;
+                    min_key = key;
+                }
+            }
+        }
+
+        auto selected_cc = static_cast<Query<T>*>(nullptr);
+        auto submit = false;
+        if (num_active_cc > 0) {
+            selected_cc = root_cc[min_key_index];
+            pthread_mutex_lock(&selected_cc->mutex);
+            if (selected_cc->owner == -1) {
+                // oops! worker marked it done! we need to do this again :(
+                pthread_mutex_unlock(&selected_cc->mutex);
+                return schedule(new_query, rwset);
+            } else {
+                if (selected_cc->txn_queue == nullptr) {
+                    selected_cc->txn_queue = new queue<Query<T> *>();
+                }
+                selected_cc->txn_queue->push(new_query);
+                pthread_mutex_unlock(&selected_cc->mutex);
+
+
+            }
+        } else {
+            selected_cc = new_query;
+            submit = true;
+        }
+
+        // let our data structures know about our scheduling decision
+        for (uint64_t i = 0; i < rwset.num_accesses; i++) {
+            auto key = rwset.accesses[i].key;
+            auto current_key_cc = (Query<T> *)data_next_pointer[key];
+            if (current_key_cc != selected_cc) {
+                // update data_next_pointer array so that all future txns
+                // that touch this gets sent to this new CC
+                while (!ATOM_CAS(data_next_pointer[key], (int64_t)current_key_cc,
+                                 (int64_t)selected_cc)) {
+                    current_key_cc = (Query<T> *)data_next_pointer[key];
+                }
+
+                // update all other CC that txn touches such that
+                // root of their CC points to selected CC
+                pthread_mutex_lock(&current_key_cc->mutex);
+                auto current_key_root = find_root<T>(current_key_cc);
+                if(current_key_root != selected_cc) {
+                    current_key_cc->parent = selected_cc;
+                }
+                pthread_mutex_unlock(&current_key_cc->mutex);
+            }
+        }
+
+        if(submit) {
+            auto core = gen.nextInt64(0) % _num_threads;
+            _threads[core].submit_query(selected_cc);
+        }
     }
 
     void run_workers() {
@@ -130,6 +177,10 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
     ParallelWorkloadLoader<T> *_loader;
     uint64_t *data_next_pointer;
     Database *_db;
+
+    // Some helpers
+    RandomNumberGenerator gen;
+    Query<T> *root_cc[MAX_NUM_ACCESSES];
 };
 
 #endif // DBX1000_CC_BFS_SCHEDULER_H

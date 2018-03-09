@@ -114,7 +114,7 @@ SET(SRC_LIST cc/occ.h
         scheduler/abort_buffer.h
         scheduler/cc_scheduler.h
         scheduler/cc_bfs_scheduler.h
-        scheduler/bfs_thread.h)
+        scheduler/bfs_thread.h scheduler/cc_bfs_thread.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})

@@ -70,7 +70,6 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
         }
 
         auto selected_cc = static_cast<Query<T>*>(nullptr);
-        auto submit = false;
         if (num_active_cc > 0) {
             selected_cc = root_cc[min_key_index];
             pthread_mutex_lock(&selected_cc->mutex);
@@ -83,13 +82,15 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
                     selected_cc->txn_queue = new queue<Query<T> *>();
                 }
                 selected_cc->txn_queue->push(new_query);
+                assert(selected_cc->owner != -1);
                 pthread_mutex_unlock(&selected_cc->mutex);
-
-
             }
         } else {
             selected_cc = new_query;
-            submit = true;
+            selected_cc->parent = nullptr;
+            selected_cc->owner = 0;
+            auto core = gen.nextInt64(0) % _num_threads;
+            _threads[core].submit_query(selected_cc);
         }
 
         // let our data structures know about our scheduling decision
@@ -113,11 +114,6 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
                 }
                 pthread_mutex_unlock(&current_key_cc->mutex);
             }
-        }
-
-        if(submit) {
-            auto core = gen.nextInt64(0) % _num_threads;
-            _threads[core].submit_query(selected_cc);
         }
     }
 

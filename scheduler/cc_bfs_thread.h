@@ -54,6 +54,7 @@ template <typename T> class WorkerThread {
                     // still a separate connected component
                     if(!chosen_cc->done_with_this) {
                         chosen_query = chosen_cc;
+                        chosen_cc->done_with_this = true;
                     } else {
                         if(chosen_cc->txn_queue == nullptr) {
                             // no additional txns in CC
@@ -80,6 +81,7 @@ template <typename T> class WorkerThread {
                         // add own txn
                         if(!chosen_cc->done_with_this) {
                             root_cc->txn_queue->push(chosen_cc);
+                            chosen_cc->done_with_this = true;
                         }
                         // add all in the txn_queue
                         if(chosen_cc->txn_queue != nullptr) {
@@ -93,9 +95,11 @@ template <typename T> class WorkerThread {
                     }
                     pthread_mutex_unlock(&root_cc->mutex);
                 }
-
                 pthread_mutex_unlock(&chosen_cc->mutex);
+
                 if(move_to_next_cc) {
+                    assert(chosen_cc->done_with_this);
+                    assert(chosen_cc->txn_queue == nullptr || chosen_cc->txn_queue->empty());
                     chosen_cc = nullptr;
                     continue;
                 }

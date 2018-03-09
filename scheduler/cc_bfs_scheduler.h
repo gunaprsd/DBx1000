@@ -107,12 +107,14 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
 
                 // update all other CC that txn touches such that
                 // root of their CC points to selected CC
-                pthread_mutex_lock(&current_key_cc->mutex);
-                auto current_key_root = find_root<T>(current_key_cc);
-                if(current_key_root != selected_cc) {
-                    current_key_cc->parent = selected_cc;
+                if(current_key_cc != nullptr) {
+                    pthread_mutex_lock(&current_key_cc->mutex);
+                    auto current_key_root = find_root<T>(current_key_cc);
+                    if(current_key_root != selected_cc) {
+                        current_key_cc->parent = selected_cc;
+                    }
+                    pthread_mutex_unlock(&current_key_cc->mutex);
                 }
-                pthread_mutex_unlock(&current_key_cc->mutex);
             }
         }
     }

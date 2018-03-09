@@ -13,9 +13,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c244eca0-0039-459c-b54d-e525f055ed8a" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/scheduler/cc_bfs_scheduler.h" afterPath="$PROJECT_DIR$/scheduler/cc_bfs_scheduler.h" />
-      <change beforePath="$PROJECT_DIR$/scheduler/cc_bfs_thread.h" afterPath="$PROJECT_DIR$/scheduler/cc_bfs_thread.h" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -44,15 +42,15 @@
       <file leaf-file-name="cc_bfs_scheduler.h" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/scheduler/cc_bfs_scheduler.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="144">
-              <caret line="71" column="59" lean-forward="false" selection-start-line="71" selection-start-column="59" selection-end-line="71" selection-end-column="59" />
+            <state relative-caret-position="637">
+              <caret line="116" column="17" lean-forward="false" selection-start-line="116" selection-start-column="17" selection-end-line="116" selection-end-column="17" />
               <folding>
                 <element signature="e#250#470#0" expanded="false" />
                 <element signature="e#559#1050#0" expanded="false" />
                 <element signature="e#1056#1480#0" expanded="false" />
                 <element signature="e#1486#1621#0" expanded="false" />
-                <element signature="e#5560#5901#0" expanded="false" />
-                <element signature="e#5907#6021#0" expanded="false" />
+                <element signature="e#5650#5991#0" expanded="false" />
+                <element signature="e#5997#6111#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -418,12 +416,12 @@
       <workItem from="1519865234673" duration="3325000" />
       <workItem from="1520046218970" duration="156000" />
       <workItem from="1520563797649" duration="23000" />
-      <workItem from="1520563854312" duration="12567000" />
+      <workItem from="1520563854312" duration="12684000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="314451000" />
+    <option name="totallyTimeSpent" value="314568000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="2560" height="1440" extended-state="6" />
@@ -919,15 +917,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/scheduler/cc_bfs_scheduler.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="144">
-          <caret line="71" column="59" lean-forward="false" selection-start-line="71" selection-start-column="59" selection-end-line="71" selection-end-column="59" />
+        <state relative-caret-position="637">
+          <caret line="116" column="17" lean-forward="false" selection-start-line="116" selection-start-column="17" selection-end-line="116" selection-end-column="17" />
           <folding>
             <element signature="e#250#470#0" expanded="false" />
             <element signature="e#559#1050#0" expanded="false" />
             <element signature="e#1056#1480#0" expanded="false" />
             <element signature="e#1486#1621#0" expanded="false" />
-            <element signature="e#5560#5901#0" expanded="false" />
-            <element signature="e#5907#6021#0" expanded="false" />
+            <element signature="e#5650#5991#0" expanded="false" />
+            <element signature="e#5997#6111#0" expanded="false" />
           </folding>
         </state>
       </provider>

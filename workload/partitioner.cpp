@@ -475,7 +475,7 @@ void HeuristicPartitioner1::do_partition() {
 HeuristicPartitioner2::HeuristicPartitioner2(uint32_t num_clusters)
     : HeuristicPartitioner1(num_clusters) {}
 
-void HeuristicPartitioner2::internal_txn_partition(uint64_t iteration) {
+void HeuristicPartitioner2::internal_txn_partition() {
     // change this to ensure that core_weights array for
     // data items are updated properly
     iteration++;
@@ -579,7 +579,7 @@ void HeuristicPartitioner2::internal_txn_partition(uint64_t iteration) {
 }
 
 HeuristicPartitioner3::HeuristicPartitioner3(uint32_t num_clusters)
-    : HeuristicPartitioner2(num_clusters) {}
+    : HeuristicPartitioner1(num_clusters) {}
 
 void HeuristicPartitioner3::init_data_partition() {
     for (auto key : graph_info->data_inv_idx) {

@@ -92,7 +92,7 @@ class HeuristicPartitioner2 : public HeuristicPartitioner1 {
   public:
     HeuristicPartitioner2(uint32_t num_clusters);
   protected:
-    virtual void internal_txn_partition(uint64_t iteration);
+    virtual void internal_txn_partition() override;
 };
 
 /*

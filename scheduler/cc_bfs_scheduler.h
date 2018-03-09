@@ -6,7 +6,7 @@
 #include "loader.h"
 #include "query.h"
 #include "simple_scheduler.h"
-#include "thread.h"
+#include "cc_bfs_thread.h"
 #include <atomic>
 
 using namespace std;
@@ -16,14 +16,13 @@ using namespace std;
  * The submit process tries to create a connected component out of the
  * transactions. It submits only the first transaction that is
  * in the connected component.
- *
  */
 template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
   public:
-    CCBFSScheduler(uint64_t num_threads, Database *db): gen(num_threads) {
+    CCBFSScheduler(uint64_t num_threads, Database *db) : gen(num_threads) {
         _db = db;
         _num_threads = num_threads;
-        _threads = new WorkerThread<T>[_num_threads];
+        _threads = new CCBFSThread<T>[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
             _threads[i].initialize(i, db);
         }
@@ -35,7 +34,9 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
     }
 
     void submit_queries() {
-        for (uint64_t thread_id = 0; thread_id < _num_threads; thread_id++) {
+      num_submitted  = 0;
+      num_delegated = 0;
+      for (uint64_t thread_id = 0; thread_id < _num_threads; thread_id++) {
             QueryIterator<T> *iterator = _loader->get_queries_list(thread_id);
             while (!iterator->done()) {
                 Query<T> *query = iterator->next();
@@ -44,6 +45,8 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
                 schedule(query, rwset);
             }
         }
+        PRINT_INFO(lu, "Num-Submitted", num_submitted);
+        PRINT_INFO(lu, "Num-Delegated", num_delegated);
     }
 
     /*
@@ -69,7 +72,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
             }
         }
 
-        auto selected_cc = static_cast<Query<T>*>(nullptr);
+        auto selected_cc = static_cast<Query<T> *>(nullptr);
         if (num_active_cc > 0) {
             selected_cc = root_cc[min_key_index];
             pthread_mutex_lock(&selected_cc->mutex);
@@ -82,6 +85,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
                     selected_cc->txn_queue = new queue<Query<T> *>();
                 }
                 selected_cc->txn_queue->push(new_query);
+                num_delegated++;
                 assert(selected_cc->owner != -1);
                 pthread_mutex_unlock(&selected_cc->mutex);
             }
@@ -91,6 +95,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
             selected_cc->owner = 0;
             auto core = gen.nextInt64(0) % _num_threads;
             _threads[core].submit_query(selected_cc);
+            num_submitted++;
         }
 
         // let our data structures know about our scheduling decision
@@ -107,10 +112,10 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
 
                 // update all other CC that txn touches such that
                 // root of their CC points to selected CC
-                if(current_key_cc != nullptr) {
+                if (current_key_cc != nullptr) {
                     pthread_mutex_lock(&current_key_cc->mutex);
                     auto current_key_root = find_root<T>(current_key_cc);
-                    if(current_key_root != selected_cc) {
+                    if (current_key_root != selected_cc) {
                         current_key_cc->parent = selected_cc;
                     }
                     pthread_mutex_unlock(&current_key_cc->mutex);
@@ -171,7 +176,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
     }
 
     uint64_t _num_threads;
-    WorkerThread<T> *_threads;
+    CCBFSThread<T> *_threads;
     ParallelWorkloadLoader<T> *_loader;
     uint64_t *data_next_pointer;
     Database *_db;
@@ -179,6 +184,8 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
     // Some helpers
     RandomNumberGenerator gen;
     Query<T> *root_cc[MAX_NUM_ACCESSES];
+    uint64_t num_submitted;
+    uint64_t num_delegated;
 };
 
 #endif // DBX1000_CC_BFS_SCHEDULER_H

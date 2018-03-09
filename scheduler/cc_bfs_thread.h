@@ -10,7 +10,7 @@
 #include "txn.h"
 #include "vll.h"
 
-template <typename T> class WorkerThread {
+template <typename T> class CCBFSThread {
   public:
     void initialize(uint32_t id, Database *db) {
         this->thread_id = id;
@@ -35,7 +35,6 @@ template <typename T> class WorkerThread {
         while (!done) {
             if(!abort_buffer.get_ready_query(chosen_query)) {
                 // there is no query in abort buffer
-
                 if(move_to_next_cc) {
                     if(input_queue.try_pop(chosen_cc)) {
                         pthread_mutex_lock(&chosen_cc->mutex);
@@ -43,7 +42,8 @@ template <typename T> class WorkerThread {
                         chosen_cc->owner = thread_id;
                         move_to_next_cc = false;
                     } else {
-                        continue;
+		      this->done = true;
+		      continue;
                     }
                 } else {
                     pthread_mutex_lock(&chosen_cc->mutex);

@@ -39,7 +39,7 @@ template <typename T> class CCBFSThread {
                     if(input_queue.try_pop(chosen_cc)) {
                         pthread_mutex_lock(&chosen_cc->mutex);
                         chosen_cc->done_with_this = false;
-                        chosen_cc->owner = thread_id;
+                        chosen_cc->owner = thread_id + 1;
                         move_to_next_cc = false;
                     } else {
 		      this->done = true;
@@ -92,6 +92,12 @@ template <typename T> class CCBFSThread {
                         }
                         chosen_cc->owner = -1;
                         move_to_next_cc = true;
+                    }
+
+                    if(root_cc->owner == 0) {
+                        // no one has taken responsibility -
+                        // so I will!
+                        root_cc->owner = thread_id;
                     }
                     pthread_mutex_unlock(&root_cc->mutex);
                 }

@@ -1,7 +1,6 @@
 #ifndef DBX1000_CC_BFS_THREAD_H
 #define DBX1000_CC_BFS_THREAD_H
 
-
 #include "abort_buffer.h"
 #include "database.h"
 #include "manager.h"
@@ -12,56 +11,57 @@
 
 template <typename T> class CCBFSThread {
   public:
-    void initialize(uint32_t id, Database *db) {
+    void initialize(uint32_t id, Database *db, tbb::concurrent_queue<Query<T> *>* _input_queue) {
         this->thread_id = id;
         this->thread_txn_id = 0;
         this->global_txn_id = thread_txn_id * FLAGS_threads + thread_id;
         this->db = db;
         this->manager = this->db->get_txn_man(thread_id);
         this->done = false;
+        this->input_queue = _input_queue;
         glob_manager->set_txn_man(manager);
         stats.init(thread_id);
     }
-
-    void submit_query(Query<T> *query) { input_queue.push(query); }
 
     void ask_to_stop() { this->done = true; }
 
     void run() {
         auto rc = RCOK;
-        auto chosen_cc = static_cast<Query<T>*>(nullptr);
+        auto chosen_cc = static_cast<Query<T> *>(nullptr);
         auto chosen_query = static_cast<Query<T> *>(nullptr);
         auto move_to_next_cc = true;
         while (!done) {
-            if(!abort_buffer.get_ready_query(chosen_query)) {
+            if (!abort_buffer.get_ready_query(chosen_query)) {
                 // there is no query in abort buffer
-                if(move_to_next_cc) {
-                    if(input_queue.try_pop(chosen_cc)) {
+                if (move_to_next_cc) {
+                    if (input_queue->try_pop(chosen_cc)) {
                         pthread_mutex_lock(&chosen_cc->mutex);
                         chosen_cc->done_with_this = false;
                         chosen_cc->owner = thread_id + 1;
                         move_to_next_cc = false;
                     } else {
-		      this->done = true;
-		      continue;
+                        if(abort_buffer.empty()) {
+                            this->done = true;
+                        }
+                        continue;
                     }
                 } else {
                     pthread_mutex_lock(&chosen_cc->mutex);
                 }
 
                 assert(chosen_cc != nullptr);
-                if(chosen_cc->parent == nullptr) {
+                if (chosen_cc->parent == nullptr) {
                     // still a separate connected component
-                    if(!chosen_cc->done_with_this) {
+                    if (!chosen_cc->done_with_this) {
                         chosen_query = chosen_cc;
                         chosen_cc->done_with_this = true;
                     } else {
-                        if(chosen_cc->txn_queue == nullptr) {
+                        if (chosen_cc->txn_queue == nullptr) {
                             // no additional txns in CC
                             move_to_next_cc = true;
                         } else {
                             // get a txn from queue
-                            if(chosen_cc->txn_queue->empty()) {
+                            if (chosen_cc->txn_queue->empty()) {
                                 move_to_next_cc = true;
                             } else {
                                 chosen_query = chosen_cc->txn_queue->front();
@@ -71,21 +71,21 @@ template <typename T> class CCBFSThread {
                     }
                 } else {
                     // has been merged into a larger CC
-                    auto root_cc =find_root<T>(chosen_cc);
+                    auto root_cc = find_root<T>(chosen_cc);
                     pthread_mutex_lock(&root_cc->mutex);
                     // check if we can actually delegate!
-                    if(root_cc->owner != -1) {
-                        if(root_cc->txn_queue == nullptr) {
-                            root_cc->txn_queue = new queue<Query<T>*>();
+                    if (root_cc->owner != -1) {
+                        if (root_cc->txn_queue == nullptr) {
+                            root_cc->txn_queue = new queue<Query<T> *>();
                         }
                         // add own txn
-                        if(!chosen_cc->done_with_this) {
+                        if (!chosen_cc->done_with_this) {
                             root_cc->txn_queue->push(chosen_cc);
                             chosen_cc->done_with_this = true;
                         }
                         // add all in the txn_queue
-                        if(chosen_cc->txn_queue != nullptr) {
-                            while(!chosen_cc->txn_queue->empty()) {
+                        if (chosen_cc->txn_queue != nullptr) {
+                            while (!chosen_cc->txn_queue->empty()) {
                                 root_cc->txn_queue->push(chosen_cc->txn_queue->front());
                                 chosen_cc->txn_queue->pop();
                             }
@@ -94,7 +94,7 @@ template <typename T> class CCBFSThread {
                         move_to_next_cc = true;
                     }
 
-                    if(root_cc->owner == 0) {
+                    if (root_cc->owner == 0) {
                         // no one has taken responsibility -
                         // so I will!
                         root_cc->owner = thread_id;
@@ -103,7 +103,7 @@ template <typename T> class CCBFSThread {
                 }
                 pthread_mutex_unlock(&chosen_cc->mutex);
 
-                if(move_to_next_cc) {
+                if (move_to_next_cc) {
                     assert(chosen_cc->done_with_this);
                     assert(chosen_cc->txn_queue == nullptr || chosen_cc->txn_queue->empty());
                     chosen_cc = nullptr;
@@ -195,9 +195,9 @@ template <typename T> class CCBFSThread {
     uint64_t thread_txn_id;
     ts_t current_timestamp;
     Database *db;
-    tbb::concurrent_queue<Query<T>*> input_queue;
+    tbb::concurrent_queue<Query<T> *>* input_queue;
     TimedAbortBuffer<T> abort_buffer;
     txn_man *manager;
 };
 
-#endif //DBX1000_CC_BFS_THREAD_H
+#endif // DBX1000_CC_BFS_THREAD_H

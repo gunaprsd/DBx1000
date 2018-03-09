@@ -24,7 +24,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
         _num_threads = num_threads;
         _threads = new CCBFSThread<T>[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
-            _threads[i].initialize(i, db);
+            _threads[i].initialize(i, db, &input_queue);
         }
         uint64_t size = AccessIterator<T>::get_max_key();
         data_next_pointer = new uint64_t[size];
@@ -94,8 +94,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
             selected_cc = new_query;
             selected_cc->parent = nullptr;
             selected_cc->owner = 0;
-            auto core = round_robin_count % _num_threads;
-            _threads[core].submit_query(selected_cc);
+            input_queue.push(selected_cc);
 	        round_robin_count++;
             num_submitted++;
         }
@@ -189,6 +188,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
     uint64_t num_submitted;
     uint64_t num_delegated;
 	uint64_t round_robin_count;
+    tbb::concurrent_queue<Query<T> *> input_queue;
 };
 
 #endif // DBX1000_CC_BFS_SCHEDULER_H

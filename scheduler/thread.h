@@ -26,14 +26,17 @@ template <typename T> class Thread {
         auto rc = RCOK;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
         auto done = false;
+        int32_t tid = static_cast<int32_t>(thread_id);
         while (!done) {
             // get next query
-            if (!scheduler_tree->next(static_cast<int32_t>(thread_id), chosen_query)) {
+            if (!scheduler_tree->next(tid, chosen_query)) {
                 if (submitted_all_queries) {
                     done = true;
                 }
                 continue;
             }
+
+            assert(chosen_query != nullptr);
 
             // prepare manager
             global_txn_id = thread_id + thread_txn_id * FLAGS_threads;
@@ -45,32 +48,26 @@ template <typename T> class Thread {
             auto end_time = get_sys_clock();
             auto duration = end_time - start_time;
 
+            assert(rc == RCOK);
+
             // update general statistics
             INC_STATS(thread_id, run_time, duration);
             INC_STATS(thread_id, latency, duration);
-            if (rc == RCOK) {
-                // update commit statistics
-                INC_STATS(thread_id, txn_cnt, 1);
-                stats.commit(thread_id);
-            } else if (rc == Abort) {
-                // add back to abort buffer
-                abort_buffer.add_query(chosen_query);
-
-                // update abort statistics
-                INC_STATS(thread_id, time_abort, duration);
-                INC_STATS(thread_id, abort_cnt, 1);
-                stats.abort(thread_id);
-            }
+            INC_STATS(thread_id, txn_cnt, 1);
+            stats.commit(thread_id);
         }
     }
     void run_with_abort_buffer() {
         auto rc = RCOK;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
-        while (!submitted_all_queries) {
+        auto done = false;
+        while (!done) {
             if (!abort_buffer.get_ready_query(chosen_query)) {
                 if (!scheduler_tree->next(static_cast<int32_t>(thread_id), chosen_query)) {
                     // no query in abort buffer, no query in transaction_queue
-                    this->submitted_all_queries = true;
+                    if (submitted_all_queries) {
+                        done = true;
+                    }
                     continue;
                 }
             }

@@ -5,8 +5,7 @@
 #include "parser.h"
 #include "partitioner.h"
 
-template <typename T>
-class OfflineScheduler {
+template <typename T> class OfflineScheduler {
   public:
     OfflineScheduler(string input_folder_path, uint32_t num_threads, uint64_t max_batch_size,
                      string output_folder_path)
@@ -15,9 +14,9 @@ class OfflineScheduler {
         // load query matrix into memory
         ParallelWorkloadLoader<T> loader(input_folder_path, num_threads);
         loader.load();
-	loader.get_queries(batch, batch_size);
+        loader.get_queries(batch, batch_size);
         loader.release();
-	assert(batch != nullptr);
+        assert(batch != nullptr);
 
         if (FLAGS_parttype == "access_graph") {
             partitioner = new AccessGraphPartitioner(num_threads);
@@ -31,9 +30,9 @@ class OfflineScheduler {
             partitioner = new HeuristicPartitioner3(num_threads);
         } else if (FLAGS_parttype == "kmeans") {
             partitioner = new KMeansPartitioner(num_threads);
-	} else if (FLAGS_parttype == "connected_component") {
+        } else if (FLAGS_parttype == "connected_component") {
             partitioner = new ConnectedComponentPartitioner(num_threads);
-	} else {
+        } else {
             assert(false);
         }
 
@@ -42,10 +41,9 @@ class OfflineScheduler {
 
         graph_info = new GraphInfo(AccessIterator<T>::get_max_key(), max_batch_size);
         cluster_info = new ClusterInfo(num_threads, AccessIterator<T>::get_num_tables());
-	cluster_info->initialize();
-	runtime_info = new RuntimeInfo();
+        cluster_info->initialize();
+        runtime_info = new RuntimeInfo();
     }
-
     void schedule() {
         auto thread = new pthread_t();
         auto data = new ThreadLocalData();
@@ -138,11 +136,10 @@ class OfflineScheduler {
 #endif
         }
     }
-
     void create_graph_info(uint64_t iteration, uint64_t start, uint64_t end) {
         graph_info->reset();
         // Create the basic access graph
-	    idx_t batch_size = (end - start);
+        idx_t batch_size = (end - start);
         for (idx_t i = 0; i < batch_size; i++) {
             Query<T> *query = &batch[i + start];
             graph_info->txn_info[i].reset(i, iteration);
@@ -151,8 +148,8 @@ class OfflineScheduler {
             graph_info->num_txn_nodes++;
 
             for (uint32_t j = 0; j < rwset->num_accesses; j++) {
-	            auto table_id = rwset->accesses[j].table_id;
-	            auto key = rwset->accesses[j].key;
+                auto table_id = rwset->accesses[j].table_id;
+                auto key = rwset->accesses[j].key;
                 auto info = &graph_info->data_info[key];
                 if (info->epoch != iteration) {
                     // Seeing the data item for the first time
@@ -187,7 +184,6 @@ class OfflineScheduler {
             ACCUMULATE_MAX(graph_info->max_data_degree, data_degree);
         }
     }
-
     static void *schedule_helper(void *ptr) {
         set_affinity(1);
         auto data = reinterpret_cast<ThreadLocalData *>(ptr);
@@ -195,6 +191,8 @@ class OfflineScheduler {
         scheduler->do_schedule();
         return nullptr;
     }
+
+  private:
     const string _input_folder_path;
     const string _output_folder_path;
     const uint32_t _num_threads;

@@ -8,31 +8,31 @@
 #include "txn.h"
 #include "vll.h"
 
-template <typename T>
-class Thread {
-public:
-    void initialize(uint32_t id, Database *db,
-                    ITransactionQueue<T>* scheduler_tree) {
+template <typename T> class Thread {
+  public:
+    void initialize(uint32_t id, Database *db, ITransactionQueue<T> *scheduler_tree) {
         this->thread_id = id;
         this->thread_txn_id = 0;
         this->global_txn_id = thread_txn_id * FLAGS_threads + thread_id;
         this->db = db;
         this->manager = this->db->get_txn_man(thread_id);
-        this->done = false;
+        this->submitted_all_queries = false;
         this->scheduler_tree = scheduler_tree;
         glob_manager->set_txn_man(manager);
         stats.init(thread_id);
     }
-    void ask_to_stop() { this->done = true; }
+    void notify_complete() { this->submitted_all_queries = true; }
     void run() {
         auto rc = RCOK;
-        auto chosen_cc = static_cast<Query<T> *>(nullptr);
         auto chosen_query = static_cast<Query<T> *>(nullptr);
-        auto move_to_next_cc = true;
+        auto done = false;
         while (!done) {
             // get next query
-            if(!scheduler_tree->next(static_cast<int32_t>(thread_id), chosen_query)) {
-                done = true;
+            if (!scheduler_tree->next(static_cast<int32_t>(thread_id), chosen_query)) {
+                if (submitted_all_queries) {
+                    done = true;
+                }
+                continue;
             }
 
             // prepare manager
@@ -66,11 +66,11 @@ public:
     void run_with_abort_buffer() {
         auto rc = RCOK;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
-        while (!done) {
+        while (!submitted_all_queries) {
             if (!abort_buffer.get_ready_query(chosen_query)) {
                 if (!scheduler_tree->next(static_cast<int32_t>(thread_id), chosen_query)) {
-                    // no query in abort buffer, no query in scheduler_tree
-                    this->done = true;
+                    // no query in abort buffer, no query in transaction_queue
+                    this->submitted_all_queries = true;
                     continue;
                 }
             }
@@ -105,6 +105,8 @@ public:
             }
         }
     }
+
+  protected:
     RC run_query(Query<T> *query) {
         // Prepare transaction manager
         RC rc = RCOK;
@@ -148,17 +150,17 @@ public:
             return current_timestamp;
         }
     }
-protected:
-    volatile bool done;
+
+  private:
     uint64_t thread_id;
     uint64_t global_txn_id;
     uint64_t thread_txn_id;
     ts_t current_timestamp;
     Database *db;
-    ITransactionQueue<T>* scheduler_tree;
+    ITransactionQueue<T> *scheduler_tree;
     TimedAbortBuffer<T> abort_buffer;
     txn_man *manager;
+    volatile bool submitted_all_queries;
 };
-
 
 #endif // DBX1000_THREAD_H

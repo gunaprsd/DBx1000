@@ -14,11 +14,9 @@ public:
 		input_queues = new SharedQueryQueue<T>[num_threads];
 		gen.seed(0, FLAGS_seed + 251);
 	}
-
 	bool next(int32_t thread_id, Query<T> *&txn) override {
 		return input_queues[thread_id].try_pop(txn);
 	}
-
 	void add(Query<T> *txn, int32_t thread_id = -1) override {
 		if(thread_id == -1) {
 			thread_id = static_cast<int32_t>(gen.nextInt64(0) % num_threads);
@@ -33,11 +31,9 @@ class SharedQueue : public ITransactionQueue<T> {
 	SharedQueryQueue<T> input_queue;
 public:
 	SharedQueue(int32_t num_threads) : num_threads(num_threads), input_queue() {}
-
 	bool next(int32_t thread_id, Query<T> *&txn) override {
 		return input_queue.try_pop(txn);
 	}
-
 	void add(Query<T> *txn, int32_t thread_id = -1) override {
 		input_queue.push(txn);
 	}

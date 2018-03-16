@@ -164,7 +164,7 @@ TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config, const string &fold
     _loader.load();
 
     // Initialize each thread
-    _scheduler = new SimpleScheduler<tpcc_params>(num_threads, &_db);
+    _scheduler = new Scheduler<tpcc_params>(num_threads, &_db);
 }
 
 void TPCCExecutor::execute() {

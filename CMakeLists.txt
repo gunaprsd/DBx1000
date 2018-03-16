@@ -112,8 +112,7 @@ SET(SRC_LIST cc/occ.h
         workload/partitioner.cpp
         scheduler/scheduler.h
         scheduler/abort_buffer.h
-        scheduler/cc_bfs_scheduler.h
-        scheduler/cc_bfs_thread.h scheduler/scheduler_tree.h
+        scheduler/scheduler_tree.h
         scheduler/queues.h scheduler/scheduler_tree_v1.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)

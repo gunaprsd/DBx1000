@@ -56,11 +56,12 @@ struct Query : public BaseQuery {
     int64_t owner;
     queue<Query<T>*>* txn_queue;
     Query<T>* parent;
-#else if SCHEDULER_TREE_FIELDS
+#endif
+#ifdef SCHEDULER_TREE_FIELDS
 	Query<T>* parent;
 	Query<T>* next;
 	Query<T>* head;
-	Query<T>** children_roots[MAX_NUM_ACCESSES];
+	Query<T>* children_roots[MAX_NUM_ACCESSES];
 	int64_t num_active_children;
 #endif
     void obtain_rw_set(ReadWriteSet* rwset);
@@ -179,7 +180,7 @@ Query<T> *find_root(Query<T> *node) {
 
 
 template<typename T>
-typedef tbb::concurrent_queue<Query<T> *> SharedQueryQueue;
+using SharedQueryQueue = tbb::concurrent_queue<Query<T> *>;
 
 
 template<typename T>

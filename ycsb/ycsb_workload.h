@@ -38,7 +38,7 @@ public:
 protected:
 	YCSBDatabase _db;
 	YCSBWorkloadLoader _loader;
-	IOnlineScheduler<ycsb_params>* _scheduler;
+	Scheduler<ycsb_params>* _scheduler;
 };
 
 

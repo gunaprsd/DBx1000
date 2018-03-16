@@ -7,7 +7,7 @@
 #include "generator.h"
 #include "loader.h"
 #include "thread.h"
-#include "simple_scheduler.h"
+#include "scheduler.h"
 #include "ycsb_database.h"
 
 class YCSBWorkloadGenerator : public ParallelWorkloadGenerator<ycsb_params> {

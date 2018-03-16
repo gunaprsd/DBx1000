@@ -1,5 +1,5 @@
 #include "tpcc_workload.h"
-#include "simple_scheduler.h"
+#include "scheduler.h"
 
 TPCCWorkloadGenerator::TPCCWorkloadGenerator(const TPCCBenchmarkConfig &_config,
                                              uint64_t num_threads, uint64_t size_per_thread,

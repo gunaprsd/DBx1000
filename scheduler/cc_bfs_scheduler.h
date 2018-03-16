@@ -1,6 +1,7 @@
 #ifndef DBX1000_CC_BFS_SCHEDULER_H
 #define DBX1000_CC_BFS_SCHEDULER_H
 
+#ifdef CONNECTED_COMP_FIELDS
 #include "database.h"
 #include "distributions.h"
 #include "loader.h"
@@ -24,7 +25,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
         _num_threads = num_threads;
         _threads = new CCBFSThread<T>[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
-            _threads[i].initialize(i, db, &input_queue);
+            _threads[i].initialize(i, db, &scheduler_tree);
         }
         uint64_t size = AccessIterator<T>::get_max_key();
         data_next_pointer = new uint64_t[size];
@@ -94,7 +95,7 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
             selected_cc = new_query;
             selected_cc->parent = nullptr;
             selected_cc->owner = 0;
-            input_queue.push(selected_cc);
+            scheduler_tree.push(selected_cc);
 	        round_robin_count++;
             num_submitted++;
         }
@@ -188,7 +189,8 @@ template <typename T> class CCBFSScheduler : public IOnlineScheduler<T> {
     uint64_t num_submitted;
     uint64_t num_delegated;
 	uint64_t round_robin_count;
-    tbb::concurrent_queue<Query<T> *> input_queue;
+    tbb::concurrent_queue<Query<T> *> scheduler_tree;
 };
+#endif
 
 #endif // DBX1000_CC_BFS_SCHEDULER_H

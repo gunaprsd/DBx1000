@@ -11,6 +11,7 @@
       <w>coffset</w>
       <w>cpos</w>
       <w>cvtx</w>
+      <w>dequeue</w>
       <w>dest</w>
       <w>edgecut</w>
       <w>ginfo</w>

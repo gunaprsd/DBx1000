@@ -58,4 +58,6 @@ DECLARE_uint32(ufactor);
 DECLARE_uint32(iterations);
 DECLARE_bool(stdev_partitioner);
 DECLARE_uint32(kmeans_dim);
+DECLARE_uint32(scheduler_delay);
+DECLARE_string(scheduler_type);
 #endif //SYSTEM_PARSER_H__

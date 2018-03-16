@@ -1,7 +1,8 @@
 #ifndef SYSTEM_QUERY_H__
 #define SYSTEM_QUERY_H__
 
-#define CONNNECTED_COMP_FIELDS
+//#define CONNNECTED_COMP_FIELDS
+#define SCHEDULER_TREE_FIELDS
 #include "global.h"
 #include <tbb/concurrent_queue.h>
 #include <queue>
@@ -55,6 +56,12 @@ struct Query : public BaseQuery {
     int64_t owner;
     queue<Query<T>*>* txn_queue;
     Query<T>* parent;
+#else if SCHEDULER_TREE_FIELDS
+	Query<T>* parent;
+	Query<T>* next;
+	Query<T>* head;
+	Query<T>** children_roots[MAX_NUM_ACCESSES];
+	int64_t num_active_children;
 #endif
     void obtain_rw_set(ReadWriteSet* rwset);
 };
@@ -149,6 +156,7 @@ template <typename T> class QueryBatch {
     uint64_t _frame_start, _frame_end;
 };
 
+#ifdef CONNECTED_COMP_FIELDS
 template<typename T>
 Query<T> *find_root(Query<T> *node) {
     if (node == nullptr) {
@@ -167,4 +175,18 @@ Query<T> *find_root(Query<T> *node) {
         }
     }
 }
+#endif
+
+
+template<typename T>
+typedef tbb::concurrent_queue<Query<T> *> SharedQueryQueue;
+
+
+template<typename T>
+class ITransactionQueue {
+public:
+	virtual bool next(int32_t thread_id, Query<T> *&txn) = 0;
+	virtual void add(Query<T> *txn, int32_t thread_id = -1) = 0;
+};
+
 #endif // SYSTEM_QUERY_H__

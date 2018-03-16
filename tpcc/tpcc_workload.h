@@ -9,7 +9,7 @@
 #include "offline_scheduler.h"
 #include "tpcc_database.h"
 #include "tpcc_utility.h"
-#include "simple_scheduler.h"
+#include "scheduler.h"
 
 class TPCCWorkloadGenerator : public ParallelWorkloadGenerator<tpcc_params> {
   public:

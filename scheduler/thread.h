@@ -5,34 +5,71 @@
 #include "database.h"
 #include "manager.h"
 #include "query.h"
-#include "tbb/concurrent_queue.h"
 #include "txn.h"
 #include "vll.h"
 
-template <typename T> class WorkerThread {
-  public:
-    void initialize(uint32_t id, Database *db) {
+template <typename T>
+class Thread {
+public:
+    void initialize(uint32_t id, Database *db,
+                    ITransactionQueue<T>* scheduler_tree) {
         this->thread_id = id;
         this->thread_txn_id = 0;
         this->global_txn_id = thread_txn_id * FLAGS_threads + thread_id;
         this->db = db;
         this->manager = this->db->get_txn_man(thread_id);
         this->done = false;
+        this->scheduler_tree = scheduler_tree;
         glob_manager->set_txn_man(manager);
         stats.init(thread_id);
     }
-
-    void submit_query(Query<T> *query) { input_queue.push(query); }
-
     void ask_to_stop() { this->done = true; }
-
     void run() {
+        auto rc = RCOK;
+        auto chosen_cc = static_cast<Query<T> *>(nullptr);
+        auto chosen_query = static_cast<Query<T> *>(nullptr);
+        auto move_to_next_cc = true;
+        while (!done) {
+            // get next query
+            if(!scheduler_tree->next(static_cast<int32_t>(thread_id), chosen_query)) {
+                done = true;
+            }
+
+            // prepare manager
+            global_txn_id = thread_id + thread_txn_id * FLAGS_threads;
+            thread_txn_id++;
+            manager->reset(global_txn_id);
+
+            auto start_time = get_sys_clock();
+            rc = run_query(chosen_query);
+            auto end_time = get_sys_clock();
+            auto duration = end_time - start_time;
+
+            // update general statistics
+            INC_STATS(thread_id, run_time, duration);
+            INC_STATS(thread_id, latency, duration);
+            if (rc == RCOK) {
+                // update commit statistics
+                INC_STATS(thread_id, txn_cnt, 1);
+                stats.commit(thread_id);
+            } else if (rc == Abort) {
+                // add back to abort buffer
+                abort_buffer.add_query(chosen_query);
+
+                // update abort statistics
+                INC_STATS(thread_id, time_abort, duration);
+                INC_STATS(thread_id, abort_cnt, 1);
+                stats.abort(thread_id);
+            }
+        }
+    }
+    void run_with_abort_buffer() {
         auto rc = RCOK;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
         while (!done) {
             if (!abort_buffer.get_ready_query(chosen_query)) {
-                if (!input_queue.try_pop(chosen_query)) {
-                    // no query in abort buffer, no query in input_queue
+                if (!scheduler_tree->next(static_cast<int32_t>(thread_id), chosen_query)) {
+                    // no query in abort buffer, no query in scheduler_tree
                     this->done = true;
                     continue;
                 }
@@ -68,23 +105,6 @@ template <typename T> class WorkerThread {
             }
         }
     }
-
-    ts_t get_next_ts() {
-        if (g_ts_batch_alloc) {
-            if (current_timestamp % g_ts_batch_num == 0) {
-                current_timestamp = glob_manager->get_ts(thread_id);
-                current_timestamp++;
-            } else {
-                current_timestamp++;
-            }
-            return current_timestamp - 1;
-        } else {
-            current_timestamp = glob_manager->get_ts(thread_id);
-            return current_timestamp;
-        }
-    }
-
-  protected:
     RC run_query(Query<T> *query) {
         // Prepare transaction manager
         RC rc = RCOK;
@@ -112,19 +132,33 @@ template <typename T> class WorkerThread {
 #elif CC_ALG == SILO
         rc = manager->run_txn(query);
 #endif
-
         return rc;
     }
-
+    ts_t get_next_ts() {
+        if (g_ts_batch_alloc) {
+            if (current_timestamp % g_ts_batch_num == 0) {
+                current_timestamp = glob_manager->get_ts(thread_id);
+                current_timestamp++;
+            } else {
+                current_timestamp++;
+            }
+            return current_timestamp - 1;
+        } else {
+            current_timestamp = glob_manager->get_ts(thread_id);
+            return current_timestamp;
+        }
+    }
+protected:
     volatile bool done;
     uint64_t thread_id;
     uint64_t global_txn_id;
     uint64_t thread_txn_id;
     ts_t current_timestamp;
     Database *db;
-    tbb::concurrent_queue<Query<T> *> input_queue;
+    ITransactionQueue<T>* scheduler_tree;
     TimedAbortBuffer<T> abort_buffer;
     txn_man *manager;
 };
+
 
 #endif // DBX1000_THREAD_H

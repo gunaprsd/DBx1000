@@ -57,3 +57,7 @@ DEFINE_uint32(ufactor, 5, "Load imbalance tolerance for METIS (1 + x/1000)");
 DEFINE_uint32(iterations, 5, "Number of iterations");
 DEFINE_bool(stdev_partitioner, false, "Partition based on std of savings?");
 DEFINE_uint32(kmeans_dim, 100, "Dimensions for K-Means clustering");
+
+DEFINE_uint32(scheduler_delay, 1000, "Delay between scheduler and worker");
+
+DEFINE_string(scheduler_type, "partitioned_queue", "Options: partitioned_queue, shared_queue, scheduler_tree");

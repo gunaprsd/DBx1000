@@ -1,6 +1,7 @@
 #ifndef DBX1000_CC_BFS_THREAD_H
 #define DBX1000_CC_BFS_THREAD_H
 
+#ifdef CONNECTED_COMP_FIELDS
 #include "abort_buffer.h"
 #include "database.h"
 #include "manager.h"
@@ -18,7 +19,7 @@ template <typename T> class CCBFSThread {
         this->db = db;
         this->manager = this->db->get_txn_man(thread_id);
         this->done = false;
-        this->input_queue = _input_queue;
+        this->scheduler_tree = _input_queue;
         glob_manager->set_txn_man(manager);
         stats.init(thread_id);
     }
@@ -34,7 +35,7 @@ template <typename T> class CCBFSThread {
             if (!abort_buffer.get_ready_query(chosen_query)) {
                 // there is no query in abort buffer
                 if (move_to_next_cc) {
-                    if (input_queue->try_pop(chosen_cc)) {
+                    if (scheduler_tree->try_pop(chosen_cc)) {
                         pthread_mutex_lock(&chosen_cc->mutex);
                         chosen_cc->done_with_this = false;
                         chosen_cc->owner = thread_id + 1;
@@ -195,9 +196,10 @@ template <typename T> class CCBFSThread {
     uint64_t thread_txn_id;
     ts_t current_timestamp;
     Database *db;
-    tbb::concurrent_queue<Query<T> *>* input_queue;
+    tbb::concurrent_queue<Query<T> *>* scheduler_tree;
     TimedAbortBuffer<T> abort_buffer;
     txn_man *manager;
 };
+#endif
 
 #endif // DBX1000_CC_BFS_THREAD_H

@@ -49,7 +49,7 @@
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL,
 // TICTOC, SILO
 // TODO TIMESTAMP does not work at this moment
-#define CC_ALG NONE
+#define CC_ALG NO_WAIT
 #define ISOLATION_LEVEL SERIALIZABLE
 
 // all transactions acquire tuples according to the primary key order.

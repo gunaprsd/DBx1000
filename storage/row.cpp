@@ -50,7 +50,7 @@ void row_t::init_manager(row_t *row) {
     manager = (Row_vll *)mem_allocator.alloc(sizeof(Row_vll), _part_id);
 #endif
 
-#if CC_ALG != HSTORE
+#if CC_ALG != HSTORE && CC_ALG != NONE
     manager->init(this);
 #endif
 }

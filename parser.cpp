@@ -60,4 +60,4 @@ DEFINE_uint32(kmeans_dim, 100, "Dimensions for K-Means clustering");
 
 DEFINE_bool(pre_schedule_txns, true, "Schedule all txns before starting workers");
 DEFINE_uint32(scheduler_delay, 1000, "Delay between scheduler and worker");
-DEFINE_string(scheduler_type, "partitioned_queue", "Options: partitioned_queue, shared_queue, transaction_queue");
+DEFINE_string(scheduler_type, "parallel_queues", "Options: parallel_queues, shared_queue, transaction_queue");

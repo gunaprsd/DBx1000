@@ -7,8 +7,8 @@ start_num = 4
 num_runs = 5
 configs = []
 sizes =  [256000]
-for cores in [15]:
-    for parts in [15]:
+for cores in [30]:
+    for parts in [30]:
         for size_per_thread in sizes:
             if parts != cores:
                 continue

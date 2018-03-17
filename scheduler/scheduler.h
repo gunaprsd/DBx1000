@@ -57,6 +57,7 @@ template <typename T> class Scheduler {
     void run_workers() {
         uint64_t start_time, end_time;
         if (FLAGS_pre_schedule_txns) {
+            printf("Pre-scheduling transactions\n");
             // submit all queries synchronously
             submit_queries();
 

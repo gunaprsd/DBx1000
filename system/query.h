@@ -188,6 +188,12 @@ class ITransactionQueue {
 public:
 	virtual bool next(int32_t thread_id, Query<T> *&txn) = 0;
 	virtual void add(Query<T> *txn, int32_t thread_id = -1) = 0;
+	virtual void load_all(QueryIterator<T>* iterator, int32_t thread_id) {
+		while (!iterator->done()) {
+			Query<T> *query = iterator->next();
+			add(query, thread_id);
+		}
+	}
 };
 
 #endif // SYSTEM_QUERY_H__

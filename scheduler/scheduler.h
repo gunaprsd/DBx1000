@@ -19,7 +19,9 @@ template <typename T> class Scheduler {
         : _num_threads(num_threads), _db(db), _threads(nullptr), _loader(nullptr),
           _txn_queue(nullptr) {
         _threads = new Thread<T>[_num_threads];
-        if (FLAGS_scheduler_type.compare("parallel_queues") == 0) {
+        if (FLAGS_scheduler_type.compare("simple_parallel_queues") == 0) {
+            _txn_queue = new SimpleParallelQueues<T>(static_cast<int32_t>(_num_threads));
+        } else if (FLAGS_scheduler_type.compare("parallel_queues") == 0) {
             _txn_queue = new ParallelQueues<T>(static_cast<int32_t>(_num_threads));
         } else if (FLAGS_scheduler_type.compare("shared_queue") == 0) {
             _txn_queue = new SharedQueue<T>(static_cast<int32_t>(_num_threads));
@@ -48,10 +50,7 @@ template <typename T> class Scheduler {
         for (int32_t thread_id = 0; thread_id < num_threads; thread_id++) {
             QueryIterator<T> *iterator =
                 _loader->get_queries_list(static_cast<uint64_t>(thread_id));
-            while (!iterator->done()) {
-                Query<T> *query = iterator->next();
-                _txn_queue->add(query, thread_id);
-            }
+            _txn_queue->load_all(iterator, thread_id);
         }
     }
     void run_workers() {

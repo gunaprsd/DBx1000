@@ -60,6 +60,7 @@ table_t *row_t::get_table() { return table; }
 Catalog *row_t::get_schema() { return get_table()->get_schema(); }
 
 const char *row_t::get_table_name() { return get_table()->get_table_name(); };
+
 uint64_t row_t::get_tuple_size() { return get_schema()->get_tuple_size(); }
 
 uint64_t row_t::get_field_cnt() { return get_schema()->field_cnt; }

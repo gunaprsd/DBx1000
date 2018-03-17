@@ -79,7 +79,6 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
         txn->obtain_rw_set(&rwset);
         internal_add(txn, rwset);
     }
-
   protected:
 	void internal_add(Query<T> *txn, ReadWriteSet &rwset) {
 		unordered_set<Node *> root_nodes;
@@ -87,8 +86,8 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
 		for (uint32_t i = 0; i < rwset.num_accesses; i++) {
 			auto key = rwset.accesses[i].key;
 			auto data_node = data_nodes[key];
-			if (data_node != nullptr) {
-				auto root_node = find_root(data_node);
+			auto root_node = find_root(data_node);
+			if (root_node != nullptr) {
 				if (root_nodes.find(root_node) == root_nodes.end()) {
 					root_nodes.insert(root_node);
 					num_active_children++;

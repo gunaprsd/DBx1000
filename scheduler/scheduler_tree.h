@@ -129,18 +129,17 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
 
             if (val == 0) {
                 input_queue.push(root_node);
-            } else {
-                printf("Has active children");
             }
         }
     }
     bool try_enqueue(Node *node, Query<T> *txn) {
+
         while (true) {
-            auto cnode = node->head;
-            if (cnode == CLOSED) {
-                // empty and closed
+            if(node->head == CLOSED) {
                 return false;
-            } else if (cnode == nullptr) {
+            }
+
+            if (node->head == nullptr) {
                 // empty
                 if (ATOM_CAS(node->head, nullptr, txn)) {
                     return true;
@@ -148,7 +147,11 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
                 // oops, someone else inserted - try again
             } else {
                 // go to the end - can be either nullptr or closed
-                while (!(cnode->next == nullptr || cnode->next == CLOSED)) {
+                auto cnode = node->head;
+                while (true) {
+                    if(cnode->next == nullptr || cnode->head == CLOSED) {
+                        break;
+                    }
                     cnode = cnode->next;
                 }
 

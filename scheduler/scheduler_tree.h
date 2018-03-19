@@ -36,99 +36,102 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
     }
     bool next(int32_t thread_id, Query<T> *&txn) override {
         // get a new position node in the tree, if currently null
-	    while(true) {
-		    auto active_node = active_nodes[thread_id];
-		    if (active_node == nullptr) {
-			    if (!input_queue.try_pop(active_node)) {
-				    return false;
-			    }
-		    }
+        while (true) {
+            auto active_node = active_nodes[thread_id];
+            if (active_node == nullptr) {
+                if (!input_queue.try_pop(active_node)) {
+                    return false;
+                }
+            }
 
-		    if (try_dequeue(active_node, txn)) {
-			    // try to dequeue something - if successful return
-			    return true;
-		    } else if (active_node->parent == nullptr) {
-			    // try to close the queue so that no more txns are added
-			    if (try_close_queue(active_node)) {
-				    // if queue is closed, close the parent
-				    if (try_close_parent(active_node)) {
-					    // get a new node in next iteration
-					    active_nodes[thread_id] = nullptr;
-				    }
-				    // if CAS fails, retry and process appropriately
-			    }
-			    // if cannot close queue, retry and process appropriately
-		    } else if(active_node->parent == CLOSED) {
-			    // get a new node in next iteration
-				active_nodes[thread_id] = nullptr;
-		    } else {
-			    auto parent = active_node->parent;
-			    auto val = ATOM_SUB_FETCH(parent->num_active_children, 1);
-			    if (val == 0) {
-				    // process parent in next iteration
-				    active_nodes[thread_id] = parent;
-			    } else {
-				    // get a new node in next iteration
-				    active_nodes[thread_id] = nullptr;
-			    }
-		    }
-	    }
+            if (try_dequeue(active_node, txn)) {
+                // try to dequeue something - if successful return
+                return true;
+            } else if (active_node->parent == nullptr) {
+                // try to close the queue so that no more txns are added
+                if (try_close_queue(active_node)) {
+                    // if queue is closed, close the parent
+                    if (try_close_parent(active_node)) {
+                        // get a new node in next iteration
+                        active_nodes[thread_id] = nullptr;
+                    }
+                    // if CAS fails, retry and process appropriately
+                }
+                // if cannot close queue, retry and process appropriately
+            } else if (active_node->parent == CLOSED) {
+                // get a new node in next iteration
+                active_nodes[thread_id] = nullptr;
+            } else {
+                auto parent = active_node->parent;
+                auto val = ATOM_SUB_FETCH(parent->num_active_children, 1);
+                if (val == 0) {
+                    // process parent in next iteration
+                    active_nodes[thread_id] = parent;
+                } else {
+                    // get a new node in next iteration
+                    active_nodes[thread_id] = nullptr;
+                }
+            }
+        }
     }
     void add(Query<T> *txn, int32_t thread_id = -1) {
         ReadWriteSet rwset;
         txn->obtain_rw_set(&rwset);
         internal_add(txn, rwset);
     }
+
   protected:
-	void internal_add(Query<T> *txn, ReadWriteSet &rwset) {
-		unordered_set<Node *> root_nodes;
-		int64_t num_active_children = 0;
-		for (uint32_t i = 0; i < rwset.num_accesses; i++) {
-			auto key = rwset.accesses[i].key;
-			auto data_node = data_nodes[key];
-			auto root_node = find_root(data_node);
-			if (root_node != nullptr) {
-				if (root_nodes.find(root_node) == root_nodes.end()) {
-					root_nodes.insert(root_node);
-					num_active_children++;
-				}
-			}
-		}
+    void internal_add(Query<T> *txn, ReadWriteSet &rwset) {
+        unordered_set<Node *> root_nodes;
+        int64_t num_active_children = 0;
+        for (uint32_t i = 0; i < rwset.num_accesses; i++) {
+            auto key = rwset.accesses[i].key;
+            auto data_node = data_nodes[key];
+            auto root_node = find_root(data_node);
+            if (root_node != nullptr) {
+                if (root_nodes.find(root_node) == root_nodes.end()) {
+                    root_nodes.insert(root_node);
+                    num_active_children++;
+                }
+            }
+        }
 
-		if (root_nodes.size() == 1) {
-			auto root_node = *(root_nodes.begin());
-			if (try_enqueue(root_node, txn)) {
-				// we are done!
-			} else {
-				return internal_add(txn, rwset);
-			}
-		} else {
-			auto root_node = txn;
-			root_node->parent = nullptr;
-			root_node->next = nullptr;
-			root_node->head = nullptr;
-			try_enqueue(root_node, txn);
-			root_node->num_active_children = num_active_children;
+        if (root_nodes.size() == 1) {
+            auto root_node = *(root_nodes.begin());
+            if (try_enqueue(root_node, txn)) {
+                // we are done!
+            } else {
+                return internal_add(txn, rwset);
+            }
+        } else {
+            auto root_node = txn;
+            root_node->parent = nullptr;
+            root_node->next = nullptr;
+            root_node->head = nullptr;
+            try_enqueue(root_node, txn);
+            root_node->num_active_children = num_active_children;
 
-			auto val = 1;
-			for (auto child_node : root_nodes) {
-				if (!ATOM_CAS(child_node->parent, root_node, nullptr)) {
-					// must have been closed by the worker!
-					val = ATOM_SUB_FETCH(root_node->num_active_children, 1);
-				}
-			}
+            auto val = num_active_children;
+            for (auto child_node : root_nodes) {
+                if (!ATOM_CAS(child_node->parent, root_node, nullptr)) {
+                    // must have been closed by the worker!
+                    val = ATOM_SUB_FETCH(root_node->num_active_children, 1);
+                }
+            }
 
-			for (uint32_t i = 0; i < rwset.num_accesses; i++) {
-				auto key = rwset.accesses[i].key;
-				data_nodes[key] = root_node;
-			}
+            for (uint32_t i = 0; i < rwset.num_accesses; i++) {
+                auto key = rwset.accesses[i].key;
+                data_nodes[key] = root_node;
+            }
 
-			if (val == 0) {
-				input_queue.push(root_node);
-			}
-		}
-	}
-	bool try_enqueue(Node *node, Query<T> *txn) {
+            if (val == 0) {
+                input_queue.push(root_node);
+            } else {
+	      printf("Has active children");
+	    }
+        }
+    }
+    bool try_enqueue(Node *node, Query<T> *txn) {
         while (true) {
             auto cnode = node->head;
             if (cnode == CLOSED) {
@@ -168,47 +171,45 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
                     if (ATOM_CAS(head_node->next, nullptr, CLOSED)) {
                         // actually delete by replacing head node with nullptr
                         if (ATOM_CAS(node->head, head_node, nullptr)) {
-	                        txn = head_node;
+                            txn = head_node;
                             return true;
                         }
                     }
                 } else {
-	                if(ATOM_CAS(node->head, head_node, head_node->next)) {
-		                txn = head_node;
-		                return true;
-	                }
+                    if (ATOM_CAS(node->head, head_node, head_node->next)) {
+                        txn = head_node;
+                        return true;
+                    }
                 }
             }
         }
     }
-    Node *find_root(Node *start_node) {
-        auto parent_node = start_node;
-        auto root_node = static_cast<Node *>(nullptr);
-        while (parent_node != nullptr && parent_node != CLOSED) {
-            root_node = parent_node;
-            parent_node = parent_node->next;
-        }
-        if (root_node != nullptr) {
-            if (is_parent_closed(root_node)) {
-                return nullptr;
-            }
-        }
-        return root_node;
+    Node *find_root(Node *node) {
+      auto root_node = node;
+      while(root_node != nullptr) {
+	if(root_node->next == nullptr) {
+	  return root_node;
+	} else if(root_node->next == CLOSED) {
+	  return nullptr;
+	} else {
+	  root_node = root_node->next;
+	}
+      }
+      return nullptr;
     }
     bool is_queue_closed(Node *node) { return node->head == CLOSED; }
     bool is_parent_closed(Node *node) { return node->parent == CLOSED; }
-	bool try_close_queue(Node *node) {
-		if (node->head == CLOSED) {
-			return true;
-		} else if (node->head == nullptr) {
-			if (ATOM_CAS(node->head, nullptr, CLOSED)) {
-				return true;
-			}
-		}
-		return false;
-	}
+    bool try_close_queue(Node *node) {
+        if (node->head == CLOSED) {
+            return true;
+        } else if (node->head == nullptr) {
+            if (ATOM_CAS(node->head, nullptr, CLOSED)) {
+                return true;
+            }
+        }
+        return false;
+    }
     bool try_close_parent(Node *node) { return ATOM_CAS(node->parent, nullptr, CLOSED); }
-
 };
 
 #endif // DBX1000_SCHEDULER_TREE_H

@@ -168,6 +168,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
                     if (ATOM_CAS(head_node->next, nullptr, CLOSED)) {
                         // actually delete by replacing head node with nullptr
                         if (ATOM_CAS(node->head, head_node, nullptr)) {
+	                        txn = head_node;
                             return true;
                         }
                     }

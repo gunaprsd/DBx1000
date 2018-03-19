@@ -26,8 +26,8 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
         uint64_t size = AccessIterator<T>::get_max_key();
         data_nodes = new Node *[size];
         for (uint64_t i = 0; i < size; i++) {
-            data_nodes[i] = new Node();
-            data_nodes[i]->is_data_node = true;
+            data_nodes[i] = nullptr;
+            //data_nodes[i]->is_data_node = true;
         }
 
         active_nodes = new Node *[num_threads];
@@ -85,6 +85,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
     void internal_add(Query<T> *txn, ReadWriteSet &rwset) {
         unordered_set<Node *> root_nodes;
         int64_t num_active_children = 0;
+        int64_t num_data_children = 0;
         for (uint32_t i = 0; i < rwset.num_accesses; i++) {
             auto key = rwset.accesses[i].key;
             auto data_node = data_nodes[key];
@@ -92,17 +93,18 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             if (root_node != nullptr) {
                 if (root_nodes.find(root_node) == root_nodes.end()) {
                     root_nodes.insert(root_node);
-                    if (!root_node->is_data_node) {
-                        num_active_children++;
-                    }
+                    num_active_children++;
                 }
+            } else {
+                num_data_children++;
             }
         }
 
-        if (root_nodes.size() == 1) {
+        if (num_active_children == 1 && num_data_children == 0) {
             auto root_node = *(root_nodes.begin());
             if (try_enqueue(root_node, txn)) {
                 // we are done!
+                INC_STATS(0, debug1, 1);
             } else {
                 return internal_add(txn, rwset);
             }
@@ -129,6 +131,9 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
 
             if (val == 0) {
                 input_queue.push(root_node);
+                INC_STATS(0, debug2, 1);
+            } else {
+                INC_STATS(0, debug3, 1);
             }
         }
     }

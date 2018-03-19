@@ -33,6 +33,9 @@ public:
     _queries = new Query<T> *[_num_threads];
     for (uint32_t i = 0; i < _num_threads; i++) {
       _queries[i] = new Query<T>[_num_queries_per_thread];
+      for(uint64_t j = 0; j < _num_queries_per_thread; j++) {
+        _queries[i]->is_data_node = false;
+      }
     }
   }
   QueryIterator<T> *get_query_iterator(uint64_t thread_id) {

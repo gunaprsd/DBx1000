@@ -61,6 +61,7 @@ struct Query : public BaseQuery {
 	Query<T>* parent;
 	Query<T>* next;
 	Query<T>* head;
+	bool is_data_node;
 	Query<T>* children_roots[MAX_NUM_ACCESSES];
 	int64_t num_active_children;
 #endif

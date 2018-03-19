@@ -26,7 +26,8 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
         uint64_t size = AccessIterator<T>::get_max_key();
         data_nodes = new Node *[size];
         for (uint64_t i = 0; i < size; i++) {
-            data_nodes[i] = nullptr;
+            data_nodes[i] = new Node();
+            data_nodes[i]->is_data_node = true;
         }
 
         active_nodes = new Node *[num_threads];
@@ -91,7 +92,9 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             if (root_node != nullptr) {
                 if (root_nodes.find(root_node) == root_nodes.end()) {
                     root_nodes.insert(root_node);
-                    num_active_children++;
+                    if (!root_node->is_data_node) {
+                        num_active_children++;
+                    }
                 }
             }
         }
@@ -127,8 +130,8 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             if (val == 0) {
                 input_queue.push(root_node);
             } else {
-	      printf("Has active children");
-	    }
+                printf("Has active children");
+            }
         }
     }
     bool try_enqueue(Node *node, Query<T> *txn) {
@@ -185,17 +188,17 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
         }
     }
     Node *find_root(Node *node) {
-      auto root_node = node;
-      while(root_node != nullptr) {
-	if(root_node->next == nullptr) {
-	  return root_node;
-	} else if(root_node->next == CLOSED) {
-	  return nullptr;
-	} else {
-	  root_node = root_node->next;
-	}
-      }
-      return nullptr;
+        auto root_node = node;
+        while (root_node != nullptr) {
+            if (root_node->next == nullptr) {
+                return root_node;
+            } else if (root_node->next == CLOSED) {
+                return nullptr;
+            } else {
+                root_node = root_node->next;
+            }
+        }
+        return nullptr;
     }
     bool is_queue_closed(Node *node) { return node->head == CLOSED; }
     bool is_parent_closed(Node *node) { return node->parent == CLOSED; }

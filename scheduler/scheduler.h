@@ -59,9 +59,13 @@ template <typename T> class Scheduler {
     void run_workers() {
         uint64_t start_time, end_time;
         if (FLAGS_pre_schedule_txns) {
-            printf("Pre-scheduling transactions\n");
+            printf("Pre-submit transactions\n");
             // submit all queries synchronously
-            submit_queries();
+	    start_time = get_server_clock();
+	    submit_queries();
+	    end_time = get_server_clock();
+	    auto duration = DURATION(end_time, start_time);
+	    printf("Submission Time: %f\n", duration);
 
             // notify that all queries are submitted to workers
             for (uint32_t i = 0; i < _num_threads; i++) {

@@ -27,7 +27,6 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
         data_nodes = new Node *[size];
         for (uint64_t i = 0; i < size; i++) {
             data_nodes[i] = nullptr;
-            // data_nodes[i]->is_data_node = true;
         }
 
         active_nodes = new Node *[num_threads];
@@ -90,8 +89,8 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             auto key = rwset.accesses[i].key;
             auto data_node = data_nodes[key];
             auto root_node = find_root(data_node);
-	    assert(root_node == find_root(root_node));
-	    if (root_node != nullptr) {
+            assert(root_node == find_root(root_node));
+            if (root_node != nullptr) {
                 if (root_nodes.find(root_node) == root_nodes.end()) {
                     root_nodes.insert(root_node);
                     num_active_children++;
@@ -101,8 +100,9 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             }
         }
 
-        if (num_active_children == 1 && num_data_children == 0) {
-            auto root_node = *(root_nodes.begin());
+	auto root_node = static_cast<Node*>(nullptr);
+        if (num_active_children == 1) {
+            root_node = *(root_nodes.begin());
             if (try_enqueue(root_node, txn)) {
                 // we are done!
                 INC_STATS(0, debug1, 1);
@@ -110,7 +110,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
                 return internal_add(txn, rwset);
             }
         } else {
-            auto root_node = txn;
+            root_node = txn;
             root_node->parent = nullptr;
             root_node->next = nullptr;
             root_node->head = nullptr;
@@ -119,26 +119,25 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
 
             auto val = num_active_children;
             for (auto child_node : root_nodes) {
-	      assert(child_node == find_root(child_node));
-	      assert(child_node->parent == nullptr);
+                assert(child_node == find_root(child_node));
+                assert(child_node->parent == nullptr);
                 if (!ATOM_CAS(child_node->parent, nullptr, root_node)) {
                     // must have been closed by the worker!
                     val = ATOM_SUB_FETCH(root_node->num_active_children, 1);
                 }
             }
 
-            for (uint32_t i = 0; i < rwset.num_accesses; i++) {
-                auto key = rwset.accesses[i].key;
-                data_nodes[key] = root_node;
-            }
-
             if (val == 0) {
-	      assert(num_data_children == rwset.num_accesses);
                 input_queue.push(root_node);
                 INC_STATS(0, debug2, 1);
             } else {
                 INC_STATS(0, debug3, 1);
             }
+        }
+
+        for (uint32_t i = 0; i < rwset.num_accesses; i++) {
+            auto key = rwset.accesses[i].key;
+            data_nodes[key] = root_node;
         }
     }
     bool try_enqueue(Node *node, Query<T> *txn) {

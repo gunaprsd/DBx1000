@@ -112,7 +112,7 @@ template <typename T> class Thread {
         // Prepare transaction manager
         RC rc = RCOK;
 
-#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
+#if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT || CC_ALG == NONE
         rc = manager->run_txn(query);
 #elif CC_ALG == OCC
         manager->start_ts = get_next_ts();

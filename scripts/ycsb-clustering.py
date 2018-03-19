@@ -64,8 +64,8 @@ def partition(start, end, type_tag):
             os.system("echo " + command + " >> " + log_file)
             os.system(command)
 
-def execute(start, end, type_tag):
-    log_file = "ycsb_execution_occ_" + type_tag + "_" + str(start) + "_" + str(end) + ".txt"
+def execute(start, end, type_tag, scheduler_tag):
+    log_file = "ycsb_execution_occ_" + type_tag + "_" + scheduler_tag + "_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -78,6 +78,7 @@ def execute(start, end, type_tag):
             # raw command
             command = base_command
             command += ' -input_folder=' + data_folder + "/" + seed_tag + '_' + type_tag + ' \\\n'
+            command += ' -scheduler_type=' + scheduler_tag + ' \\\n'
             command += ' >> ' + log_file
             for i in xrange(0, 10):
                 print(command)
@@ -93,7 +94,7 @@ if __name__ == "__main__":
         assert(len(sys.argv) == 5)
         partition(int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])
     elif sys.argv[1] == "execute":
-        assert(len(sys.argv) == 5)
-        execute(int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])
+        assert(len(sys.argv) == 6)
+        execute(int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], sys.argv[5])
     else:
         assert(False)

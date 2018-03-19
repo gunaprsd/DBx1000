@@ -171,6 +171,11 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
                             return true;
                         }
                     }
+                } else {
+	                if(ATOM_CAS(node->head, head_node, head_node->next)) {
+		                txn = head_node;
+		                return true;
+	                }
                 }
             }
         }

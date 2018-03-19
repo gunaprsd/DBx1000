@@ -141,7 +141,6 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
         }
     }
     bool try_enqueue(Node *node, Query<T> *txn) {
-
         while (true) {
             if (node->head == CLOSED) {
                 return false;
@@ -150,23 +149,22 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             if (node->head == nullptr) {
                 // empty
                 if (ATOM_CAS(node->head, nullptr, txn)) {
+	                if(!ATOM_CAS(node->tail, nullptr, txn)) {
+		                assert(false);
+	                }
                     return true;
                 }
                 // oops, someone else inserted - try again
             } else {
                 // go to the end - can be either nullptr or closed
-                auto cnode = node->head;
-                while (true) {
-                    if (cnode->next == nullptr || cnode->head == CLOSED) {
-                        break;
-                    }
-                    cnode = cnode->next;
-                }
-
+                auto cnode = node->tail;
                 if (cnode->next == nullptr) {
                     txn->next = nullptr;
                     if (ATOM_CAS(cnode->next, nullptr, txn)) {
                         // successfully planted txn
+	                    if(!ATOM_CAS(node->tail, nullptr, txn)) {
+		                    assert(false);
+	                    }
                         return true;
                     }
                 }

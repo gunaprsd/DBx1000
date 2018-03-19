@@ -14,9 +14,7 @@
   <component name="ChangeListManager">
     <list default="true" id="c244eca0-0039-459c-b54d-e525f055ed8a" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/scheduler/scheduler.h" afterPath="$PROJECT_DIR$/scheduler/scheduler.h" />
-      <change beforePath="$PROJECT_DIR$/scheduler/scheduler_tree_v1.h" afterPath="$PROJECT_DIR$/scheduler/scheduler_tree_v1.h" />
-      <change beforePath="$PROJECT_DIR$/system/query.h" afterPath="$PROJECT_DIR$/system/query.h" />
+      <change beforePath="$PROJECT_DIR$/scheduler/scheduler_tree.h" afterPath="$PROJECT_DIR$/scheduler/scheduler_tree.h" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -40,20 +38,20 @@
               <folding>
                 <element signature="e#225#697#0" expanded="false" />
                 <element signature="e#2101#3755#0" expanded="false" />
-                <element signature="e#3774#4655#0" expanded="false" />
-                <element signature="e#4660#5127#0" expanded="false" />
-                <marker date="1521435881238" expanded="false" signature="3943:3972" ph="..." />
-                <marker date="1521435881238" expanded="false" signature="4108:4623" ph="..." />
+                <element signature="e#3774#4673#0" expanded="false" />
+                <element signature="e#4678#5145#0" expanded="false" />
+                <marker date="1521458813706" expanded="false" signature="3961:3990" ph="..." />
+                <marker date="1521458813706" expanded="false" signature="4126:4641" ph="..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="scheduler_tree.h" pinned="false" current-in-tab="false">
+      <file leaf-file-name="scheduler_tree.h" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/scheduler/scheduler_tree.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="288">
-              <caret line="19" column="22" lean-forward="false" selection-start-line="19" selection-start-column="22" selection-end-line="19" selection-end-column="22" />
+            <state relative-caret-position="268">
+              <caret line="150" column="21" lean-forward="false" selection-start-line="150" selection-start-column="21" selection-end-line="150" selection-end-column="21" />
               <folding />
             </state>
           </provider>
@@ -91,14 +89,13 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="scheduler_tree_v1.h" pinned="false" current-in-tab="true">
+      <file leaf-file-name="scheduler_tree_v1.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/scheduler/scheduler_tree_v1.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="253">
-              <caret line="43" column="23" lean-forward="false" selection-start-line="43" selection-start-column="23" selection-end-line="43" selection-end-column="23" />
+            <state relative-caret-position="-58">
+              <caret line="13" column="57" lean-forward="true" selection-start-line="13" selection-start-column="57" selection-end-line="13" selection-end-column="57" />
               <folding>
                 <element signature="e#470#932#0" expanded="false" />
-                <element signature="e#1427#2944#0" expanded="false" />
                 <element signature="e#2957#3269#0" expanded="false" />
                 <element signature="e#3271#3503#0" expanded="false" />
                 <element signature="e#3505#3843#0" expanded="false" />
@@ -152,9 +149,9 @@
             <state relative-caret-position="-173">
               <caret line="11" column="30" lean-forward="false" selection-start-line="11" selection-start-column="30" selection-end-line="11" selection-end-column="30" />
               <folding>
-                <element signature="e#2118#4820#0" expanded="false" />
-                <element signature="e#4825#5293#0" expanded="false" />
-                <element signature="e#5298#5549#0" expanded="false" />
+                <element signature="e#2118#4984#0" expanded="false" />
+                <element signature="e#4989#5457#0" expanded="false" />
+                <element signature="e#5462#5713#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -247,10 +244,10 @@
         <option value="$PROJECT_DIR$/parser.cpp" />
         <option value="$PROJECT_DIR$/workload/generator.h" />
         <option value="$PROJECT_DIR$/scheduler/thread.h" />
-        <option value="$PROJECT_DIR$/scheduler/scheduler_tree.h" />
         <option value="$PROJECT_DIR$/system/query.h" />
         <option value="$PROJECT_DIR$/scheduler/scheduler_tree_v1.h" />
         <option value="$PROJECT_DIR$/scheduler/scheduler.h" />
+        <option value="$PROJECT_DIR$/scheduler/scheduler_tree.h" />
       </list>
     </option>
   </component>
@@ -446,7 +443,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="360661000" />
+    <option name="totallyTimeSpent" value="361596000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1440" height="900" extended-state="0" />
@@ -852,10 +849,10 @@
           <folding>
             <element signature="e#225#697#0" expanded="false" />
             <element signature="e#2101#3755#0" expanded="false" />
-            <element signature="e#3774#4655#0" expanded="false" />
-            <element signature="e#4660#5127#0" expanded="false" />
-            <marker date="1521435881238" expanded="false" signature="3943:3972" ph="..." />
-            <marker date="1521435881238" expanded="false" signature="4108:4623" ph="..." />
+            <element signature="e#3774#4673#0" expanded="false" />
+            <element signature="e#4678#5145#0" expanded="false" />
+            <marker date="1521458813706" expanded="false" signature="3961:3990" ph="..." />
+            <marker date="1521458813706" expanded="false" signature="4126:4641" ph="..." />
           </folding>
         </state>
       </provider>
@@ -886,14 +883,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scheduler/scheduler_tree.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="288">
-          <caret line="19" column="22" lean-forward="false" selection-start-line="19" selection-start-column="22" selection-end-line="19" selection-end-column="22" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/system/query.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="338">
@@ -915,25 +904,32 @@
         <state relative-caret-position="-173">
           <caret line="11" column="30" lean-forward="false" selection-start-line="11" selection-start-column="30" selection-end-line="11" selection-end-column="30" />
           <folding>
-            <element signature="e#2118#4820#0" expanded="false" />
-            <element signature="e#4825#5293#0" expanded="false" />
-            <element signature="e#5298#5549#0" expanded="false" />
+            <element signature="e#2118#4984#0" expanded="false" />
+            <element signature="e#4989#5457#0" expanded="false" />
+            <element signature="e#5462#5713#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/scheduler/scheduler_tree_v1.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="253">
-          <caret line="43" column="23" lean-forward="false" selection-start-line="43" selection-start-column="23" selection-end-line="43" selection-end-column="23" />
+        <state relative-caret-position="-58">
+          <caret line="13" column="57" lean-forward="true" selection-start-line="13" selection-start-column="57" selection-end-line="13" selection-end-column="57" />
           <folding>
             <element signature="e#470#932#0" expanded="false" />
-            <element signature="e#1427#2944#0" expanded="false" />
             <element signature="e#2957#3269#0" expanded="false" />
             <element signature="e#3271#3503#0" expanded="false" />
             <element signature="e#3505#3843#0" expanded="false" />
             <element signature="e#3845#4135#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scheduler/scheduler_tree.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="268">
+          <caret line="150" column="21" lean-forward="false" selection-start-line="150" selection-start-column="21" selection-end-line="150" selection-end-column="21" />
+          <folding />
         </state>
       </provider>
     </entry>

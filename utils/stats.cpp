@@ -121,8 +121,7 @@ void Stats::print() {
     total_txn_cnt += _stats[tid]->txn_cnt;
     total_abort_cnt += _stats[tid]->abort_cnt;
     total_run_time += _stats[tid]->run_time;
-    total_throughput +=
-        (_stats[tid]->txn_cnt * BILLION / _stats[tid]->run_time);
+    total_throughput += _stats[tid]->txn_cnt;
     total_time_man += _stats[tid]->time_man;
     total_debug1 += _stats[tid]->debug1;
     total_debug2 += _stats[tid]->debug2;
@@ -140,6 +139,8 @@ void Stats::print() {
     printf("[tid=%ld] txn_cnt=%ld,abort_cnt=%ld,run_time=%lf\n", tid, _stats[tid]->txn_cnt,
            _stats[tid]->abort_cnt, (double)_stats[tid]->run_time/BILLION);
   }
+  double avg_time = total_run_time / FLAGS_threads;
+  total_throughput = total_throughput * BILLION / avg_time;
   FILE *outf;
   if (output_file != NULL) {
     outf = fopen(output_file, "w");

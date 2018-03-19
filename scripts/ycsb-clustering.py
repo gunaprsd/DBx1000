@@ -6,9 +6,9 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes =  [256000]
-for cores in [30]:
-    for parts in [30]:
+sizes =  [512000]
+for cores in [15]:
+    for parts in [15]:
         for size_per_thread in sizes:
             if parts != cores:
                 continue
@@ -65,7 +65,7 @@ def partition(start, end, type_tag):
             os.system(command)
 
 def execute(start, end, type_tag):
-    log_file = "ycsb_execution_no_wait_" + type_tag + "_" + str(start) + "_" + str(end) + ".txt"
+    log_file = "ycsb_execution_occ_" + type_tag + "_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -79,7 +79,7 @@ def execute(start, end, type_tag):
             command = base_command
             command += ' -input_folder=' + data_folder + "/" + seed_tag + '_' + type_tag + ' \\\n'
             command += ' >> ' + log_file
-            for i in xrange(0, 5):
+            for i in xrange(0, 10):
                 print(command)
                 os.system("echo " + command + " >> " + log_file)
                 os.system(command)

@@ -42,7 +42,7 @@ DEFINE_string(input_folder, "data", "Folder to access workload from");
 DEFINE_uint32(threads, 4, "Number of threads");
 DEFINE_bool(pin_threads, true, "Pin threads?");
 DEFINE_bool(hyperthreading, false, "Enable hyper-threading?");
-DEFINE_bool(abort_buffer, true, "Use an abort buffer?");
+DEFINE_bool(abort_buffer, false, "Use an abort buffer?");
 DEFINE_uint32(abort_buffer_size, ABORT_BUFFER_SIZE, "Size of abort buffer");
 DEFINE_uint32(abort_penalty, ABORT_PENALTY, "Penalty in mus");
 

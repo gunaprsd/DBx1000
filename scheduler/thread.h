@@ -48,13 +48,17 @@ template <typename T> class Thread {
             auto end_time = get_sys_clock();
             auto duration = end_time - start_time;
 
-            assert(rc == RCOK);
-
             // update general statistics
             INC_STATS(thread_id, run_time, duration);
             INC_STATS(thread_id, latency, duration);
-            INC_STATS(thread_id, txn_cnt, 1);
-            stats.commit(thread_id);
+            if (rc == RCOK) {
+                INC_STATS(thread_id, txn_cnt, 1);
+                stats.commit(thread_id);
+            } else if (rc == Abort) {
+                INC_STATS(thread_id, time_abort, duration);
+                INC_STATS(thread_id, abort_cnt, 1);
+                stats.abort(thread_id);
+            }
         }
     }
     void run_with_abort_buffer() {

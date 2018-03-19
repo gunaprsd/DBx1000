@@ -27,7 +27,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
         data_nodes = new Node *[size];
         for (uint64_t i = 0; i < size; i++) {
             data_nodes[i] = nullptr;
-            //data_nodes[i]->is_data_node = true;
+            // data_nodes[i]->is_data_node = true;
         }
 
         active_nodes = new Node *[num_threads];
@@ -38,12 +38,12 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
     bool next(int32_t thread_id, Query<T> *&txn) override {
         // get a new position node in the tree, if currently null
         while (true) {
-            auto active_node = active_nodes[thread_id];
-            if (active_node == nullptr) {
-                if (!input_queue.try_pop(active_node)) {
+            if (active_nodes[thread_id] == nullptr) {
+                if (!input_queue.try_pop(active_nodes[thread_id])) {
                     return false;
                 }
             }
+            auto active_node = active_nodes[thread_id];
 
             if (try_dequeue(active_node, txn)) {
                 // try to dequeue something - if successful return
@@ -90,7 +90,8 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             auto key = rwset.accesses[i].key;
             auto data_node = data_nodes[key];
             auto root_node = find_root(data_node);
-            if (root_node != nullptr) {
+	    assert(root_node == find_root(root_node));
+	    if (root_node != nullptr) {
                 if (root_nodes.find(root_node) == root_nodes.end()) {
                     root_nodes.insert(root_node);
                     num_active_children++;
@@ -118,7 +119,9 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
 
             auto val = num_active_children;
             for (auto child_node : root_nodes) {
-                if (!ATOM_CAS(child_node->parent, root_node, nullptr)) {
+	      assert(child_node == find_root(child_node));
+	      assert(child_node->parent == nullptr);
+                if (!ATOM_CAS(child_node->parent, nullptr, root_node)) {
                     // must have been closed by the worker!
                     val = ATOM_SUB_FETCH(root_node->num_active_children, 1);
                 }
@@ -130,6 +133,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             }
 
             if (val == 0) {
+	      assert(num_data_children == rwset.num_accesses);
                 input_queue.push(root_node);
                 INC_STATS(0, debug2, 1);
             } else {
@@ -140,7 +144,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
     bool try_enqueue(Node *node, Query<T> *txn) {
 
         while (true) {
-            if(node->head == CLOSED) {
+            if (node->head == CLOSED) {
                 return false;
             }
 
@@ -154,7 +158,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
                 // go to the end - can be either nullptr or closed
                 auto cnode = node->head;
                 while (true) {
-                    if(cnode->next == nullptr || cnode->head == CLOSED) {
+                    if (cnode->next == nullptr || cnode->head == CLOSED) {
                         break;
                     }
                     cnode = cnode->next;
@@ -198,12 +202,12 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
     Node *find_root(Node *node) {
         auto root_node = node;
         while (root_node != nullptr) {
-            if (root_node->next == nullptr) {
+            if (root_node->parent == nullptr) {
                 return root_node;
-            } else if (root_node->next == CLOSED) {
+            } else if (root_node->parent == CLOSED) {
                 return nullptr;
             } else {
-                root_node = root_node->next;
+                root_node = root_node->parent;
             }
         }
         return nullptr;

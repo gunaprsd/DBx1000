@@ -9,6 +9,7 @@
 #include "query.h"
 #include "queues.h"
 #include "scheduler_tree.h"
+#include "scheduler_tree_v1.h"
 #include "thread.h"
 #include "txn.h"
 #include "vll.h"
@@ -27,6 +28,8 @@ template <typename T> class Scheduler {
             _txn_queue = new SharedQueue<T>(static_cast<int32_t>(_num_threads));
         } else if (FLAGS_scheduler_type.compare("scheduler_tree") == 0) {
             _txn_queue = new SchedulerTree<T>(static_cast<int32_t>(_num_threads));
+        } else if (FLAGS_scheduler_type.compare("scheduler_tree_v1") == 0) {
+	        _txn_queue = new SchedulerTreeV1<T>(static_cast<int32_t>(_num_threads));
         } else {
             assert(false);
         }

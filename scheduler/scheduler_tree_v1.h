@@ -1,244 +1,162 @@
-//#ifndef DBX1000_SCHEDULER_TREE_V1_H
-//#define DBX1000_SCHEDULER_TREE_V1_H
-//
-//
-//#include "scheduler.h"
-//#include "database.h"
-//#include "loader.h"
-//#include "query.h"
-//#include "queues.h"
-//#include <unistd.h>
-//#include <atomic>
-//#include <unordered_set>
-//
-//#define CLOSED (Query<T>*)-1
-//
-//template<typename T>
-//class SchedulerTreeV1 : public ITransactionQueue<T> {
-//	typedef Query<T> Node;
-//	int32_t num_threads;
-//	SharedQueryQueue<T> input_queue;
-//	Node** data_nodes;
-//	Node** active_nodes;
-//public:
-//	SchedulerTreeV1(int32_t num_threads) : num_threads(num_threads), input_queue() {
-//		// create an array to store individual data leaf nodes
-//		uint64_t size = AccessIterator<T>::get_max_key();
-//		data_nodes = new Node*[size];
-//		for (uint64_t i = 0; i < size; i++) {
-//			data_nodes[i] = nullptr;
-//		}
-//
-//		active_nodes = new Node*[num_threads];
-//		for(int32_t i = 0; i < num_threads; i++) {
-//			active_nodes[i] = nullptr;
-//		}
-//	}
-//
-//	bool next(int32_t thread_id, Query<T> *&txn) override {
-////		if (move_to_next_cc) {
-////			if (scheduler_tree->try_pop(chosen_cc)) {
-////				pthread_mutex_lock(&chosen_cc->mutex);
-////				chosen_cc->done_with_this = false;
-////				chosen_cc->owner = thread_id + 1;
-////				move_to_next_cc = false;
-////			} else {
-////				if(abort_buffer.empty()) {
-////					this->done = true;
-////				}
-////				continue;
-////			}
-////		} else {
-////			pthread_mutex_lock(&chosen_cc->mutex);
-////		}
-////
-////		assert(chosen_cc != nullptr);
-////		if (chosen_cc->parent == nullptr) {
-////			// still a separate connected component
-////			if (!chosen_cc->done_with_this) {
-////				chosen_query = chosen_cc;
-////				chosen_cc->done_with_this = true;
-////			} else {
-////				if (chosen_cc->txn_queue == nullptr) {
-////					// no additional txns in CC
-////					move_to_next_cc = true;
-////				} else {
-////					// get a txn from queue
-////					if (chosen_cc->txn_queue->empty()) {
-////						move_to_next_cc = true;
-////					} else {
-////						chosen_query = chosen_cc->txn_queue->front();
-////						chosen_cc->txn_queue->pop();
-////					}
-////				}
-////			}
-////		} else {
-////			// has been merged into a larger CC
-////			auto root_cc = find_root<T>(chosen_cc);
-////			pthread_mutex_lock(&root_cc->mutex);
-////			// check if we can actually delegate!
-////			if (root_cc->owner != -1) {
-////				if (root_cc->txn_queue == nullptr) {
-////					root_cc->txn_queue = new queue<Query<T> *>();
-////				}
-////				// add own txn
-////				if (!chosen_cc->done_with_this) {
-////					root_cc->txn_queue->push(chosen_cc);
-////					chosen_cc->done_with_this = true;
-////				}
-////				// add all in the txn_queue
-////				if (chosen_cc->txn_queue != nullptr) {
-////					while (!chosen_cc->txn_queue->empty()) {
-////						root_cc->txn_queue->push(chosen_cc->txn_queue->front());
-////						chosen_cc->txn_queue->pop();
-////					}
-////				}
-////				chosen_cc->owner = -1;
-////				move_to_next_cc = true;
-////			}
-////
-////			if (root_cc->owner == 0) {
-////				// no one has taken responsibility -
-////				// so I will!
-////				root_cc->owner = thread_id;
-////			}
-////			pthread_mutex_unlock(&root_cc->mutex);
-////		}
-////		pthread_mutex_unlock(&chosen_cc->mutex);
-////
-////		if (move_to_next_cc) {
-////			assert(chosen_cc->done_with_this);
-////			assert(chosen_cc->txn_queue == nullptr || chosen_cc->txn_queue->empty());
-////			chosen_cc = nullptr;
-////			continue;
-////		}
-//		return false;
-//	}
-//
-//	void add(Query<T>* txn, int32_t thread_id = -1) {
-//		ReadWriteSet rwset;
-//		txn->obtain_rw_set(&rwset);
-//		internal_add(txn, rwset);
-//	}
-//
-//protected:
-//	bool try_enqueue(Node* node, Query<T>* txn) {
-//		while(true) {
-//			auto cnode = node->head;
-//			if(cnode == CLOSED) {
-//				// empty and closed
-//				return false;
-//			} else if(cnode == nullptr) {
-//				// empty
-//				if(ATOM_CAS(node->head, nullptr, txn)) {
-//					return true;
-//				}
-//				// oops, someone else inserted - try again
-//			} else {
-//				// go to the end - can be either nullptr or closed
-//				while(!(cnode->next == nullptr || cnode->next == CLOSED)) {
-//					cnode = cnode->next;
-//				}
-//
-//				if(cnode->next == nullptr) {
-//					txn->next = nullptr;
-//					if(ATOM_CAS(cnode->next, nullptr, txn)) {
-//						// successfully planted txn
-//						return true;
-//					}
-//				}
-//				// oops someone else inserted - try again
-//			}
-//		}
-//	}
-//
-//	bool try_dequeue(Node* node, Query<T>* & txn) {
-//		while(true) {
-//			auto head_node = node->head;
-//			if(head_node == nullptr || head_node == CLOSED) {
-//				return false;
-//			} else {
-//				if(head_node->next == nullptr) {
-//					// first mark for delete by changing next to CLOSED
-//					if(ATOM_CAS(head_node->next, nullptr, CLOSED)) {
-//						// actually delete by replacing head node with nullptr
-//						if(ATOM_CAS(node->head, head_node, nullptr)) {
-//							return true;
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//
-//	Node* find_root(Node* start_node) {
-//		auto parent_node = start_node;
-//		auto root_node = static_cast<Node*>(nullptr);
-//		while(parent_node != nullptr) {
-//			root_node = parent_node;
-//			parent_node = parent_node->next;
-//		}
-//		if(root_node != nullptr) {
-//			if(root_node) {
-//				return nullptr;
-//			}
-//		}
-//		return root_node;
-//	}
-//
-//	void internal_add(Query<T> *txn, ReadWriteSet &rwset) {
-//		int64_t num_active_nodes = 0;
-//		int64_t min_key = UINT64_MAX;
-//		int64_t min_key_index = UINT64_MAX;
-//		for (int64_t i = 0; i < static_cast<int64_t>(rwset.num_accesses); i++) {
-//			auto key = rwset.accesses[i].key;
-//			auto data_node = data_nodes[key];
-//			txn->children_roots[i] = find_root(data_node);
-//			if (txn->children_roots[i] != nullptr) {
-//				num_active_nodes++;
-//				if (key < min_key) {
-//					min_key_index = i;
-//					min_key = key;
-//				}
-//			}
-//		}
-//
-//		auto selected_root = static_cast<Query<T> *>(nullptr);
-//		if (num_active_nodes > 0) {
-//			selected_root = txn->children_roots[min_key_index];
-//			if(try_enqueue(selected_root, txn)) {
-//				// added safely
-//			} else {
-//				return internal_add(txn, rwset);
-//			}
-//		} else {
-//			selected_root = txn;
-//			selected_root->parent = nullptr;
-//			input_queue.push(selected_root);
-//		}
-//
-//		// let our data structures know about our scheduling decision
-//		for (uint64_t i = 0; i < rwset.num_accesses; i++) {
-//			auto key = rwset.accesses[i].key;
-//			auto data_node = data_nodes[key];
-//			if (data_node != selected_root) {
-//
-//
-//				// update all other CC that txn touches such that
-//				// root of their CC points to selected CC
-//				if (current_key_cc != nullptr) {
-//					pthread_mutex_lock(&current_key_cc->mutex);
-//					auto current_key_root = find_root<T>(current_key_cc);
-//					if (current_key_root != selected_root) {
-//						current_key_cc->parent = selected_root;
-//					}
-//					pthread_mutex_unlock(&current_key_cc->mutex);
-//				}
-//			}
-//		}
-//	}
-//
-//};
-//
-//
-//#endif //DBX1000_SCHEDULER_TREE_V1_H
+#ifndef DBX1000_SCHEDULER_TREE_V1_H
+#define DBX1000_SCHEDULER_TREE_V1_H
+
+#include "database.h"
+#include "loader.h"
+#include "query.h"
+#include "queues.h"
+#include "scheduler.h"
+#include <atomic>
+#include <unistd.h>
+#include <unordered_set>
+using namespace std;
+
+template <typename T> class SchedulerTreeV1 : public ITransactionQueue<T> {
+	typedef Query<T> Node;
+	int32_t num_threads;
+	SharedQueryQueue<T> input_queue;
+	Node **data_nodes;
+	Node **active_nodes;
+
+public:
+	SchedulerTreeV1(int32_t num_threads) : num_threads(num_threads), input_queue() {
+		// create an array to store individual data leaf nodes
+		uint64_t size = AccessIterator<T>::get_max_key();
+		data_nodes = new Node *[size];
+		for (uint64_t i = 0; i < size; i++) {
+			data_nodes[i] = nullptr;
+			// data_nodes[i]->is_data_node = true;
+		}
+
+		active_nodes = new Node *[num_threads];
+		for (int32_t i = 0; i < num_threads; i++) {
+			active_nodes[i] = nullptr;
+		}
+	}
+	bool next(int32_t thread_id, Query<T> *&txn) override {
+		// get a new position node in the tree, if currently null
+		while (true) {
+			if (active_nodes[thread_id] == nullptr) {
+				if (!input_queue.try_pop(active_nodes[thread_id])) {
+					return false;
+				}
+			}
+			if (try_dequeue(active_nodes[thread_id], txn)) {
+				// try to dequeue something - if successful return
+				return true;
+			} else {
+				// get a new node in next iteration
+				active_nodes[thread_id] = nullptr;
+			}
+		}
+	}
+	void add(Query<T> *txn, int32_t thread_id = -1) {
+		ReadWriteSet rwset;
+		txn->obtain_rw_set(&rwset);
+		unordered_set<Node *> root_nodes;
+		int64_t num_active_children = 0;
+		int64_t num_data_children = 0;
+		int32_t max_size = 0;
+		Node* max_size_node = nullptr;
+		for (uint32_t i = 0; i < rwset.num_accesses; i++) {
+			auto key = rwset.accesses[i].key;
+			auto data_node = data_nodes[key];
+			auto root_node = find_root(data_node);
+			assert(root_node == find_root(root_node));
+			if (root_node != nullptr) {
+				if (root_nodes.find(root_node) == root_nodes.end()) {
+					root_nodes.insert(root_node);
+					num_active_children++;
+					if(max_size < root_node->size) {
+						max_size = root_node->size;
+						max_size_node = root_node;
+					}
+				}
+			} else {
+				num_data_children++;
+			}
+		}
+
+		Node* real_root_node = nullptr;
+		if(num_active_children >= 1) {
+			real_root_node = max_size_node;
+			for(auto child_node : root_nodes) {
+				if(child_node != max_size_node) {
+					child_node->parent = real_root_node;
+					merge(real_root_node, child_node);
+				}
+			}
+			enqueue(real_root_node, txn);
+		} else {
+			real_root_node = txn;
+			real_root_node->parent = nullptr;
+			real_root_node->next = nullptr;
+			real_root_node->head = nullptr;
+			real_root_node->tail = nullptr;
+			real_root_node->size = 0;
+			enqueue(real_root_node, txn);
+			input_queue.push(real_root_node);
+		}
+
+		for (uint32_t i = 0; i < rwset.num_accesses; i++) {
+			auto key = rwset.accesses[i].key;
+			data_nodes[key] = real_root_node;
+		}
+	}
+protected:
+	void merge(Node* node1, Node* node2) {
+		if(node1->head == nullptr) {
+			node1->head = node2->head;
+			node1->tail = node2->tail;
+		} else {
+			node1->tail->next = node2->head;
+			node1->tail = node2->tail;
+		}
+		node1->size += node2->size;
+		node2->head = nullptr;
+		node2->tail = nullptr;
+		node2->size = 0;
+	}
+	void enqueue(Node *node, Query<T> *txn) {
+		if (node->head == nullptr) {
+			// empty
+			node->head = txn;
+			node->tail = txn;
+		} else {
+			txn->next = nullptr;
+			node->tail->next = txn;
+			node->tail = txn;
+		}
+		node->size++;
+	}
+	bool try_dequeue(Node *node, Query<T> *&txn) {
+		auto head_node = node->head;
+		if(head_node == nullptr) {
+			return false;
+		} else if(head_node->next == nullptr) {
+			txn = head_node;
+			node->head = nullptr;
+			node->tail = nullptr;
+			return true;
+		} else {
+			txn = head_node;
+			node->head = head_node->next;
+			return true;
+		}
+	}
+	Node *find_root(Node *node) {
+		auto root_node = node;
+		while (root_node != nullptr) {
+			if (root_node->parent == nullptr) {
+				return root_node;
+			} else if (root_node->parent == CLOSED) {
+				return nullptr;
+			} else {
+				root_node = root_node->parent;
+			}
+		}
+		return nullptr;
+	}
+};
+
+#endif // DBX1000_SCHEDULER_TREE_H

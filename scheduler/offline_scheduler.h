@@ -32,6 +32,8 @@ template <typename T> class OfflineScheduler {
             partitioner = new KMeansPartitioner(num_threads);
         } else if (FLAGS_parttype == "connected_component") {
             partitioner = new ConnectedComponentPartitioner(num_threads);
+        } else if (FLAGS_parttype == "union_find") {
+            partitioner = new UnionFindPartitioner(num_threads);
         } else {
             assert(false);
         }

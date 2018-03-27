@@ -1,6 +1,8 @@
 #include "partitioner.h"
 #include <queue>
 #include <stack>
+#include <unordered_map>
+
 using namespace std;
 
 BasePartitioner::BasePartitioner(uint32_t num_clusters)
@@ -809,4 +811,91 @@ void ConnectedComponentPartitioner::do_partition() {
     }
     uint64_t end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
+}
+
+UnionFindPartitioner::UnionFindPartitioner(uint32_t num_clusters)
+        : BasePartitioner(num_clusters) {}
+
+void UnionFindPartitioner::do_partition() {
+    unordered_map<int64_t, int64_t> core_map;
+    idx_t num_txn_nodes = graph_info->num_txn_nodes;
+
+    uint64_t start_time = get_server_clock();
+    // Union all data items accessed together by the txns
+    for(int64_t t = 0; t < num_txn_nodes; t++) {
+        auto info = &(graph_info->txn_info[t]);
+        for (uint32_t i = 0; i < info->rwset.num_accesses; i++) {
+            auto key1 = info->rwset.accesses[i].key;
+            auto data_info1 = &(graph_info->data_info[key1]);
+            for(uint32_t j = i + 1; j < info->rwset.num_accesses; j++) {
+                auto key2 = info->rwset.accesses[i].key;
+                auto data_info2 = &(graph_info->data_info[key2]);
+                Union(data_info1->id, data_info2->id);
+            }
+        }
+    }
+
+    // Find the connected components and assign to cores
+    int64_t round_robin = 0;
+    for(int64_t t = 0; t < num_txn_nodes; t++) {
+        auto info = &(graph_info->txn_info[t]);
+        auto key = info->rwset.accesses[0].key;
+        auto data_info = &(graph_info->data_info[key]);
+        auto cc = Find(data_info->root);
+
+        info->iteration = iteration;
+        auto iter = core_map.find(cc);
+        if(iter == core_map.end()) {
+            core_map[cc] = (round_robin % _num_clusters);
+            info->assigned_core = (round_robin % _num_clusters);
+            round_robin++;
+        } else {
+            info->assigned_core = iter->second;
+        }
+    }
+
+    uint64_t end_time = get_server_clock();
+    runtime_info->partition_duration += DURATION(end_time, start_time);
+
+    // Update core_weights data structure to help compute_cluster_info
+    for(int64_t t = 0; t < num_txn_nodes; t++) {
+        auto info = &(graph_info->txn_info[t]);
+        for(uint64_t i = 0; i < info->rwset.num_accesses; i++) {
+            auto key = info->rwset.accesses[i].key;
+            auto data_info = &(graph_info->data_info[key]);
+            if (data_info->iteration != iteration) {
+                for (uint64_t j = 0; j < _num_clusters; j++) {
+                    data_info->core_weights[j] = 0;
+                }
+            }
+            data_info->core_weights[info->assigned_core]++;
+        }
+    }
+}
+
+int64_t UnionFindPartitioner::Find(int64_t p) {
+    if(graph_info->data_info[p].root == p) {
+        return p;
+    } else {
+        auto root = Find(graph_info->data_info[p].root);
+        graph_info->data_info[p].root = root;
+        return root;
+    }
+}
+
+void UnionFindPartitioner::Union(int64_t p, int64_t q) {
+    auto p1 = Find(p);
+    auto p2 = Find(q);
+    if(p1 == p2) {
+        return;
+    }
+    auto info1 = &(graph_info->data_info[p1]);
+    auto info2 = &(graph_info->data_info[p2]);
+    if(info1->size < info2->size) {
+        info1->root = p2;
+        info2->size += info1->size;
+    } else {
+        info2->root = p1;
+        info1->size += info2->size;
+    }
 }

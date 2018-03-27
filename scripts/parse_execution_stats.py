@@ -31,7 +31,7 @@ def parse_file(filename):
 	        perf_dict[tokens[0].strip()] = tokens[1].strip()
             pretty_print(perf_dict)
             cnt += 1
-            if cnt % 5 == 0:
+            if cnt % 10 == 0:
 	        print("")
 
     f.close()

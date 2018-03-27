@@ -149,7 +149,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
             if (node->head == nullptr) {
                 // empty
                 if (ATOM_CAS(node->head, nullptr, txn)) {
-	                if(!ATOM_CAS(node->tail, nullptr, txn)) {
+	                if(!ATOM_CAS(node->tail, node->tail, txn)) {
 		                assert(false);
 	                }
                     return true;
@@ -162,7 +162,7 @@ template <typename T> class SchedulerTree : public ITransactionQueue<T> {
                     txn->next = nullptr;
                     if (ATOM_CAS(cnode->next, nullptr, txn)) {
                         // successfully planted txn
-	                    if(!ATOM_CAS(node->tail, nullptr, txn)) {
+	                    if(!ATOM_CAS(node->tail, node->tail, txn)) {
 		                    assert(false);
 	                    }
                         return true;

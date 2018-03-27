@@ -8,7 +8,8 @@
 #include "txn.h"
 #include "vll.h"
 
-template <typename T> class Thread {
+template <typename T>
+class Thread {
   public:
     void initialize(uint32_t id, Database *db, ITransactionQueue<T> *scheduler_tree) {
         this->thread_id = id;
@@ -62,7 +63,7 @@ template <typename T> class Thread {
         }
     }
     void run_with_abort_buffer() {
-        auto rc = RCOK;
+        RC rc;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
         auto done = false;
         while (!done) {

@@ -132,4 +132,16 @@ protected:
 	void do_partition();
 };
 
+class UnionFindPartitioner : public BasePartitioner
+{
+public:
+	explicit UnionFindPartitioner(uint32_t num_clusters);
+
+protected:
+	void do_partition();
+private:
+	int64_t Find(int64_t p);
+	void Union(int64_t p, int64_t q);
+};
+
 #endif // DBX1000_PARTITIONER_H

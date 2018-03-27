@@ -28,7 +28,6 @@ public:
       : _num_threads(num_threads),
         _num_queries_per_thread(num_queries_per_thread),
         _folder_path(folder_path) {
-
     ensure_folder_exists(_folder_path);
     _queries = new Query<T> *[_num_threads];
     for (uint32_t i = 0; i < _num_threads; i++) {

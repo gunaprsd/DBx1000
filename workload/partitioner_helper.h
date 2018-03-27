@@ -8,6 +8,8 @@
 
 struct DataNodeInfo {
     idx_t id;
+    idx_t root;
+    idx_t size;
     uint32_t tid;
     uint64_t epoch;
     uint64_t iteration;
@@ -21,6 +23,8 @@ struct DataNodeInfo {
 
     void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
         id = _id;
+        root = id;
+        size = 1;
         tid = _table_id;
         epoch = _epoch;
         iteration = 0;
@@ -56,10 +60,10 @@ struct TableInfo {
     uint32_t id;
     uint64_t num_accessed_data;
     uint64_t num_total_accesses;
-    //uint64_t txn_cross_access_histogram[MAX_NUM_ACCESSES];
     uint64_t data_core_degree_histogram[MAX_NUM_CORES];
 
     TableInfo() {}
+
     void initialize(uint32_t _id) {
         id = _id;
         num_accessed_data = 0;
@@ -67,9 +71,6 @@ struct TableInfo {
         for (uint64_t i = 0; i < MAX_NUM_CORES; i++) {
             data_core_degree_histogram[i] = 0;
         }
-        /*for (uint64_t i = 0; i < MAX_NUM_ACCESSES; i++) {
-            txn_cross_access_histogram[i] = 0;
-        }*/
     }
 
     void reset() {
@@ -78,10 +79,6 @@ struct TableInfo {
         for (uint64_t i = 0; i < MAX_NUM_CORES; i++) {
             data_core_degree_histogram[i] = 0;
         }
-
-        /*for (uint64_t i = 0; i < MAX_NUM_ACCESSES; i++) {
-            txn_cross_access_histogram[i] = 0;
-        }*/
     }
 
     void print(string name) {

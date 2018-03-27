@@ -11,7 +11,8 @@
 #include <unordered_set>
 using namespace std;
 
-template <typename T> class SchedulerTreeV1 : public ITransactionQueue<T> {
+template <typename T>
+class SchedulerTreeV1 : public ITransactionQueue<T> {
 	typedef Query<T> Node;
 	int32_t num_threads;
 	SharedQueryQueue<T> input_queue;

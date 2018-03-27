@@ -140,8 +140,8 @@ public:
 protected:
 	void do_partition();
 private:
-	int64_t Find(int64_t p);
-	void Union(int64_t p, int64_t q);
+	DataNodeInfo* Find(DataNodeInfo* p);
+	void Union(DataNodeInfo* p, DataNodeInfo* q);
 };
 
 #endif // DBX1000_PARTITIONER_H

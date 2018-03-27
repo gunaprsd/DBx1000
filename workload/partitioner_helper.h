@@ -8,7 +8,7 @@
 
 struct DataNodeInfo {
     idx_t id;
-    idx_t root;
+    DataNodeInfo* root;
     idx_t size;
     uint32_t tid;
     uint64_t epoch;
@@ -23,7 +23,7 @@ struct DataNodeInfo {
 
     void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
         id = _id;
-        root = id;
+        root = this;
         size = 1;
         tid = _table_id;
         epoch = _epoch;

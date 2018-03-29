@@ -6,10 +6,7 @@
 using namespace std;
 
 BasePartitioner::BasePartitioner(uint32_t num_clusters)
-    : old_objective_value(0), converged(false), _num_clusters(num_clusters), _rand(1),
-      iteration(1) {
-    _rand.seed(0, FLAGS_seed + 125);
-}
+    : old_objective_value(0), converged(false), _num_clusters(num_clusters), iteration(1) {}
 
 void BasePartitioner::partition(uint64_t _id, GraphInfo *_graph_info, ClusterInfo *_cluster_info,
                                 RuntimeInfo *_runtime_info) {
@@ -17,30 +14,46 @@ void BasePartitioner::partition(uint64_t _id, GraphInfo *_graph_info, ClusterInf
     graph_info = _graph_info;
     cluster_info = _cluster_info;
     runtime_info = _runtime_info;
-    iteration = 1;
 
-    init_random_partition();
-    compute_cluster_info();
-    printf("********** (Batch %lu) Random Cluster Information ************\n", id);
-    cluster_info->print();
-
-    // do_partition must assign core_weights to data node
-    // and assigned_core for each txn node.
     iteration++;
+
     do_partition();
-    compute_cluster_info();
 }
 
-/*
- * Assumes that core_weights for data items are set
- * according to transaction to core allocation.
- */
-void BasePartitioner::compute_cluster_info() {
+void BasePartitioner::assign_and_compute_cluster_info(idx_t *parts) {
+    auto use_parts_array = (parts != nullptr);
     old_objective_value = cluster_info->objective;
     cluster_info->reset();
+
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        auto txn_info = &(graph_info->txn_info[i]);
+        if (use_parts_array) {
+            txn_info->assigned_core = parts[i];
+        }
+        auto chosen_core = txn_info->assigned_core;
+
+        // update cluster size
+        cluster_info->cluster_size[chosen_core]++;
+
+        // update core_weights of data nodes
+        auto rwset = &(txn_info->rwset);
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
+            if (info->iteration != iteration) {
+                memset(info->core_weights, 0, sizeof(uint64_t) * MAX_NUM_CORES);
+                info->iteration = iteration;
+            }
+            info->core_weights[chosen_core]++;
+        }
+    }
+
+    // Compute partitioning objective value and update other information
     cluster_info->objective = 0;
     for (auto key : graph_info->data_inv_idx) {
         auto info = &(graph_info->data_info[key]);
+
+        // find aggregate stats on core_weights for each data item
         uint64_t sum_c_sq = 0, sum_c = 0, num_c = 0;
         uint64_t max_c = 0, chosen_c = UINT64_MAX;
         for (uint64_t c = 0; c < _num_clusters; c++) {
@@ -78,54 +91,8 @@ void BasePartitioner::compute_cluster_info() {
         table_info->data_core_degree_histogram[num_c - 1]++;
     }
 
-    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-        auto txn_info = &(graph_info->txn_info[i]);
-        cluster_info->cluster_size[txn_info->assigned_core]++;
-    }
-
     if (old_objective_value == cluster_info->objective) {
         converged = true;
-    }
-}
-
-void BasePartitioner::init_random_partition() {
-    idx_t *parts = new idx_t[graph_info->num_txn_nodes];
-    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-        parts[i] = _rand.nextInt64(0) % _num_clusters;
-    }
-    assign_txn_clusters(parts);
-    delete[] parts;
-}
-
-void BasePartitioner::assign_txn_clusters(idx_t *parts) {
-    // increase iteration so that we are able to update
-    // core_weights appropriately and not confuse with old
-    // values that it may contain.
-    iteration++;
-
-    // memset(cluster_info->cluster_size, 0, sizeof(uint64_t) * _num_clusters);
-
-    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-        auto chosen_core = parts[i];
-        // assign the core to txn
-        graph_info->txn_info[i].assigned_core = chosen_core;
-
-        // update core_weights of data nodes
-        auto rwset = &(graph_info->txn_info[i].rwset);
-        for (auto j = 0u; j < rwset->num_accesses; j++) {
-            auto key = rwset->accesses[j].key;
-            auto info = &(graph_info->data_info[key]);
-            if (info->iteration != iteration) {
-                // first time we are seeing this data item
-                // reset the core_weights
-                memset(info->core_weights, 0, sizeof(uint64_t) * MAX_NUM_CORES);
-                info->iteration = iteration;
-            }
-            info->core_weights[chosen_core]++;
-        }
-
-        // update cluster size info
-        // cluster_info->cluster_size[chosen_core] += graph_info->txn_info[i].rwset.num_accesses;
     }
 }
 
@@ -148,6 +115,8 @@ void BasePartitioner::sort_helper(uint64_t *index, uint64_t *value, uint64_t siz
         assert(value[index[i]] >= value[index[i + 1]]);
     }
 }
+
+
 
 ConflictGraphPartitioner::ConflictGraphPartitioner(uint32_t num_clusters)
     : BasePartitioner(num_clusters), vwgt(), adjwgt(), xadj(), adjncy() {}
@@ -214,8 +183,7 @@ void ConflictGraphPartitioner::do_partition() {
     end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
 
-    // assign the cores to txn based on this parts array
-    assign_txn_clusters(parts);
+	assign_and_compute_cluster_info(parts);
 
     xadj.clear();
     vwgt.clear();
@@ -224,6 +192,8 @@ void ConflictGraphPartitioner::do_partition() {
 
     delete[] parts;
 }
+
+
 
 AccessGraphPartitioner::AccessGraphPartitioner(uint32_t num_clusters)
     : BasePartitioner(num_clusters), vwgt(), adjwgt(), xadj(), adjncy() {}
@@ -318,7 +288,7 @@ void AccessGraphPartitioner::do_partition() {
     end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
 
-    assign_txn_clusters(all_parts);
+	assign_and_compute_cluster_info(all_parts);
 
     xadj.clear();
     vwgt.clear();
@@ -327,13 +297,11 @@ void AccessGraphPartitioner::do_partition() {
     delete[] all_parts;
 }
 
+
+
 HeuristicPartitioner1::HeuristicPartitioner1(uint32_t num_clusters)
     : BasePartitioner(num_clusters) {}
 
-/*
- * Reassign transactions to cores based on assigned core of data
- * items. Also, update core_weights for data items appropriately.
- */
 void HeuristicPartitioner1::internal_txn_partition() {
     double compute_savings_duration = 0;
     double data_reallocation_duration = 0;
@@ -443,7 +411,7 @@ void HeuristicPartitioner1::init_data_partition() {
     // Random allocation of data items
     RandomNumberGenerator gen(1);
     gen.seed(0, FLAGS_seed);
-    for(auto key : graph_info->data_inv_idx) {
+    for (auto key : graph_info->data_inv_idx) {
         idx_t chosen_core = gen.nextInt64(0) % _num_clusters;
         auto info = &(graph_info->data_info[key]);
         info->assigned_core = chosen_core;
@@ -465,7 +433,7 @@ void HeuristicPartitioner1::do_partition() {
         runtime_info->partition_duration += DURATION(end_time, start_time);
 
         // compute the cluster info
-        compute_cluster_info();
+	    assign_and_compute_cluster_info();
         if (!converged) {
             printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id,
                    iteration - 2);
@@ -603,8 +571,12 @@ void HeuristicPartitioner3::init_data_partition() {
     }
 }
 
+
+
 KMeansPartitioner::KMeansPartitioner(uint32_t num_clusters)
-    : BasePartitioner(num_clusters), dim(FLAGS_kmeans_dim) {}
+    : BasePartitioner(num_clusters), _rand(1), dim(FLAGS_kmeans_dim) {
+	_rand.seed(0, FLAGS_seed + 124);
+}
 
 void KMeansPartitioner::do_partition() {
     txn = new double[dim * graph_info->num_txn_nodes];
@@ -640,13 +612,14 @@ void KMeansPartitioner::do_partition() {
         runtime_info->partition_duration += DURATION(end_time, start_time);
 
         // compute the cluster info
-        compute_cluster_info();
+	    assign_and_compute_cluster_info();
         if (!converged) {
             printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id,
                    iteration - 2);
             cluster_info->print();
         }
     }
+
     delete txn;
 }
 
@@ -726,10 +699,12 @@ void KMeansPartitioner::do_iteration() {
     PRINT_INFO(lf, "Iteration-Duration", duration);
 }
 
-ConnectedComponentPartitioner::ConnectedComponentPartitioner(uint32_t num_clusters)
+
+
+BreadthFirstSearchPartitioner::BreadthFirstSearchPartitioner(uint32_t num_clusters)
     : BasePartitioner(num_clusters) {}
 
-void ConnectedComponentPartitioner::do_partition() {
+void BreadthFirstSearchPartitioner::do_partition() {
     uint64_t start_time = get_server_clock();
     idx_t visited_count = 0;
     idx_t num_txn_nodes = graph_info->num_txn_nodes;
@@ -790,12 +765,8 @@ void ConnectedComponentPartitioner::do_partition() {
                     auto key = info->rwset.accesses[i].key;
                     auto data_info = &(graph_info->data_info[key]);
                     if (data_info->iteration != iteration) {
-                        for (uint64_t j = 0; j < _num_clusters; j++) {
-                            data_info->core_weights[j] = 0;
-                        }
                         nodes_queue.push(data_info->id);
                     }
-                    data_info->core_weights[chosen_core]++;
                 }
             }
         }
@@ -813,22 +784,24 @@ void ConnectedComponentPartitioner::do_partition() {
     runtime_info->partition_duration += DURATION(end_time, start_time);
 }
 
+
+
 UnionFindPartitioner::UnionFindPartitioner(uint32_t num_clusters)
-        : BasePartitioner(num_clusters) {}
+		: BasePartitioner(num_clusters) {}
 
 void UnionFindPartitioner::do_partition() {
-    unordered_map<DataNodeInfo*, int64_t> core_map;
+    unordered_map<DataNodeInfo *, int64_t> core_map;
     idx_t num_txn_nodes = graph_info->num_txn_nodes;
 
     uint64_t start_time = get_server_clock();
     printf("Union of data items\n");
     // Union all data items accessed together by the txns
-    for(int64_t t = 0; t < num_txn_nodes; t++) {
+    for (int64_t t = 0; t < num_txn_nodes; t++) {
         auto info = &(graph_info->txn_info[t]);
         for (uint32_t i = 0; i < info->rwset.num_accesses; i++) {
             auto key1 = info->rwset.accesses[i].key;
             auto data_info1 = &(graph_info->data_info[key1]);
-            for(uint32_t j = i + 1; j < info->rwset.num_accesses; j++) {
+            for (uint32_t j = i + 1; j < info->rwset.num_accesses; j++) {
                 auto key2 = info->rwset.accesses[j].key;
                 auto data_info2 = &(graph_info->data_info[key2]);
                 Union(data_info1, data_info2);
@@ -839,7 +812,7 @@ void UnionFindPartitioner::do_partition() {
     printf("Finding cores\n");
     // Find the connected components and assign to cores
     int64_t round_robin = 0;
-    for(int64_t t = 0; t < num_txn_nodes; t++) {
+    for (int64_t t = 0; t < num_txn_nodes; t++) {
         auto info = &(graph_info->txn_info[t]);
         auto key = info->rwset.accesses[0].key;
         auto data_info = &(graph_info->data_info[key]);
@@ -847,7 +820,7 @@ void UnionFindPartitioner::do_partition() {
 
         info->iteration = iteration;
         auto iter = core_map.find(cc);
-        if(iter == core_map.end()) {
+        if (iter == core_map.end()) {
             core_map[cc] = (round_robin % _num_clusters);
             info->assigned_core = (round_robin % _num_clusters);
             round_robin++;
@@ -859,44 +832,73 @@ void UnionFindPartitioner::do_partition() {
     uint64_t end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
 
-    // Update core_weights data structure to help compute_cluster_info
-    printf("Assigning core weights\n");
-    for(int64_t t = 0; t < num_txn_nodes; t++) {
-        auto info = &(graph_info->txn_info[t]);
-        for(uint64_t i = 0; i < info->rwset.num_accesses; i++) {
-            auto key = info->rwset.accesses[i].key;
-            auto data_info = &(graph_info->data_info[key]);
-            if (data_info->iteration != iteration) {
-                for (uint64_t j = 0; j < _num_clusters; j++) {
-                    data_info->core_weights[j] = 0;
-                }
-            }
-            data_info->core_weights[info->assigned_core]++;
-        }
-    }
+	assign_and_compute_cluster_info();
 }
 
-DataNodeInfo* UnionFindPartitioner::Find(DataNodeInfo* info) {
-    auto cinfo = info;
-    while(cinfo->root != cinfo) {
-        cinfo = cinfo->root;
+DataNodeInfo *UnionFindPartitioner::Find(DataNodeInfo *info) {
+    if (info->root != info) {
+        info->root = Find(info->root);
     }
-    info->root = cinfo;
-    return cinfo;
+    return info->root;
 }
 
-void UnionFindPartitioner::Union(DataNodeInfo* p, DataNodeInfo* q) {
+void UnionFindPartitioner::Union(DataNodeInfo *p, DataNodeInfo *q) {
     auto info1 = Find(p);
     auto info2 = Find(q);
-    if(info1 == info2) {
+    if (info1 == info2) {
         return;
     }
 
-    if(info1->size < info2->size) {
+    if (info1->size < info2->size) {
         info1->root = info2;
         info2->size += info1->size;
     } else {
         info2->root = info1;
         info1->size += info2->size;
     }
+}
+
+
+
+RandomPartitioner::RandomPartitioner(uint32_t num_clusters)
+    : BasePartitioner(num_clusters), _rand(1) {
+    _rand.seed(0, FLAGS_seed + 125);
+}
+
+void RandomPartitioner::do_partition() {
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        graph_info->txn_info[i].assigned_core = _rand.nextInt64(0) % _num_clusters;
+    }
+
+	assign_and_compute_cluster_info();
+}
+
+
+
+DummyPartitioner::DummyPartitioner(uint32_t num_clusters)
+		: BasePartitioner(num_clusters), _rand(1) {
+	_rand.seed(0, FLAGS_seed + 136);
+}
+
+void DummyPartitioner::do_partition() {
+	for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+		auto txn_info = &(graph_info->txn_info[i]);
+		auto chosen_core = _rand.nextInt64(0) % _num_clusters;
+		// update cluster size
+		cluster_info->cluster_size[chosen_core]++;
+
+		// update core_weights of data nodes
+		auto rwset = &(txn_info->rwset);
+		for (auto j = 0u; j < rwset->num_accesses; j++) {
+			auto key = rwset->accesses[j].key;
+			auto info = &(graph_info->data_info[key]);
+			if (info->iteration != iteration) {
+				memset(info->core_weights, 0, sizeof(uint64_t) * MAX_NUM_CORES);
+				info->iteration = iteration;
+			}
+			info->core_weights[chosen_core]++;
+		}
+	}
+
+	assign_and_compute_cluster_info();
 }

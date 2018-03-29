@@ -30,10 +30,14 @@ template <typename T> class OfflineScheduler {
             partitioner = new HeuristicPartitioner3(num_threads);
         } else if (FLAGS_parttype == "kmeans") {
             partitioner = new KMeansPartitioner(num_threads);
-        } else if (FLAGS_parttype == "connected_component") {
-            partitioner = new ConnectedComponentPartitioner(num_threads);
+        } else if (FLAGS_parttype == "bfs") {
+            partitioner = new BreadthFirstSearchPartitioner(num_threads);
         } else if (FLAGS_parttype == "union_find") {
             partitioner = new UnionFindPartitioner(num_threads);
+        } else if (FLAGS_parttype == "random") {
+            partitioner = new RandomPartitioner(num_threads);
+        } else if (FLAGS_parttype == "dummy") {
+            partitioner = new DummyPartitioner(num_threads);
         } else {
             assert(false);
         }
@@ -74,8 +78,7 @@ template <typename T> class OfflineScheduler {
 
             partitioner->partition(iteration, graph_info, cluster_info, runtime_info);
 
-            printf("****************** (Batch %lu) Cluster Information **************\n",
-                   iteration);
+            printf("****************** (Batch %lu) Cluster Information **************\n", iteration);
             cluster_info->print();
 
             for (uint64_t i = 0; i < size; i++) {

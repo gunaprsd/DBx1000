@@ -26,7 +26,6 @@ public:
 		data_nodes = new Node *[size];
 		for (uint64_t i = 0; i < size; i++) {
 			data_nodes[i] = nullptr;
-			// data_nodes[i]->is_data_node = true;
 		}
 
 		active_nodes = new Node *[num_threads];

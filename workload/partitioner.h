@@ -19,14 +19,12 @@ class BasePartitioner {
     GraphInfo *graph_info;
     ClusterInfo *cluster_info;
     RuntimeInfo *runtime_info;
-    RandomNumberGenerator _rand;
+
     uint64_t iteration;
     uint64_t id;
     BasePartitioner(uint32_t num_clusters);
     void sort_helper(uint64_t *index, uint64_t *value, uint64_t size);
-    void init_random_partition();
-    void assign_txn_clusters(idx_t *parts);
-    void compute_cluster_info();
+    void assign_and_compute_cluster_info(idx_t *parts = nullptr);
     virtual void do_partition() = 0;
 };
 
@@ -116,6 +114,7 @@ public:
 protected:
 	void do_partition();
 	void do_iteration();
+	RandomNumberGenerator _rand;
 	const uint32_t dim;
 	double* txn;
 	double* means;
@@ -125,15 +124,14 @@ protected:
  * Finds the connected components through a breadth-first search
  * of the access graph.
  */
-class ConnectedComponentPartitioner: public BasePartitioner {
+class BreadthFirstSearchPartitioner: public BasePartitioner {
 public:
-	explicit ConnectedComponentPartitioner(uint32_t num_clusters);
+	explicit BreadthFirstSearchPartitioner(uint32_t num_clusters);
 protected:
 	void do_partition();
 };
 
-class UnionFindPartitioner : public BasePartitioner
-{
+class UnionFindPartitioner : public BasePartitioner {
 public:
 	explicit UnionFindPartitioner(uint32_t num_clusters);
 
@@ -144,4 +142,19 @@ private:
 	void Union(DataNodeInfo* p, DataNodeInfo* q);
 };
 
+class DummyPartitioner : public BasePartitioner {
+public:
+	explicit DummyPartitioner(uint32_t num_clusters);
+protected:
+	void do_partition();
+	RandomNumberGenerator _rand;
+};
+
+class RandomPartitioner : public BasePartitioner {
+public:
+	explicit RandomPartitioner(uint32_t num_clusters);
+protected:
+	void do_partition();
+	RandomNumberGenerator _rand;
+};
 #endif // DBX1000_PARTITIONER_H

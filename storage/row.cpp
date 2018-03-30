@@ -216,12 +216,12 @@ RC row_t::get_row_WAIT_DIE(access_t type, txn_man *txn, row_t *&row) {
         row = this;
         return RCOK;
     } else if (rc == WAIT) {
-        uint64_t start_time = get_sys_clock();
+        Time start_time = get_sys_clock();
         while (!txn->lock_ready && !txn->lock_abort) {
             continue;
         }
-        uint64_t end_time = get_sys_clock();
-        INC_TMP_STATS(thread_id, time_wait, end_time - start_time);
+        Time end_time = get_sys_clock();
+        INC_TMP_STATS(thread_id, time_wait, time_duration(end_time, start_time));
         if (txn->lock_ready) {
             row = this;
             return RCOK;
@@ -252,7 +252,7 @@ RC row_t::get_row_DL_DETECT(access_t type, txn_man *txn, row_t *&row) {
         row = this;
         return rc;
     } else if (rc == WAIT) {
-        uint64_t start_time, last_detect, last_try, now;
+        Time start_time, last_detect, last_try, now;
         start_time = get_sys_clock();
         bool dependency_added = false;
 
@@ -312,8 +312,8 @@ RC row_t::get_row_DL_DETECT(access_t type, txn_man *txn, row_t *&row) {
         } else {
             return ERROR;
         }
-        uint64_t end_time = get_sys_clock();
-        INC_TMP_STATS(thread_id, time_wait, end_time - start_time);
+        Time end_time = get_sys_clock();
+        INC_TMP_STATS(thread_id, time_wait, time_duration(end_time, start_time));
     } else {
         return Abort;
     }
@@ -346,12 +346,12 @@ RC row_t::get_row_TIMESTAMP(access_t type, txn_man *txn, row_t *&row) {
     if (rc == RCOK) {
         row = txn->cur_row;
     } else if (rc == WAIT) {
-        uint64_t start_time = get_sys_clock();
+        Time start_time = get_sys_clock();
         while (!txn->ts_ready) {
             PAUSE
         }
-        uint64_t end_time = get_sys_clock();
-        INC_TMP_STATS(thd_id, time_wait, end_time - start_time);
+        Time end_time = get_sys_clock();
+        INC_TMP_STATS(thd_id, time_wait, time_duration(end_time, start_time));
         row = txn->cur_row;
     }
 
@@ -374,11 +374,11 @@ RC row_t::get_row_MVCC(access_t type, txn_man *txn, row_t *&row) {
     if (rc == RCOK) {
         row = txn->cur_row;
     } else if (rc == WAIT) {
-        uint64_t t1 = get_sys_clock();
+        Time t1 = get_sys_clock();
         while (!txn->ts_ready)
             PAUSE
-        uint64_t t2 = get_sys_clock();
-        INC_TMP_STATS(thd_id, time_wait, t2 - t1);
+        Time t2 = get_sys_clock();
+        INC_TMP_STATS(thd_id, time_wait, time_duration(t2, t1));
         row = txn->cur_row;
     }
     if (rc != Abort) {
@@ -424,11 +424,11 @@ RC row_t::get_row_HEKATON(access_t type, txn_man *txn, row_t *&row) {
     if (rc == RCOK) {
         row = txn->cur_row;
     } else if (rc == WAIT) {
-        uint64_t t1 = get_sys_clock();
+        Time t1 = get_sys_clock();
         while (!txn->ts_ready)
             PAUSE
-        uint64_t t2 = get_sys_clock();
-        INC_TMP_STATS(thd_id, time_wait, t2 - t1);
+        Time t2 = get_sys_clock();
+        INC_TMP_STATS(thd_id, time_wait, time_duration(t2, t1));
         row = txn->cur_row;
     }
     if (rc != Abort) {

@@ -102,7 +102,7 @@ row_t *txn_man::get_row(row_t *row, access_t type) {
   if (CC_ALG == HSTORE) {
     return row;
   }
-  uint64_t start_time = get_sys_clock();
+  Time start_time = get_sys_clock();
   RC rc = RCOK;
   if (accesses[row_cnt] == NULL) {
     auto access = (Access *)_mm_malloc(sizeof(Access), 64);
@@ -154,7 +154,7 @@ row_t *txn_man::get_row(row_t *row, access_t type) {
   if (type == WR)
     wr_cnt++;
 
-  uint64_t duration = get_sys_clock() - start_time;
+  auto duration = time_duration(get_sys_clock(), start_time);
   INC_TMP_STATS(get_thd_id(), time_man, duration);
   return accesses[row_cnt - 1]->data;
 }
@@ -171,25 +171,25 @@ void txn_man::insert_row(row_t *row, table_t *table) {
 }
 
 itemid_t *txn_man::index_read(INDEX *index, idx_key_t key, int part_id) {
-  uint64_t starttime = get_sys_clock();
+  auto starttime = get_sys_clock();
   itemid_t *item;
   index->index_read(key, item, part_id, get_thd_id());
-  INC_TMP_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
+  INC_TMP_STATS(get_thd_id(), time_index, time_duration(get_sys_clock(), starttime));
   return item;
 }
 
 void txn_man::index_read(INDEX *index, idx_key_t key, int part_id,
                          itemid_t *&item) {
-  uint64_t starttime = get_sys_clock();
+  auto starttime = get_sys_clock();
   index->index_read(key, item, part_id, get_thd_id());
-  INC_TMP_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
+  INC_TMP_STATS(get_thd_id(), time_index, time_duration(get_sys_clock(), starttime));
 }
 
 RC txn_man::finish(RC rc) {
 #if CC_ALG == HSTORE
   return RCOK;
 #endif
-  uint64_t starttime = get_sys_clock();
+  auto starttime = get_sys_clock();
 #if CC_ALG == OCC
   if (rc == RCOK)
     rc = occ_man.validate(this);
@@ -211,7 +211,7 @@ RC txn_man::finish(RC rc) {
 #else
   cleanup(rc);
 #endif
-  uint64_t timespan = get_sys_clock() - starttime;
+  auto timespan = time_duration(get_sys_clock(), starttime);
   INC_TMP_STATS(get_thd_id(), time_man, timespan);
   INC_STATS(get_thd_id(), time_cleanup, timespan);
   return rc;

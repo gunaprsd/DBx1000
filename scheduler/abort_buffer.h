@@ -27,7 +27,7 @@ public:
 			double r = gen.nextDouble(0);
 			penalty = static_cast<uint64_t>(r * FLAGS_abort_penalty);
 		}
-		uint64_t ready_time = get_sys_clock() + penalty;
+		Time ready_time = increment(get_sys_clock(), penalty);
 		auto t = make_tuple(ready_time, (BaseQuery *)query);
 		priorityQueue.push(t);
 	}

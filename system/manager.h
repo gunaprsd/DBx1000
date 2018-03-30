@@ -38,6 +38,6 @@ private:
 	ts_t volatile * volatile * volatile all_ts;
 	txn_man ** 		_all_txns;
 	// for MVCC 
-	volatile ts_t	_last_min_ts_time;
-	ts_t			_min_ts;
+	volatile Time	_last_min_ts_time;
+	Time			_min_ts;
 };

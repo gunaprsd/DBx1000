@@ -44,8 +44,8 @@ uint64_t
 Manager::get_ts(uint64_t thread_id) {
 	if (g_ts_batch_alloc)
 		assert(g_ts_alloc == TS_CAS);
-	uint64_t time;
-	uint64_t starttime = get_sys_clock();
+	Time time;
+	Time starttime = get_sys_clock();
 	switch(g_ts_alloc) {
 	case TS_MUTEX :
 		pthread_mutex_lock( &ts_mutex );
@@ -77,7 +77,7 @@ Manager::get_ts(uint64_t thread_id) {
 
 ts_t Manager::get_min_ts(uint64_t tid) {
 	uint64_t now = get_sys_clock();
-	uint64_t last_time = _last_min_ts_time; 
+	uint64_t last_time = _last_min_ts_time;
 	if (tid == 0 && now - last_time > MIN_TS_INTVL)
 	{ 
 		ts_t min = UINT64_MAX;

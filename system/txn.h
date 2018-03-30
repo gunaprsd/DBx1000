@@ -64,7 +64,6 @@ class txn_man {
     }
 
     Database *database;
-    myrand *mrand;
     uint64_t abort_cnt;
     uint64_t thread_id;
     pthread_mutex_t txn_lock;

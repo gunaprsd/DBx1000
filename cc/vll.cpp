@@ -34,10 +34,7 @@ void VLLMan::vllMainLoop(txn_man *txn, BaseQuery *query) {
   bool done = false;
   while (!done) {
     txn_man *front_txn = NULL;
-    uint64_t t5 = get_sys_clock();
     pthread_mutex_lock(&_mutex);
-    uint64_t tt5 = get_sys_clock() - t5;
-    INC_STATS(txn->get_thd_id(), debug5, tt5);
 
     TxnQEntry *front = _txn_queue;
     if (front)
@@ -89,7 +86,6 @@ int VLLMan::beginTxn(txn_man *txn, BaseQuery *query, TxnQEntry *&entry) {
 
 void VLLMan::execute(txn_man *txn, BaseQuery *query) {
   // RC rc;
-  uint64_t t3 = get_sys_clock();
   // ycsb_params * m_query = & ((ycsb_query *) query)->params;
   YCSBDatabase *wl = (YCSBDatabase *)txn->get_db();
   Catalog *schema = wl->the_table->get_schema();
@@ -110,8 +106,6 @@ void VLLMan::execute(txn_man *txn, BaseQuery *query) {
       }
     }
   }
-  uint64_t tt3 = get_sys_clock() - t3;
-  INC_STATS(txn->get_thd_id(), debug3, tt3);
 }
 
 void VLLMan::finishTxn(txn_man *txn, TxnQEntry *entry) {

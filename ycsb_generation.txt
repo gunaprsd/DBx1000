@@ -1,0 +1,10 @@
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=500000 -tag=ycsb_p10_c10_sz500000_s89 -output_folder=data/ycsb_p10_c10_sz500000_s89_raw -task=generate -seed=89
+Workload Generation Completed in 12.950004 secs
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=10000 -tag=ycsb_p10_c10_sz10000_s89 -output_folder=data/ycsb_p10_c10_sz10000_s89_raw -task=generate -seed=89
+Workload Generation Completed in 0.335563 secs
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=100000 -tag=ycsb_p10_c10_sz100000_s89 -output_folder=data/ycsb_p10_c10_sz100000_s89_raw -task=generate -seed=89
+Workload Generation Completed in 2.661610 secs
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=200000 -tag=ycsb_p10_c10_sz200000_s89 -output_folder=data/ycsb_p10_c10_sz200000_s89_raw -task=generate -seed=89
+Workload Generation Completed in 5.034895 secs
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=500000 -tag=ycsb_p10_c10_sz500000_s89 -output_folder=data/ycsb_p10_c10_sz500000_s89_raw -task=generate -seed=89
+Workload Generation Completed in 14.174479 secs

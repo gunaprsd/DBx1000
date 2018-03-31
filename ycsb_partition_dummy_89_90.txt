@@ -1,0 +1,88 @@
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=10000 -tag=ycsb_p10_c10_sz10000_s89 -input_folder=data/ycsb_p10_c10_sz10000_s89_raw -output_folder=data/ycsb_p10_c10_sz10000_s89_dummy -task=partition -parttype=dummy -ufactor=100 -iterations=30
+Workload-Load-Time            : 0.026344
+************** (Batch 1) Input Information ***************
+Num-Data-Nodes                : 776323
+Num-Txn-Nodes                 : 100000
+Num-Edges                     : 1576946
+Min-Data-Degree               : 1
+Max-Data-Degree               : 4194
+Min-Txn-Degree                : 11
+Max-Txn-Degree                : 16
+****************** (Batch 1) Cluster Information **************
+Objective                     : 179796672
+Cluster-Size                  : 9916, 9972, 10073, 9990, 10047, 10131, 9913, 9925, 10099, 9934, 
+Table0-Total-Accesses           : 1576946
+Table0-Num-Accessed-Data        : 776323
+Table0-Data-Core-Degree-Histogram: 82.70, 10.00,  3.02,  1.43,  0.84,  0.54,  0.40,  0.30,  0.27,  0.49, 
+Table0-Weighted-Avg-Cores       :  1.38
+*************** Final Runtime Information *************
+ReadWriteSet-Duration         : 0.826916  
+PreProcessing-Duration        : 0.000000  
+Partition-Duration            : 0.099031  
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=100000 -tag=ycsb_p10_c10_sz100000_s89 -input_folder=data/ycsb_p10_c10_sz100000_s89_raw -output_folder=data/ycsb_p10_c10_sz100000_s89_dummy -task=partition -parttype=dummy -ufactor=100 -iterations=30
+Workload-Load-Time            : 0.153532
+************** (Batch 1) Input Information ***************
+Num-Data-Nodes                : 4187062
+Num-Txn-Nodes                 : 1000000
+Num-Edges                     : 15768770
+Min-Data-Degree               : 1
+Max-Data-Degree               : 41460
+Min-Txn-Degree                : 11
+Max-Txn-Degree                : 16
+****************** (Batch 1) Cluster Information **************
+Objective                     : 18092301391
+Cluster-Size                  : 99641, 100043, 100008, 99862, 100036, 100334, 100235, 99885, 100235, 99721, 
+Table0-Total-Accesses           : 15768770
+Table0-Num-Accessed-Data        : 4187062
+Table0-Data-Core-Degree-Histogram: 63.12, 19.48,  7.13,  3.44,  2.00,  1.31,  0.94,  0.74,  0.65,  1.19, 
+Table0-Weighted-Avg-Cores       :  1.85
+*************** Final Runtime Information *************
+ReadWriteSet-Duration         : 6.977195  
+PreProcessing-Duration        : 0.000000  
+Partition-Duration            : 0.504685  
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=200000 -tag=ycsb_p10_c10_sz200000_s89 -input_folder=data/ycsb_p10_c10_sz200000_s89_raw -output_folder=data/ycsb_p10_c10_sz200000_s89_dummy -task=partition -parttype=dummy -ufactor=100 -iterations=30
+Workload-Load-Time            : 0.196198
+************** (Batch 1) Input Information ***************
+Num-Data-Nodes                : 6152099
+Num-Txn-Nodes                 : 2000000
+Num-Edges                     : 31537638
+Min-Data-Degree               : 1
+Max-Data-Degree               : 82966
+Min-Txn-Degree                : 10
+Max-Txn-Degree                : 16
+****************** (Batch 1) Cluster Information **************
+Objective                     : 72465312017
+Cluster-Size                  : 199479, 200282, 200571, 199516, 199665, 199804, 200313, 200268, 200035, 200067, 
+Table0-Total-Accesses           : 31537638
+Table0-Num-Accessed-Data        : 6152099
+Table0-Data-Core-Degree-Histogram: 51.54, 23.32, 10.07,  5.02,  2.95,  1.93,  1.39,  1.09,  0.95,  1.75, 
+Table0-Weighted-Avg-Cores       :  2.19
+*************** Final Runtime Information *************
+ReadWriteSet-Duration         : 11.487343 
+PreProcessing-Duration        : 0.000000  
+Partition-Duration            : 0.771756  
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=500000 -tag=ycsb_p10_c10_sz500000_s89 -input_folder=data/ycsb_p10_c10_sz500000_s89_raw -output_folder=data/ycsb_p10_c10_sz500000_s89_dummy -task=partition -parttype=dummy -ufactor=100 -iterations=30
+Workload-Load-Time            : 0.548109
+************** (Batch 1) Input Information ***************
+Num-Data-Nodes                : 8794298
+Num-Txn-Nodes                 : 5000000
+Num-Edges                     : 78841496
+Min-Data-Degree               : 1
+Max-Data-Degree               : 207188
+Min-Txn-Degree                : 9
+Max-Txn-Degree                : 16
+****************** (Batch 1) Cluster Information **************
+Objective                     : 452662622854
+Cluster-Size                  : 499378, 500479, 500694, 499538, 499554, 499733, 500704, 500481, 499678, 499761, 
+Table0-Total-Accesses           : 78841496
+Table0-Num-Accessed-Data        : 8794298
+Table0-Data-Core-Degree-Histogram: 30.30, 25.20, 15.84,  9.26,  5.63,  3.73,  2.69,  2.11,  1.86,  3.39, 
+Table0-Weighted-Avg-Cores       :  3.02
+*************** Final Runtime Information *************
+ReadWriteSet-Duration         : 23.756908 
+PreProcessing-Duration        : 0.000000  
+Partition-Duration            : 1.747203  
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=10000 -tag=ycsb_p10_c10_sz10000_s89 -input_folder=data/ycsb_p10_c10_sz10000_s89_raw -output_folder=data/ycsb_p10_c10_sz10000_s89_dummy -task=partition -parttype=dummy -ufactor=100 -iterations=30
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=100000 -tag=ycsb_p10_c10_sz100000_s89 -input_folder=data/ycsb_p10_c10_sz100000_s89_raw -output_folder=data/ycsb_p10_c10_sz100000_s89_dummy -task=partition -parttype=dummy -ufactor=100 -iterations=30
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=200000 -tag=ycsb_p10_c10_sz200000_s89 -input_folder=data/ycsb_p10_c10_sz200000_s89_raw -output_folder=data/ycsb_p10_c10_sz200000_s89_dummy -task=partition -parttype=dummy -ufactor=100 -iterations=30
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=500000 -tag=ycsb_p10_c10_sz500000_s89 -input_folder=data/ycsb_p10_c10_sz500000_s89_raw -output_folder=data/ycsb_p10_c10_sz500000_s89_dummy -task=partition -parttype=dummy -ufactor=100 -iterations=30

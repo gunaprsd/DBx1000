@@ -1,0 +1,92 @@
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=10000 -tag=ycsb_p10_c10_sz10000_s89 -input_folder=data/ycsb_p10_c10_sz10000_s89_raw -output_folder=data/ycsb_p10_c10_sz10000_s89_union_find -task=partition -parttype=union_find -ufactor=100 -iterations=30
+Workload-Load-Time            : 0.017927
+************** (Batch 1) Input Information ***************
+Num-Data-Nodes                : 776323
+Num-Txn-Nodes                 : 100000
+Num-Edges                     : 1576946
+Min-Data-Degree               : 1
+Max-Data-Degree               : 4194
+Min-Txn-Degree                : 11
+Max-Txn-Degree                : 16
+Union of data items
+Finding cores
+****************** (Batch 1) Cluster Information **************
+Objective                     : 0
+Cluster-Size                  : 9904, 9995, 10027, 9951, 9949, 10052, 10075, 10087, 10057, 9903, 
+Table0-Total-Accesses           : 1576946
+Table0-Num-Accessed-Data        : 776323
+Table0-Data-Core-Degree-Histogram: 100.00, 
+Table0-Weighted-Avg-Cores       :  1.00
+*************** Final Runtime Information *************
+ReadWriteSet-Duration         : 0.823824  
+PreProcessing-Duration        : 0.000000  
+Partition-Duration            : 0.228117  
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=100000 -tag=ycsb_p10_c10_sz100000_s89 -input_folder=data/ycsb_p10_c10_sz100000_s89_raw -output_folder=data/ycsb_p10_c10_sz100000_s89_union_find -task=partition -parttype=union_find -ufactor=100 -iterations=30
+Workload-Load-Time            : 0.147597
+************** (Batch 1) Input Information ***************
+Num-Data-Nodes                : 4187062
+Num-Txn-Nodes                 : 1000000
+Num-Edges                     : 15768770
+Min-Data-Degree               : 1
+Max-Data-Degree               : 41460
+Min-Txn-Degree                : 11
+Max-Txn-Degree                : 16
+Union of data items
+Finding cores
+****************** (Batch 1) Cluster Information **************
+Objective                     : 0
+Cluster-Size                  : 100167, 100383, 100018, 100164, 100090, 99992, 99727, 99640, 100061, 99758, 
+Table0-Total-Accesses           : 15768770
+Table0-Num-Accessed-Data        : 4187062
+Table0-Data-Core-Degree-Histogram: 100.00, 
+Table0-Weighted-Avg-Cores       :  1.00
+*************** Final Runtime Information *************
+ReadWriteSet-Duration         : 6.773440  
+PreProcessing-Duration        : 0.000000  
+Partition-Duration            : 1.254101  
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=200000 -tag=ycsb_p10_c10_sz200000_s89 -input_folder=data/ycsb_p10_c10_sz200000_s89_raw -output_folder=data/ycsb_p10_c10_sz200000_s89_union_find -task=partition -parttype=union_find -ufactor=100 -iterations=30
+Workload-Load-Time            : 0.179589
+************** (Batch 1) Input Information ***************
+Num-Data-Nodes                : 6152099
+Num-Txn-Nodes                 : 2000000
+Num-Edges                     : 31537638
+Min-Data-Degree               : 1
+Max-Data-Degree               : 82966
+Min-Txn-Degree                : 10
+Max-Txn-Degree                : 16
+Union of data items
+Finding cores
+****************** (Batch 1) Cluster Information **************
+Objective                     : 0
+Cluster-Size                  : 199831, 200418, 200288, 200872, 200118, 199568, 200003, 199654, 199560, 199688, 
+Table0-Total-Accesses           : 31537638
+Table0-Num-Accessed-Data        : 6152099
+Table0-Data-Core-Degree-Histogram: 100.00, 
+Table0-Weighted-Avg-Cores       :  1.00
+*************** Final Runtime Information *************
+ReadWriteSet-Duration         : 11.147244 
+PreProcessing-Duration        : 0.000000  
+Partition-Duration            : 1.895167  
+./build/rundb -benchmark=ycsb -ycsb_zipf_theta=0.9 -ycsb_read_percent=0.5 -ycsb_multipart_txns=0 -ycsb_num_partitions=10 -threads=10 -size_per_thread=500000 -tag=ycsb_p10_c10_sz500000_s89 -input_folder=data/ycsb_p10_c10_sz500000_s89_raw -output_folder=data/ycsb_p10_c10_sz500000_s89_union_find -task=partition -parttype=union_find -ufactor=100 -iterations=30
+Workload-Load-Time            : 0.586881
+************** (Batch 1) Input Information ***************
+Num-Data-Nodes                : 8794298
+Num-Txn-Nodes                 : 5000000
+Num-Edges                     : 78841496
+Min-Data-Degree               : 1
+Max-Data-Degree               : 207188
+Min-Txn-Degree                : 9
+Max-Txn-Degree                : 16
+Union of data items
+Finding cores
+****************** (Batch 1) Cluster Information **************
+Objective                     : 0
+Cluster-Size                  : 499715, 499820, 499998, 501221, 500248, 499470, 499910, 499732, 499256, 500630, 
+Table0-Total-Accesses           : 78841496
+Table0-Num-Accessed-Data        : 8794298
+Table0-Data-Core-Degree-Histogram: 100.00, 
+Table0-Weighted-Avg-Cores       :  1.00
+*************** Final Runtime Information *************
+ReadWriteSet-Duration         : 23.771923 
+PreProcessing-Duration        : 0.000000  
+Partition-Duration            : 4.554496  

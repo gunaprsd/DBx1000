@@ -116,8 +116,6 @@ void BasePartitioner::sort_helper(uint64_t *index, uint64_t *value, uint64_t siz
     }
 }
 
-
-
 ConflictGraphPartitioner::ConflictGraphPartitioner(uint32_t num_clusters)
     : BasePartitioner(num_clusters), vwgt(), adjwgt(), xadj(), adjncy() {}
 
@@ -183,7 +181,7 @@ void ConflictGraphPartitioner::do_partition() {
     end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
 
-	assign_and_compute_cluster_info(parts);
+    assign_and_compute_cluster_info(parts);
 
     xadj.clear();
     vwgt.clear();
@@ -192,8 +190,6 @@ void ConflictGraphPartitioner::do_partition() {
 
     delete[] parts;
 }
-
-
 
 AccessGraphPartitioner::AccessGraphPartitioner(uint32_t num_clusters)
     : BasePartitioner(num_clusters), vwgt(), adjwgt(), xadj(), adjncy() {}
@@ -288,7 +284,7 @@ void AccessGraphPartitioner::do_partition() {
     end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
 
-	assign_and_compute_cluster_info(all_parts);
+    assign_and_compute_cluster_info(all_parts);
 
     xadj.clear();
     vwgt.clear();
@@ -296,8 +292,6 @@ void AccessGraphPartitioner::do_partition() {
     adjwgt.clear();
     delete[] all_parts;
 }
-
-
 
 HeuristicPartitioner1::HeuristicPartitioner1(uint32_t num_clusters)
     : BasePartitioner(num_clusters) {}
@@ -433,7 +427,7 @@ void HeuristicPartitioner1::do_partition() {
         runtime_info->partition_duration += DURATION(end_time, start_time);
 
         // compute the cluster info
-	    assign_and_compute_cluster_info();
+        assign_and_compute_cluster_info();
         if (!converged) {
             printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id,
                    iteration - 2);
@@ -571,11 +565,9 @@ void HeuristicPartitioner3::init_data_partition() {
     }
 }
 
-
-
 KMeansPartitioner::KMeansPartitioner(uint32_t num_clusters)
     : BasePartitioner(num_clusters), _rand(1), dim(FLAGS_kmeans_dim) {
-	_rand.seed(0, FLAGS_seed + 124);
+    _rand.seed(0, FLAGS_seed + 124);
 }
 
 void KMeansPartitioner::do_partition() {
@@ -612,7 +604,7 @@ void KMeansPartitioner::do_partition() {
         runtime_info->partition_duration += DURATION(end_time, start_time);
 
         // compute the cluster info
-	    assign_and_compute_cluster_info();
+        assign_and_compute_cluster_info();
         if (!converged) {
             printf("********** (Batch %lu) Cluster Information at Iteration %lu ************\n", id,
                    iteration - 2);
@@ -699,8 +691,6 @@ void KMeansPartitioner::do_iteration() {
     PRINT_INFO(lf, "Iteration-Duration", duration);
 }
 
-
-
 BreadthFirstSearchPartitioner::BreadthFirstSearchPartitioner(uint32_t num_clusters)
     : BasePartitioner(num_clusters) {}
 
@@ -782,12 +772,10 @@ void BreadthFirstSearchPartitioner::do_partition() {
     }
     uint64_t end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
+    assign_and_compute_cluster_info();
 }
 
-
-
-UnionFindPartitioner::UnionFindPartitioner(uint32_t num_clusters)
-		: BasePartitioner(num_clusters) {}
+UnionFindPartitioner::UnionFindPartitioner(uint32_t num_clusters) : BasePartitioner(num_clusters) {}
 
 void UnionFindPartitioner::do_partition() {
     unordered_map<DataNodeInfo *, int64_t> core_map;
@@ -832,7 +820,7 @@ void UnionFindPartitioner::do_partition() {
     uint64_t end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
 
-	assign_and_compute_cluster_info();
+    assign_and_compute_cluster_info();
 }
 
 DataNodeInfo *UnionFindPartitioner::Find(DataNodeInfo *info) {
@@ -858,47 +846,43 @@ void UnionFindPartitioner::Union(DataNodeInfo *p, DataNodeInfo *q) {
     }
 }
 
-
-
 RandomPartitioner::RandomPartitioner(uint32_t num_clusters)
     : BasePartitioner(num_clusters), _rand(1) {
     _rand.seed(0, FLAGS_seed + 125);
 }
 
 void RandomPartitioner::do_partition() {
+    auto start_time = get_server_clock();
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         graph_info->txn_info[i].assigned_core = _rand.nextInt64(0) % _num_clusters;
     }
-
-	assign_and_compute_cluster_info();
+    auto end_time = get_server_clock();
+    runtime_info->partition_duration += DURATION(end_time, start_time);
+    assign_and_compute_cluster_info();
 }
 
-
-
 DummyPartitioner::DummyPartitioner(uint32_t num_clusters)
-		: BasePartitioner(num_clusters), _rand(1) {
-	_rand.seed(0, FLAGS_seed + 136);
+    : BasePartitioner(num_clusters), _rand(1) {
+    _rand.seed(0, FLAGS_seed + 136);
 }
 
 void DummyPartitioner::do_partition() {
-	for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
-		auto txn_info = &(graph_info->txn_info[i]);
-		auto chosen_core = _rand.nextInt64(0) % _num_clusters;
-		// update cluster size
-		cluster_info->cluster_size[chosen_core]++;
+    auto start_time = get_server_clock();
+    uint64_t num_edges = graph_info->num_edges;
+    for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
+        auto txn_info = &(graph_info->txn_info[i]);
+	txn_info->assigned_core = _rand.nextInt64(0) % _num_clusters;
 
-		// update core_weights of data nodes
-		auto rwset = &(txn_info->rwset);
-		for (auto j = 0u; j < rwset->num_accesses; j++) {
-			auto key = rwset->accesses[j].key;
-			auto info = &(graph_info->data_info[key]);
-			if (info->iteration != iteration) {
-				memset(info->core_weights, 0, sizeof(uint64_t) * MAX_NUM_CORES);
-				info->iteration = iteration;
-			}
-			info->core_weights[chosen_core]++;
-		}
-	}
-
-	assign_and_compute_cluster_info();
+        // update core_weights of data nodes
+        auto rwset = &(txn_info->rwset);
+        for (auto j = 0u; j < rwset->num_accesses; j++) {
+            auto key = rwset->accesses[j].key;
+            auto info = &(graph_info->data_info[key]);
+	    num_edges += info->read_txns.size();
+        }
+    }
+    cluster_info->objective = num_edges;
+    auto end_time = get_server_clock();
+    runtime_info->partition_duration += DURATION(end_time, start_time);
+    assign_and_compute_cluster_info();
 }

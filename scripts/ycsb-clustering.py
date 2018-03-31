@@ -7,8 +7,8 @@ start_num = 4
 num_runs = 5
 configs = []
 sizes =  [10000, 100000, 200000, 500000]
-for cores in [10]:
-    for parts in [10]:
+for cores in [30]:
+    for parts in [30]:
         for size_per_thread in sizes:
             if parts != cores:
                 continue
@@ -79,6 +79,7 @@ def execute(start, end, type_tag, scheduler_tag):
             command = base_command
             command += ' -input_folder=' + data_folder + "/" + seed_tag + '_' + type_tag + ' \\\n'
             command += ' -scheduler_type=' + scheduler_tag + ' \\\n'
+            command += ' -abort_buffer \\\n'
             command += ' >> ' + log_file
             for i in xrange(0, 10):
                 print(command)

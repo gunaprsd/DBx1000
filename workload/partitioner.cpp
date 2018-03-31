@@ -990,6 +990,8 @@ int64_t ParallelUnionFindPartitioner::get_core(DataNodeInfo *cc) {
 void *ParallelUnionFindPartitioner::union_helper(void *ptr) {
     auto data = reinterpret_cast<ThreadLocalData *>(ptr);
     auto partitioner = reinterpret_cast<ParallelUnionFindPartitioner *>(data->fields[0]);
+    auto thread_id = reinterpret_cast<uint64_t>(data->fields[1]);
+    set_affinity(thread_id);
     int64_t start = static_cast<int64_t>(data->fields[2]);
     int64_t end = static_cast<int64_t>(data->fields[3]);
     partitioner->do_union(start, end);
@@ -999,6 +1001,8 @@ void *ParallelUnionFindPartitioner::union_helper(void *ptr) {
 void *ParallelUnionFindPartitioner::find_helper(void *ptr) {
     auto data = reinterpret_cast<ThreadLocalData *>(ptr);
     auto partitioner = reinterpret_cast<ParallelUnionFindPartitioner *>(data->fields[0]);
+    auto thread_id = reinterpret_cast<uint64_t>(data->fields[1]);
+    set_affinity(thread_id);
     int64_t start = static_cast<int64_t>(data->fields[2]);
     int64_t end = static_cast<int64_t>(data->fields[3]);
     partitioner->do_find(start, end);

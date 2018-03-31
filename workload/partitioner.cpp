@@ -929,7 +929,6 @@ void ParallelUnionFindPartitioner::Union(DataNodeInfo *p, DataNodeInfo *q) {
 			__sync_fetch_and_add(&info1->size, info2->size);
 			return;
 		}
-
 	}
 
 	Union(p, q);
@@ -975,7 +974,7 @@ int64_t ParallelUnionFindPartitioner::get_core(DataNodeInfo* cc) {
     int64_t core = -1;
     auto iter = _core_map.find(cc);
     if (iter == _core_map.end()) {
-        core = _rand.nextInt64(0);
+        core = _rand.nextInt64(0) % _num_clusters;
         auto res = _core_map.insert(std::pair<DataNodeInfo*, int64_t>(cc, core));
         if(res.second) {
             return core;

@@ -1,8 +1,8 @@
 #include "partitioner.h"
+#include <cmath>
 #include <queue>
 #include <stack>
 #include <unordered_map>
-#include <cmath>
 using namespace std;
 
 BasePartitioner::BasePartitioner(uint32_t num_clusters)
@@ -846,10 +846,10 @@ void UnionFindPartitioner::Union(DataNodeInfo *p, DataNodeInfo *q) {
     }
 }
 
-ParallelUnionFindPartitioner::ParallelUnionFindPartitioner(uint32_t num_threads, uint32_t num_clusters)
-		: BasePartitioner(num_clusters), _rand(num_threads), _num_threads(num_threads)
-{
-    for(uint32_t i = 0; i < num_threads; i++) {
+ParallelUnionFindPartitioner::ParallelUnionFindPartitioner(uint32_t num_threads,
+                                                           uint32_t num_clusters)
+    : BasePartitioner(num_clusters), _rand(num_threads), _num_threads(num_threads) {
+    for (uint32_t i = 0; i < num_threads; i++) {
         _rand.seed(i, FLAGS_seed + 124 + i);
     }
 }
@@ -858,15 +858,15 @@ void ParallelUnionFindPartitioner::do_partition() {
     auto threads = new pthread_t[_num_threads];
     auto data = new ThreadLocalData[_num_threads];
 
-	idx_t num_txn_nodes = graph_info->num_txn_nodes;
+    idx_t num_txn_nodes = graph_info->num_txn_nodes;
     idx_t num_txn_nodes_per_thread = static_cast<idx_t>(ceil(num_txn_nodes / _num_threads));
 
-	uint64_t start_time = get_server_clock();
+    uint64_t start_time = get_server_clock();
     for (auto i = 0u; i < _num_threads; i++) {
         data[i].fields[0] = (uint64_t)this;
         data[i].fields[1] = (uint64_t)i;
         data[i].fields[2] = i * num_txn_nodes_per_thread;
-        data[i].fields[3] = min((i+1) * num_txn_nodes_per_thread, num_txn_nodes);
+        data[i].fields[3] = min((i + 1) * num_txn_nodes_per_thread, num_txn_nodes);
         pthread_create(&threads[i], nullptr, union_helper, reinterpret_cast<void *>(&data[i]));
     }
 
@@ -876,14 +876,14 @@ void ParallelUnionFindPartitioner::do_partition() {
     uint64_t end_time = get_server_clock();
     double duration = DURATION(end_time, start_time);
     PRINT_INFO(lf, "Union Duration", duration);
-	runtime_info->partition_duration += duration;
+    runtime_info->partition_duration += duration;
 
     start_time = get_server_clock();
     for (auto i = 0u; i < _num_threads; i++) {
         data[i].fields[0] = (uint64_t)this;
         data[i].fields[1] = (uint64_t)i;
         data[i].fields[2] = i * num_txn_nodes_per_thread;
-        data[i].fields[3] = min((i+1) * num_txn_nodes_per_thread, num_txn_nodes);
+        data[i].fields[3] = min((i + 1) * num_txn_nodes_per_thread, num_txn_nodes);
         pthread_create(&threads[i], nullptr, find_helper, reinterpret_cast<void *>(&data[i]));
     }
 
@@ -892,47 +892,46 @@ void ParallelUnionFindPartitioner::do_partition() {
     }
     end_time = get_server_clock();
     duration = DURATION(end_time, start_time);
-	PRINT_INFO(lf, "Find Duration", duration);
-	runtime_info->partition_duration += duration;
+    PRINT_INFO(lf, "Find Duration", duration);
+    runtime_info->partition_duration += duration;
 
-	// Find the connected components and assign to cores
-	assign_and_compute_cluster_info();
+    // Find the connected components and assign to cores
+    assign_and_compute_cluster_info();
 }
 
 DataNodeInfo *ParallelUnionFindPartitioner::Find(DataNodeInfo *info) {
-	DataNodeInfo* old_val;
-	DataNodeInfo* new_val;
-	if (info->root != info) {
-		old_val = info->root;
-		new_val = Find(old_val);
-		if(old_val != new_val) {
-			__sync_bool_compare_and_swap(&info->root, old_val, new_val);
-		}
-	}
-	return info->root;
+    DataNodeInfo *old_val;
+    DataNodeInfo *new_val;
+    if (info->root != info) {
+        old_val = info->root;
+        new_val = Find(old_val);
+        if (old_val != new_val) {
+            __sync_bool_compare_and_swap(&info->root, old_val, new_val);
+        }
+    }
+    return info->root;
 }
 
 void ParallelUnionFindPartitioner::Union(DataNodeInfo *p, DataNodeInfo *q) {
-	auto info1 = Find(p);
-	auto info2 = Find(q);
-	if (info1 == info2) {
-		return;
-	}
+    auto info1 = Find(p);
+    auto info2 = Find(q);
+    if (info1 == info2) {
+        return;
+    }
 
-	if (info1->size < info2->size) {
-		if(__sync_bool_compare_and_swap(& info1->root, info1, info2)) {
-			__sync_fetch_and_add(&info2->size, info1->size);
-			return;
-		}
-	} else {
-		if(__sync_bool_compare_and_swap(& info2->root, info2, info1)) {
-			__sync_fetch_and_add(&info1->size, info2->size);
-			return;
-		}
+    if (info1->size < info2->size) {
+        if (__sync_bool_compare_and_swap(&info1->root, info1, info2)) {
+            __sync_fetch_and_add(&info2->size, info1->size);
+            return;
+        }
+    } else {
+        if (__sync_bool_compare_and_swap(&info2->root, info2, info1)) {
+            __sync_fetch_and_add(&info1->size, info2->size);
+            return;
+        }
+    }
 
-	}
-
-	Union(p, q);
+    Union(p, q);
 }
 
 void ParallelUnionFindPartitioner::do_union(int64_t start, int64_t end) {
@@ -951,7 +950,7 @@ void ParallelUnionFindPartitioner::do_union(int64_t start, int64_t end) {
 }
 
 void ParallelUnionFindPartitioner::do_find(int64_t start, int64_t end) {
-    unordered_map<DataNodeInfo*, int64_t> local_core_map;
+    unordered_map<DataNodeInfo *, int64_t> local_core_map;
     // Find the connected components and assign to cores
     for (int64_t t = start; t < end; t++) {
         auto info = &(graph_info->txn_info[t]);
@@ -971,16 +970,16 @@ void ParallelUnionFindPartitioner::do_find(int64_t start, int64_t end) {
     }
 }
 
-int64_t ParallelUnionFindPartitioner::get_core(DataNodeInfo* cc) {
+int64_t ParallelUnionFindPartitioner::get_core(DataNodeInfo *cc) {
     int64_t core = -1;
     auto iter = _core_map.find(cc);
     if (iter == _core_map.end()) {
-        core = _rand.nextInt64(0);
-        auto res = _core_map.insert(std::pair<DataNodeInfo*, int64_t>(cc, core));
-        if(res.second) {
+        core = _rand.nextInt64(0) % _num_clusters;
+        auto res = _core_map.insert(std::pair<DataNodeInfo *, int64_t>(cc, core));
+        if (res.second) {
             return core;
         } else {
-        	return get_core(cc);
+            return get_core(cc);
         }
     } else {
         core = iter->second;
@@ -1031,14 +1030,14 @@ void DummyPartitioner::do_partition() {
     uint64_t num_edges = graph_info->num_edges;
     for (uint64_t i = 0; i < graph_info->num_txn_nodes; i++) {
         auto txn_info = &(graph_info->txn_info[i]);
-	txn_info->assigned_core = _rand.nextInt64(0) % _num_clusters;
+        txn_info->assigned_core = _rand.nextInt64(0) % _num_clusters;
 
         // update core_weights of data nodes
         auto rwset = &(txn_info->rwset);
         for (auto j = 0u; j < rwset->num_accesses; j++) {
             auto key = rwset->accesses[j].key;
             auto info = &(graph_info->data_info[key]);
-	    num_edges += info->read_txns.size();
+            num_edges += info->read_txns.size();
         }
     }
     cluster_info->objective = num_edges;

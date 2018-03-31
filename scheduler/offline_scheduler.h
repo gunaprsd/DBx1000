@@ -34,6 +34,8 @@ template <typename T> class OfflineScheduler {
             partitioner = new BreadthFirstSearchPartitioner(num_threads);
         } else if (FLAGS_parttype == "union_find") {
             partitioner = new UnionFindPartitioner(num_threads);
+        } else if (FLAGS_parttype == "parallel_union_find") {
+	        partitioner = new ParallelUnionFindPartitioner(num_threads, num_threads);
         } else if (FLAGS_parttype == "random") {
             partitioner = new RandomPartitioner(num_threads);
         } else if (FLAGS_parttype == "dummy") {

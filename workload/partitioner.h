@@ -7,6 +7,9 @@
 #include "query.h"
 #include <algorithm>
 #include <cstring>
+#include <tbb/concurrent_unordered_map.h>
+#include <unordered_map>
+#include "pthread.h"
 
 class BasePartitioner {
   public:
@@ -140,6 +143,24 @@ protected:
 private:
 	DataNodeInfo* Find(DataNodeInfo* p);
 	void Union(DataNodeInfo* p, DataNodeInfo* q);
+};
+
+class ParallelUnionFindPartitioner : public BasePartitioner {
+public:
+	explicit ParallelUnionFindPartitioner(uint32_t num_clusters, uint32_t num_threads);
+protected:
+	void do_partition();
+	void do_union(int64_t start, int64_t end);
+	void do_find(int64_t start, int64_t end);
+	static void* union_helper(void* data);
+	static void* find_helper(void* data);
+private:
+	DataNodeInfo* Find(DataNodeInfo* p);
+	void Union(DataNodeInfo* p, DataNodeInfo* q);
+	int64_t get_core(DataNodeInfo* p);
+	RandomNumberGenerator _rand;
+	uint32_t _num_threads;
+	tbb::concurrent_unordered_map<DataNodeInfo*, int64_t> _core_map;
 };
 
 class DummyPartitioner : public BasePartitioner {

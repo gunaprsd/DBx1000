@@ -9,6 +9,7 @@
 #include "thread.h"
 #include "scheduler.h"
 #include "ycsb_database.h"
+#include "online_batch_scheduler.h"
 
 class YCSBWorkloadGenerator : public ParallelWorkloadGenerator<ycsb_params> {
 public:
@@ -38,7 +39,7 @@ public:
 protected:
 	YCSBDatabase _db;
 	YCSBWorkloadLoader _loader;
-	Scheduler<ycsb_params>* _scheduler;
+	OnlineBatchScheduler<ycsb_params>* _scheduler;
 };
 
 

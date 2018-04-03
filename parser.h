@@ -61,4 +61,5 @@ DECLARE_uint32(kmeans_dim);
 DECLARE_bool(pre_schedule_txns);
 DECLARE_uint32(scheduler_delay);
 DECLARE_string(scheduler_type);
+DECLARE_uint32(scheduler_batch_size);
 #endif //SYSTEM_PARSER_H__

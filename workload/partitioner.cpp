@@ -846,6 +846,7 @@ void UnionFindPartitioner::Union(DataNodeInfo *p, DataNodeInfo *q) {
     }
 }
 
+
 ParallelUnionFindPartitioner::ParallelUnionFindPartitioner(uint32_t num_threads,
                                                            uint32_t num_clusters)
     : BasePartitioner(num_clusters), _rand(num_threads), _num_threads(num_threads) {
@@ -910,6 +911,7 @@ DataNodeInfo *ParallelUnionFindPartitioner::Find(DataNodeInfo *info) {
         }
     }
     return info->root;
+    return nullptr;
 }
 
 void ParallelUnionFindPartitioner::Union(DataNodeInfo *p, DataNodeInfo *q) {
@@ -1048,4 +1050,9 @@ void DummyPartitioner::do_partition() {
     auto end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
     assign_and_compute_cluster_info();
+}
+
+ostream &operator<<(ostream &os, const EpochAddress &ap) {
+	os << "[" << ap.GetEpoch() << ", " << (long)ap.GetAddress() << "]";
+	return os;
 }

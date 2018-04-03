@@ -167,13 +167,13 @@ Query<T> *find_root(Query<T> *node) {
         return nullptr;
     } else {
         auto parent = node->parent;
-        auto root = node;
+        auto root_ptr = node;
         while (parent != nullptr) {
-            root = parent;
-            parent = root->parent;
+            root_ptr = parent;
+            parent = root_ptr->parent;
         }
-        if (root->owner != -1) {
-            return root;
+        if (root_ptr->owner != -1) {
+            return root_ptr;
         } else {
             return nullptr;
         }

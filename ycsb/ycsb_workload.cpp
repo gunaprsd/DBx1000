@@ -1,6 +1,8 @@
 // Copyright[2017] <Guna Prasaad>
 
 #include "ycsb_workload.h"
+#include "parser.h"
+
 #include <algorithm>
 
 YCSBWorkloadGenerator::YCSBWorkloadGenerator(const YCSBBenchmarkConfig &_config,
@@ -166,7 +168,7 @@ YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &fold
     // Load workload in parallel
     _loader.load();
 
-    _scheduler = new Scheduler<ycsb_params>(num_threads, &_db);
+    _scheduler = new OnlineBatchScheduler<ycsb_params>(num_threads,FLAGS_scheduler_batch_size,  &_db);
 }
 
 void YCSBExecutor::execute() {

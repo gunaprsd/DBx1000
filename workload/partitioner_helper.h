@@ -5,10 +5,50 @@
 #include <cstring>
 #include <metis.h>
 #include <system/query.h>
+struct EpochAddress {
+    long word;
+    static const int word_size = 64;
+    static const int epoch_size = 16;
+    static const int address_size = word_size - epoch_size;
+    static const int epoch_shift = address_size;
+    static const long address_mask = (1L << address_size) - 1L;
+    static const long epoch_mask = ~address_mask;
+
+public:
+    EpochAddress() {
+        word = 0;
+    }
+    void Set(void *ptr, uint64_t epoch) {
+        SetAddress(ptr);
+        SetEpoch(epoch);
+    }
+    void SetAddress(void *ptr) {
+        auto ptr_word = (long)ptr & address_mask;
+        word &= ~(address_mask);
+        word |= ptr_word;
+    }
+    void *GetAddress() const {
+        auto ptr_word = (word & address_mask);
+        return (void *)ptr_word;
+    }
+    void SetEpoch(uint64_t epoch) {
+        auto epoch_short = static_cast<short>(epoch);
+        word &= ~(epoch_mask);
+        word |= ((long)epoch_short << epoch_shift);
+    }
+    short GetEpoch() const { return static_cast<short>(word >> epoch_shift); }
+    bool IsEpoch(uint64_t iteration) {
+        auto epoch_short = static_cast<short>(iteration);
+        return (epoch_short == GetEpoch());
+    }
+    friend ostream &operator<<(ostream &os, const EpochAddress &ap);
+};
+
 
 struct DataNodeInfo {
     idx_t id;
     DataNodeInfo* root;
+    EpochAddress root_ptr;
     idx_t size;
     uint32_t tid;
     uint64_t epoch;
@@ -23,7 +63,7 @@ struct DataNodeInfo {
 
     void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
         id = _id;
-        root = this;
+        root_ptr.Set(this, _epoch);
         size = 1;
         tid = _table_id;
         epoch = _epoch;
@@ -35,6 +75,8 @@ struct DataNodeInfo {
         memset(&core_weights, 0, sizeof(uint64_t) * MAX_NUM_CORES);
     }
 };
+
+
 
 struct TxnNodeInfo {
     idx_t id;

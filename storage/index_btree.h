@@ -57,7 +57,7 @@ private:
 	
 	uint32_t 		cut(uint32_t length);
 	uint32_t	 	order; // # of keys in a node(for both leaf and non-leaf)
-	bt_node ** 	roots; // each compute_partitions has a different root
+	bt_node ** 	roots; // each compute_partitions has a different root_ptr
 	bt_node *   find_root(uint64_t part_id);
 
 	bool 		latch_node(bt_node * node, latch_t latch_type);

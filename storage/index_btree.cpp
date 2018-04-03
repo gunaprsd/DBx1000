@@ -482,7 +482,7 @@ RC index_btree::insert_into_parent(
 	
     bt_node * parent = left->parent;
 
-    /* Case: new root. */
+    /* Case: new root_ptr. */
     if (parent == NULL)
         return insert_into_new_root(params, left, key, right);
     
@@ -529,8 +529,8 @@ RC index_btree::insert_into_new_root(
 	left->next = right;
 
 	this->roots[part_id] = new_root;	
-	// TODO this new root is not latched, at this point, other threads
-	// may start to access this new root. Is this ok?
+	// TODO this new root_ptr is not latched, at this point, other threads
+	// may start to access this new root_ptr. Is this ok?
     return RCOK;
 }
 

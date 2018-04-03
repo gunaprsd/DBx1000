@@ -250,7 +250,6 @@ template <typename T> class OnlineBatchScheduler {
   public:
     OnlineBatchScheduler(uint32_t num_threads, uint32_t max_batch_size, Database *db)
         : _num_threads(num_threads),
-          _num_clusters(num_threads),
           _max_batch_size(max_batch_size),
           _db(db), tasks(), _core_map(), _rand(1), done(false) {
         _rand.seed(0, FLAGS_seed + 125);
@@ -262,12 +261,16 @@ template <typename T> class OnlineBatchScheduler {
         }
 
         // Initialize data items
-	    _epoch = 0;
+
 	    auto num_data_items = AccessIterator<T>::get_max_key();
 	    _data_info = new DataNodeInfo[num_data_items];
 	    for (uint64_t i = 0; i < num_data_items; i++) {
-		    _data_info[i].reset(i, 0, 0);
+		    _data_info[i].reset(i, 1, 0);
 	    }
+
+	    _epoch = 0;
+	    _current_batch_index = 0;
+	    _batch_info = nullptr;
     }
 
     void schedule(ParallelWorkloadLoader<T> *loader) {
@@ -277,16 +280,20 @@ template <typename T> class OnlineBatchScheduler {
         _loader->release();
 
         // Prepare read-write set
+	    auto start_time = get_server_clock();
         _rwset_info = new ReadWriteSet[_max_size];
         for (uint64_t i = 0; i < _max_size; i++) {
             _batch[i].obtain_rw_set(&(_rwset_info[i]));
         }
+		auto end_time = get_server_clock();
+	    double duration = DURATION(end_time, start_time);
+		printf("ReadWriteSet Duration: %lf secs", duration);
 
         move_to_next_batch();
         add_union_tasks();
 
         printf("Starting workers...");
-        auto start_time = get_server_clock();
+        start_time = get_server_clock();
         pthread_t worker_threads[_num_threads];
         ThreadLocalData data[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
@@ -299,14 +306,13 @@ template <typename T> class OnlineBatchScheduler {
         for (uint32_t i = 0; i < _num_threads; i++) {
             pthread_join(worker_threads[i], nullptr);
         }
-        auto end_time = get_server_clock();
-        double duration = DURATION(end_time, start_time);
-        printf("Total Runtime : %lf secs\n", duration);
+        end_time = get_server_clock();
+        duration = DURATION(end_time, start_time);
+        printf("Total Runtime: %lf secs\n", duration);
     }
 
   protected:
     const uint32_t _num_threads;
-    const uint32_t _num_clusters;
     const uint64_t _max_batch_size;
 	Database *_db;
 	tbb::concurrent_queue<Task *> tasks;
@@ -330,7 +336,6 @@ template <typename T> class OnlineBatchScheduler {
     void run_worker(uint64_t thread_id) {
         // must collocate share work between union, find and execute
         Task *task;
-
         while (!done) {
             if (!tasks.try_pop(task)) {
                 continue;
@@ -378,12 +383,12 @@ template <typename T> class OnlineBatchScheduler {
     void add_find_tasks() {
         // add find task for current batch
         _core_map.clear();
-        int64_t batch_size = _batch_info->end_index - _batch_info->start_index;
+        int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
         int64_t batch_size_per_thread = batch_size / _num_threads;
         for (uint64_t i = 0; i < _num_threads; i++) {
             int64_t start_index = i * batch_size_per_thread;
             int64_t end_index = (i + 1) * batch_size_per_thread;
-            end_index = end_index > batch_size ? batch_size : end_index;
+            end_index = (end_index > batch_size) ? batch_size : end_index;
             auto task = &(_batch_info->find_tasks->tasks[i]);
             task->type = FIND;
             task->batch_info = _batch_info;
@@ -400,19 +405,19 @@ template <typename T> class OnlineBatchScheduler {
     	// previous batch is done.
 
         for (uint64_t i = 0; i < _num_threads; i++) {
-            auto task = &(_batch_info->find_tasks->tasks[i]);
+            auto task = &(_batch_info->execute_tasks->tasks[i]);
             task->type = EXECUTE;
             task->batch_info = _batch_info;
             tasks.push(task);
         }
     }
     void add_union_tasks() {
-        int64_t batch_size = _batch_info->end_index - _batch_info->start_index;
+        int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
         int64_t batch_size_per_thread = batch_size / _num_threads;
         for (uint64_t i = 0; i < _num_threads; i++) {
             int64_t start_index = i * batch_size_per_thread;
             int64_t end_index = (i + 1) * batch_size_per_thread;
-            end_index = end_index > batch_size ? batch_size : end_index;
+            end_index = (end_index > batch_size) ? batch_size : end_index;
             auto task = &(_batch_info->union_tasks->tasks[i]);
             task->type = UNION;
             task->batch_info = _batch_info;
@@ -425,11 +430,13 @@ template <typename T> class OnlineBatchScheduler {
         if(_current_batch_index < _max_batch_size) {
             auto start_index = _current_batch_index;
             _current_batch_index += _max_batch_size;
+            // handling corner case
             _current_batch_index =
-                    (_current_batch_index >= _max_size) ? _max_size : _current_batch_index;
+                    (_current_batch_index <= _max_size) ? _current_batch_index : _max_size;
             auto end_index = _current_batch_index;
-            _epoch++;
             auto new_batch = new BatchInfo(_batch_info, start_index, end_index, _num_threads);
+            // updating epoch and adding a new_batch
+	        _epoch++;
             _batch_info = new_batch;
             return true;
         } else {
@@ -535,7 +542,7 @@ template <typename T> class OnlineBatchScheduler {
         long core = -1;
         auto iter = _core_map.find(word);
         if (iter == _core_map.end()) {
-            core = static_cast<long>(_rand.nextInt64(0) % _num_clusters);
+            core = static_cast<long>(_rand.nextInt64(0) % _num_threads);
             auto res = _core_map.insert(std::pair<long, long>(word, core));
             if (res.second) {
                 return core;

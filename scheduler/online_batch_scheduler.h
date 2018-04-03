@@ -51,6 +51,7 @@ struct TaskList {
 };
 struct BatchInfo {
     BatchInfo *prev_batch;
+    uint64_t epoch;
     int64_t start_index;
     int64_t end_index;
     int64_t parallelism;
@@ -58,9 +59,9 @@ struct BatchInfo {
     TaskList *find_tasks;
     TaskList *execute_tasks;
 
-    BatchInfo(BatchInfo *_prev_batch, int64_t _start_index, int64_t _end_index,
+    BatchInfo(BatchInfo *_prev_batch, uint64_t _epoch, int64_t _start_index, int64_t _end_index,
               int64_t _parallelism)
-        : prev_batch(_prev_batch), start_index(_start_index), end_index(_end_index),
+        : prev_batch(_prev_batch), epoch(_epoch), start_index(_start_index), end_index(_end_index),
           parallelism(_parallelism) {
         union_tasks = new TaskList(parallelism);
         find_tasks = new TaskList(parallelism);
@@ -385,6 +386,7 @@ template <typename T> class OnlineBatchScheduler {
     }
     void add_find_tasks() {
         // add find task for current batch
+	    printf("Adding find tasks for batch %lu\n", _batch_info->epoch);
         _core_map.clear();
         int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
         int64_t batch_size_per_thread = batch_size / _num_threads;
@@ -403,11 +405,14 @@ template <typename T> class OnlineBatchScheduler {
     void add_execute_tasks() {
         if (_batch_info->prev_batch != nullptr) {
             auto prev_batch = _batch_info->prev_batch;
-            while (!prev_batch->is_done())
-                ;
+            while (!prev_batch->is_done()) {
+
+            }
+	        printf("Execute tasks done for batch %lu\n", prev_batch->epoch);
         }
         // previous batch is done.
 
+	    printf("Adding execute tasks for batch %lu\n", _batch_info->epoch);
         for (uint64_t i = 0; i < _num_threads; i++) {
             auto task = &(_batch_info->execute_tasks->tasks[i]);
             task->type = EXECUTE;
@@ -416,6 +421,7 @@ template <typename T> class OnlineBatchScheduler {
         }
     }
     void add_union_tasks() {
+    	printf("Adding union tasks for batch %lu\n", _batch_info->epoch);
         int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
         int64_t batch_size_per_thread = batch_size / _num_threads;
         for (uint64_t i = 0; i < _num_threads; i++) {
@@ -438,9 +444,8 @@ template <typename T> class OnlineBatchScheduler {
             _current_batch_index =
                 (_current_batch_index <= _max_size) ? _current_batch_index : _max_size;
             auto end_index = _current_batch_index;
-            auto new_batch = new BatchInfo(_batch_info, start_index, end_index, _num_threads);
-            // updating epoch and adding a new_batch
-            _epoch++;
+	        __sync_fetch_and_add(& _epoch, 1);
+            auto new_batch = new BatchInfo(_batch_info, _epoch, start_index, end_index, _num_threads);
             _batch_info = new_batch;
             return true;
         } else {

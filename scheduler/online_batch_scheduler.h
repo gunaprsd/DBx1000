@@ -339,41 +339,49 @@ template <typename T> class OnlineBatchScheduler {
             }
 
             switch (task->type) {
-                case UNION: {
-                    auto info = &(task->info.union_info);
-                    do_union(info->start_index, info->end_index);
-                    bool last = task->batch_info->notify_completion(UNION);
-                    if (last) {
-                        add_find_tasks();
-                    }
-                    break;
+            case UNION: {
+                auto info = &(task->info.union_info);
+                do_union(info->start_index, info->end_index);
+                printf("Union for %ld, %ld in thread %lu\n", info->start_index, info->end_index,
+                       thread_id);
+                bool last = task->batch_info->notify_completion(UNION);
+                if (last) {
+                    add_find_tasks();
                 }
-                case FIND: {
-                    auto info = &(task->info.find_info);
-                    do_find(info->start_index, info->end_index);
-                    bool last = task->batch_info->notify_completion(FIND);
-                    if (last) {
-                        if (_batch_info != nullptr) {
-                            add_execute_tasks();
-                        }
+                break;
+            }
+            case FIND: {
+                auto info = &(task->info.find_info);
+                do_find(info->start_index, info->end_index);
+                printf("Find for %ld, %ld in thread %lu\n", info->start_index, info->end_index,
+                       thread_id);
 
-                        bool next = move_to_next_batch();
-                        if (next) {
-                            add_union_tasks();
-                        } else {
-                            done = true;
-                        }
+                bool last = task->batch_info->notify_completion(FIND);
+                if (last) {
+                    if (_batch_info != nullptr) {
+                        add_execute_tasks();
                     }
-                    break;
+
+                    bool next = move_to_next_batch();
+		    printf("Current batch index: %lu\n", _current_batch_index);
+                    if (next) {
+                        add_union_tasks();
+                    } else {
+                        done = true;
+                    }
                 }
-                case EXECUTE: {
-                    auto info = &(task->info.execute_info);
-                    _threads[thread_id].run(*info->queries);
-                    task->batch_info->notify_completion(EXECUTE);
-                    break;
-                }
-                default:
-                    break;
+                break;
+            }
+            case EXECUTE: {
+                auto info = &(task->info.execute_info);
+                _threads[thread_id].run(*info->queries);
+                task->batch_info->notify_completion(EXECUTE);
+                printf("Executing a batch for %lu in thread %lu\n", task->batch_info->epoch,
+                       thread_id);
+                break;
+            }
+            default:
+	      assert(false);
             }
         }
     }
@@ -414,7 +422,7 @@ template <typename T> class OnlineBatchScheduler {
             _batch[i].obtain_rw_set(&(_rwset_info[i]));
         }
     }
-    static void *prepare_helper(void* ptr) {
+    static void *prepare_helper(void *ptr) {
         auto data = (ThreadLocalData *)ptr;
         auto scheduler = (OnlineBatchScheduler<T> *)data->fields[0];
         auto thread_id = data->fields[1];
@@ -422,6 +430,7 @@ template <typename T> class OnlineBatchScheduler {
         scheduler->compute_read_write_set(thread_id);
         return nullptr;
     }
+
   private:
     void add_find_tasks() {
         // add find task for current batch
@@ -436,17 +445,15 @@ template <typename T> class OnlineBatchScheduler {
             auto task = &(_batch_info->find_tasks->tasks[i]);
             task->type = FIND;
             task->batch_info = _batch_info;
-            task->info.find_info.start_index = start_index;
-            task->info.find_info.end_index = end_index;
+            task->info.find_info.start_index =  _batch_info->start_index + start_index;
+            task->info.find_info.end_index =  _batch_info->start_index + end_index;
             tasks.push(task);
         }
     }
     void add_execute_tasks() {
         if (_batch_info->prev_batch != nullptr) {
             auto prev_batch = _batch_info->prev_batch;
-            while (!prev_batch->is_done()) {
-
-            }
+            while (!prev_batch->is_done()) {}
             printf("Execute tasks done for batch %lu\n", prev_batch->epoch);
         }
         // previous batch is done.
@@ -470,8 +477,8 @@ template <typename T> class OnlineBatchScheduler {
             auto task = &(_batch_info->union_tasks->tasks[i]);
             task->type = UNION;
             task->batch_info = _batch_info;
-            task->info.union_info.start_index = start_index;
-            task->info.union_info.end_index = end_index;
+            task->info.union_info.start_index = _batch_info->start_index + start_index;
+            task->info.union_info.end_index =  _batch_info->start_index + end_index;
             tasks.push(task);
         }
     }
@@ -481,10 +488,11 @@ template <typename T> class OnlineBatchScheduler {
             _current_batch_index += _max_batch_size;
             // handling corner case
             _current_batch_index =
-                    (_current_batch_index <= _max_size) ? _current_batch_index : _max_size;
+                (_current_batch_index <= _max_size) ? _current_batch_index : _max_size;
             auto end_index = _current_batch_index;
-            __sync_fetch_and_add(& _epoch, 1);
-            auto new_batch = new BatchInfo(_batch_info, _epoch, start_index, end_index, _num_threads);
+            __sync_fetch_and_add(&_epoch, 1);
+            auto new_batch =
+                new BatchInfo(_batch_info, _epoch, start_index, end_index, _num_threads);
             _batch_info = new_batch;
             return true;
         } else {

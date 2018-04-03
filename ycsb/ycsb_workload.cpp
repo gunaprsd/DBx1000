@@ -157,9 +157,8 @@ void YCSBWorkloadGenerator::gen_multi_partition_requests(uint64_t thread_id, ycs
 }
 
 YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &folder_path,
-                             uint64_t num_threads)
-    : _db(config),
-      _loader(folder_path, num_threads) {
+                           uint64_t num_threads)
+    : _db(config), _loader(folder_path, num_threads) {
 
     // Build database in parallel
     _db.initialize(FLAGS_load_parallelism);
@@ -168,13 +167,11 @@ YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &fold
     // Load workload in parallel
     _loader.load();
 
-    _scheduler = new OnlineBatchScheduler<ycsb_params>(num_threads,FLAGS_scheduler_batch_size,  &_db);
+    _scheduler =
+        new OnlineBatchScheduler<ycsb_params>(num_threads, FLAGS_scheduler_batch_size, &_db);
 }
 
-void YCSBExecutor::execute() {
-    _scheduler->schedule(&_loader);
-}
+void YCSBExecutor::execute() { _scheduler->schedule(&_loader); }
 
-void YCSBExecutor::release() {
-    _loader.release();
+void YCSBExecutor::release() { //_loader.release();
 }

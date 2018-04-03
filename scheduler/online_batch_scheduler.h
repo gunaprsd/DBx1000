@@ -249,9 +249,8 @@ template <typename T> class OnlineBatchExecutor {
 template <typename T> class OnlineBatchScheduler {
   public:
     OnlineBatchScheduler(uint32_t num_threads, uint32_t max_batch_size, Database *db)
-        : _num_threads(num_threads),
-          _max_batch_size(max_batch_size),
-          _db(db), tasks(), _core_map(), _rand(1), done(false) {
+        : _num_threads(num_threads), _max_batch_size(max_batch_size), _db(db), tasks(), _core_map(),
+          _rand(1), done(false) {
         _rand.seed(0, FLAGS_seed + 125);
 
         // Initialize threads
@@ -262,15 +261,15 @@ template <typename T> class OnlineBatchScheduler {
 
         // Initialize data items
 
-	    auto num_data_items = AccessIterator<T>::get_max_key();
-	    _data_info = new DataNodeInfo[num_data_items];
-	    for (uint64_t i = 0; i < num_data_items; i++) {
-		    _data_info[i].reset(i, 1, 0);
-	    }
+        auto num_data_items = AccessIterator<T>::get_max_key();
+        _data_info = new DataNodeInfo[num_data_items];
+        for (uint64_t i = 0; i < num_data_items; i++) {
+            _data_info[i].reset(i, 1, 0);
+        }
 
-	    _epoch = 0;
-	    _current_batch_index = 0;
-	    _batch_info = nullptr;
+        _epoch = 0;
+        _current_batch_index = 0;
+        _batch_info = nullptr;
     }
 
     void schedule(ParallelWorkloadLoader<T> *loader) {
@@ -280,19 +279,19 @@ template <typename T> class OnlineBatchScheduler {
         _loader->release();
 
         // Prepare read-write set
-	    auto start_time = get_server_clock();
+        auto start_time = get_server_clock();
         _rwset_info = new ReadWriteSet[_max_size];
         for (uint64_t i = 0; i < _max_size; i++) {
             _batch[i].obtain_rw_set(&(_rwset_info[i]));
         }
-		auto end_time = get_server_clock();
-	    double duration = DURATION(end_time, start_time);
-		printf("ReadWriteSet Duration: %lf secs", duration);
+        auto end_time = get_server_clock();
+        double duration = DURATION(end_time, start_time);
+        printf("ReadWriteSet Duration: %lf secs\n", duration);
 
         move_to_next_batch();
         add_union_tasks();
 
-        printf("Starting workers...");
+        printf("Starting workers...\n");
         start_time = get_server_clock();
         pthread_t worker_threads[_num_threads];
         ThreadLocalData data[_num_threads];
@@ -309,29 +308,33 @@ template <typename T> class OnlineBatchScheduler {
         end_time = get_server_clock();
         duration = DURATION(end_time, start_time);
         printf("Total Runtime: %lf secs\n", duration);
+
+        if (STATS_ENABLE) {
+            stats.print();
+        }
     }
 
   protected:
     const uint32_t _num_threads;
     const uint64_t _max_batch_size;
-	Database *_db;
-	tbb::concurrent_queue<Task *> tasks;
-	tbb::concurrent_unordered_map<long, long> _core_map;
-	RandomNumberGenerator _rand;
-	volatile bool done;
+    Database *_db;
+    tbb::concurrent_queue<Task *> tasks;
+    tbb::concurrent_unordered_map<long, long> _core_map;
+    RandomNumberGenerator _rand;
+    volatile bool done;
     OnlineBatchExecutor<T> *_threads;
     ParallelWorkloadLoader<T> *_loader;
     DataNodeInfo *_data_info;
 
     // current batch info
-	uint64_t _epoch;
+    uint64_t _epoch;
     uint64_t _current_batch_index;
-	BatchInfo *_batch_info;
+    BatchInfo *_batch_info;
 
     // Input batch of all transactions
     uint64_t _max_size;
-	Query<T> *_batch;
-	ReadWriteSet *_rwset_info;
+    Query<T> *_batch;
+    ReadWriteSet *_rwset_info;
 
     void run_worker(uint64_t thread_id) {
         // must collocate share work between union, find and execute
@@ -361,7 +364,7 @@ template <typename T> class OnlineBatchScheduler {
                     }
 
                     bool next = move_to_next_batch();
-                    if(next) {
+                    if (next) {
                         add_union_tasks();
                     } else {
                         done = true;
@@ -398,11 +401,12 @@ template <typename T> class OnlineBatchScheduler {
         }
     }
     void add_execute_tasks() {
-    	if(_batch_info->prev_batch != nullptr) {
-    		auto prev_batch = _batch_info->prev_batch;
-    		while(!prev_batch->is_done());
-    	}
-    	// previous batch is done.
+        if (_batch_info->prev_batch != nullptr) {
+            auto prev_batch = _batch_info->prev_batch;
+            while (!prev_batch->is_done())
+                ;
+        }
+        // previous batch is done.
 
         for (uint64_t i = 0; i < _num_threads; i++) {
             auto task = &(_batch_info->execute_tasks->tasks[i]);
@@ -427,16 +431,16 @@ template <typename T> class OnlineBatchScheduler {
         }
     }
     bool move_to_next_batch() {
-        if(_current_batch_index < _max_batch_size) {
+        if (_current_batch_index < _max_size) {
             auto start_index = _current_batch_index;
             _current_batch_index += _max_batch_size;
             // handling corner case
             _current_batch_index =
-                    (_current_batch_index <= _max_size) ? _current_batch_index : _max_size;
+                (_current_batch_index <= _max_size) ? _current_batch_index : _max_size;
             auto end_index = _current_batch_index;
             auto new_batch = new BatchInfo(_batch_info, start_index, end_index, _num_threads);
             // updating epoch and adding a new_batch
-	        _epoch++;
+            _epoch++;
             _batch_info = new_batch;
             return true;
         } else {
@@ -492,13 +496,13 @@ template <typename T> class OnlineBatchScheduler {
         old_val.word = info->root_ptr.word;
 
         // ensure we are in the new epoch!
-        if(!old_val.IsEpoch(_epoch)) {
+        if (!old_val.IsEpoch(_epoch)) {
             do {
                 EpochAddress self;
                 self.Set(info, _epoch);
                 __sync_bool_compare_and_swap(&info->root_ptr.word, old_val.word, self.word);
                 old_val.word = info->root_ptr.word;
-            } while(!old_val.IsEpoch(_epoch));
+            } while (!old_val.IsEpoch(_epoch));
         }
 
         // find with path compression

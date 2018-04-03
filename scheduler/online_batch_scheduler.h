@@ -274,45 +274,14 @@ template <typename T> class OnlineBatchScheduler {
     }
 
     void schedule(ParallelWorkloadLoader<T> *loader) {
-        printf("Preparing...\n");
         _loader = loader;
         _loader->get_queries(_batch, _max_size);
         _loader->release();
 
-        // Prepare read-write set
-        auto start_time = get_server_clock();
-        _rwset_info = new ReadWriteSet[_max_size];
-        for (uint64_t i = 0; i < _max_size; i++) {
-            _batch[i].obtain_rw_set(&(_rwset_info[i]));
-        }
-        auto end_time = get_server_clock();
-        double duration = DURATION(end_time, start_time);
-        printf("ReadWriteSet Duration: %lf secs\n", duration);
-
+        prepare();
         move_to_next_batch();
         add_union_tasks();
-
-        printf("Starting workers...\n");
-        start_time = get_server_clock();
-        pthread_t worker_threads[_num_threads];
-        ThreadLocalData data[_num_threads];
-        for (uint64_t i = 0; i < _num_threads; i++) {
-            data[i].fields[0] = (uint64_t)this;
-            data[i].fields[1] = (uint64_t)i;
-            pthread_create(&worker_threads[i], nullptr, execute_helper, (void *)&data[i]);
-        }
-
-        // wait until all workers are done!
-        for (uint32_t i = 0; i < _num_threads; i++) {
-            pthread_join(worker_threads[i], nullptr);
-        }
-        end_time = get_server_clock();
-        duration = DURATION(end_time, start_time);
-        printf("Total Runtime: %lf secs\n", duration);
-
-        if (STATS_ENABLE) {
-            stats.print();
-        }
+        execute();
     }
 
   protected:
@@ -337,6 +306,30 @@ template <typename T> class OnlineBatchScheduler {
     Query<T> *_batch;
     ReadWriteSet *_rwset_info;
 
+    void execute() {
+        printf("Starting workers...\n");
+
+        auto start_time = get_server_clock();
+        pthread_t worker_threads[_num_threads];
+        ThreadLocalData data[_num_threads];
+        for (uint64_t i = 0; i < _num_threads; i++) {
+            data[i].fields[0] = (uint64_t)this;
+            data[i].fields[1] = (uint64_t)i;
+            pthread_create(&worker_threads[i], nullptr, execute_helper, (void *)&data[i]);
+        }
+
+        // wait until all workers are done!
+        for (uint32_t i = 0; i < _num_threads; i++) {
+            pthread_join(worker_threads[i], nullptr);
+        }
+        auto end_time = get_server_clock();
+        auto duration = DURATION(end_time, start_time);
+        printf("Total Runtime: %lf secs\n", duration);
+
+        if (STATS_ENABLE) {
+            stats.print();
+        }
+    }
     void run_worker(uint64_t thread_id) {
         // must collocate share work between union, find and execute
         Task *task;
@@ -346,47 +339,93 @@ template <typename T> class OnlineBatchScheduler {
             }
 
             switch (task->type) {
-            case UNION: {
-                auto info = &(task->info.union_info);
-                do_union(info->start_index, info->end_index);
-                bool last = task->batch_info->notify_completion(UNION);
-                if (last) {
-                    add_find_tasks();
-                }
-                break;
-            }
-            case FIND: {
-                auto info = &(task->info.find_info);
-                do_find(info->start_index, info->end_index);
-                bool last = task->batch_info->notify_completion(FIND);
-                if (last) {
-                    if (_batch_info != nullptr) {
-                        add_execute_tasks();
+                case UNION: {
+                    auto info = &(task->info.union_info);
+                    do_union(info->start_index, info->end_index);
+                    bool last = task->batch_info->notify_completion(UNION);
+                    if (last) {
+                        add_find_tasks();
                     }
+                    break;
+                }
+                case FIND: {
+                    auto info = &(task->info.find_info);
+                    do_find(info->start_index, info->end_index);
+                    bool last = task->batch_info->notify_completion(FIND);
+                    if (last) {
+                        if (_batch_info != nullptr) {
+                            add_execute_tasks();
+                        }
 
-                    bool next = move_to_next_batch();
-                    if (next) {
-                        add_union_tasks();
-                    } else {
-                        done = true;
+                        bool next = move_to_next_batch();
+                        if (next) {
+                            add_union_tasks();
+                        } else {
+                            done = true;
+                        }
                     }
+                    break;
                 }
-                break;
-            }
-            case EXECUTE: {
-                auto info = &(task->info.execute_info);
-                _threads[thread_id].run(*info->queries);
-                task->batch_info->notify_completion(EXECUTE);
-                break;
-            }
-            default:
-                break;
+                case EXECUTE: {
+                    auto info = &(task->info.execute_info);
+                    _threads[thread_id].run(*info->queries);
+                    task->batch_info->notify_completion(EXECUTE);
+                    break;
+                }
+                default:
+                    break;
             }
         }
     }
+    static void *execute_helper(void *ptr) {
+        auto data = (ThreadLocalData *)ptr;
+        auto scheduler = (OnlineBatchScheduler<T> *)data->fields[0];
+        auto thread_id = data->fields[1];
+        set_affinity(thread_id);
+        scheduler->run_worker(thread_id);
+        return nullptr;
+    }
+
+    void prepare() {
+        _rwset_info = new ReadWriteSet[_max_size];
+        auto start_time = get_server_clock();
+        pthread_t worker_threads[_num_threads];
+        ThreadLocalData data[_num_threads];
+        for (uint64_t i = 0; i < _num_threads; i++) {
+            data[i].fields[0] = (uint64_t)this;
+            data[i].fields[1] = (uint64_t)i;
+            pthread_create(&worker_threads[i], nullptr, prepare_helper, (void *)&data[i]);
+        }
+
+        // wait until all workers are done!
+        for (uint32_t i = 0; i < _num_threads; i++) {
+            pthread_join(worker_threads[i], nullptr);
+        }
+        auto end_time = get_server_clock();
+        auto duration = DURATION(end_time, start_time);
+        printf("Preparation Time: %lf secs\n", duration);
+    }
+    void compute_read_write_set(uint64_t thread_id) {
+        uint64_t size_per_thread = _max_size / _num_threads;
+        uint64_t start_index = thread_id * size_per_thread;
+        uint64_t end_index = (thread_id + 1) * size_per_thread;
+        end_index = end_index > _max_size ? _max_size : end_index;
+        for (auto i = start_index; i < end_index; i++) {
+            _batch[i].obtain_rw_set(&(_rwset_info[i]));
+        }
+    }
+    static void *prepare_helper(void* ptr) {
+        auto data = (ThreadLocalData *)ptr;
+        auto scheduler = (OnlineBatchScheduler<T> *)data->fields[0];
+        auto thread_id = data->fields[1];
+        set_affinity(thread_id);
+        scheduler->compute_read_write_set(thread_id);
+        return nullptr;
+    }
+  private:
     void add_find_tasks() {
         // add find task for current batch
-	    printf("Adding find tasks for batch %lu\n", _batch_info->epoch);
+        printf("Adding find tasks for batch %lu\n", _batch_info->epoch);
         _core_map.clear();
         int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
         int64_t batch_size_per_thread = batch_size / _num_threads;
@@ -408,11 +447,11 @@ template <typename T> class OnlineBatchScheduler {
             while (!prev_batch->is_done()) {
 
             }
-	        printf("Execute tasks done for batch %lu\n", prev_batch->epoch);
+            printf("Execute tasks done for batch %lu\n", prev_batch->epoch);
         }
         // previous batch is done.
 
-	    printf("Adding execute tasks for batch %lu\n", _batch_info->epoch);
+        printf("Adding execute tasks for batch %lu\n", _batch_info->epoch);
         for (uint64_t i = 0; i < _num_threads; i++) {
             auto task = &(_batch_info->execute_tasks->tasks[i]);
             task->type = EXECUTE;
@@ -421,7 +460,7 @@ template <typename T> class OnlineBatchScheduler {
         }
     }
     void add_union_tasks() {
-    	printf("Adding union tasks for batch %lu\n", _batch_info->epoch);
+        printf("Adding union tasks for batch %lu\n", _batch_info->epoch);
         int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
         int64_t batch_size_per_thread = batch_size / _num_threads;
         for (uint64_t i = 0; i < _num_threads; i++) {
@@ -442,9 +481,9 @@ template <typename T> class OnlineBatchScheduler {
             _current_batch_index += _max_batch_size;
             // handling corner case
             _current_batch_index =
-                (_current_batch_index <= _max_size) ? _current_batch_index : _max_size;
+                    (_current_batch_index <= _max_size) ? _current_batch_index : _max_size;
             auto end_index = _current_batch_index;
-	        __sync_fetch_and_add(& _epoch, 1);
+            __sync_fetch_and_add(& _epoch, 1);
             auto new_batch = new BatchInfo(_batch_info, _epoch, start_index, end_index, _num_threads);
             _batch_info = new_batch;
             return true;
@@ -485,16 +524,6 @@ template <typename T> class OnlineBatchScheduler {
             task->info.execute_info.queries->push(&_batch[t]);
         }
     }
-    static void *execute_helper(void *ptr) {
-        auto data = (ThreadLocalData *)ptr;
-        auto scheduler = (OnlineBatchScheduler<T> *)data->fields[0];
-        auto thread_id = data->fields[1];
-        set_affinity(thread_id);
-        scheduler->run_worker(thread_id);
-        return nullptr;
-    }
-
-  private:
     long Find(DataNodeInfo *info) {
         EpochAddress old_val;
         EpochAddress new_val;

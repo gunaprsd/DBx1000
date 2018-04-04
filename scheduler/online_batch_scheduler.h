@@ -42,12 +42,12 @@ struct TaskList {
     int64_t num_tasks;
     int64_t num_done;
 
-    TaskList(int64_t num_tasks) : tasks(nullptr), num_tasks(num_tasks), num_done(0) {
+    TaskList(int64_t num_tasks) : tasks(nullptr), num_tasks(num_tasks), num_done(num_tasks) {
         tasks = new Task[num_tasks];
     }
     ~TaskList() { delete[] tasks; }
-    bool notify_completion() { return __sync_add_and_fetch(&num_done, 1) == num_tasks; }
-    bool is_done() { return num_done == num_tasks; }
+    bool notify_completion() { return __sync_fetch_and_sub(&num_done, 1) == 1; }
+    bool is_done() { return num_done == 0; }
 };
 struct BatchInfo {
     BatchInfo *prev_batch;
@@ -342,8 +342,8 @@ template <typename T> class OnlineBatchScheduler {
             case UNION: {
                 auto info = &(task->info.union_info);
                 do_union(info->start_index, info->end_index);
-                printf("Union for %ld, %ld in thread %lu\n", info->start_index, info->end_index,
-                       thread_id);
+		//                printf("Union for %ld, %ld in thread %lu\n", info->start_index, info->end_index,
+                //       thread_id);
                 bool last = task->batch_info->notify_completion(UNION);
                 if (last) {
                     add_find_tasks();
@@ -353,8 +353,8 @@ template <typename T> class OnlineBatchScheduler {
             case FIND: {
                 auto info = &(task->info.find_info);
                 do_find(info->start_index, info->end_index);
-                printf("Find for %ld, %ld in thread %lu\n", info->start_index, info->end_index,
-                       thread_id);
+                //printf("Find for %ld, %ld in thread %lu\n", info->start_index, info->end_index,
+                //       thread_id);
 
                 bool last = task->batch_info->notify_completion(FIND);
                 if (last) {
@@ -363,7 +363,7 @@ template <typename T> class OnlineBatchScheduler {
                     }
 
                     bool next = move_to_next_batch();
-		    printf("Current batch index: %lu\n", _current_batch_index);
+                    //printf("Current batch index: %lu\n", _current_batch_index);
                     if (next) {
                         add_union_tasks();
                     } else {
@@ -376,12 +376,12 @@ template <typename T> class OnlineBatchScheduler {
                 auto info = &(task->info.execute_info);
                 _threads[thread_id].run(*info->queries);
                 task->batch_info->notify_completion(EXECUTE);
-                printf("Executing a batch for %lu in thread %lu\n", task->batch_info->epoch,
-                       thread_id);
+		//                printf("Executing a batch for %lu in thread %lu\n", task->batch_info->epoch,
+                //       thread_id);
                 break;
             }
             default:
-	      assert(false);
+                assert(false);
             }
         }
     }
@@ -434,7 +434,7 @@ template <typename T> class OnlineBatchScheduler {
   private:
     void add_find_tasks() {
         // add find task for current batch
-        printf("Adding find tasks for batch %lu\n", _batch_info->epoch);
+      //        printf("Adding find tasks for batch %lu\n", _batch_info->epoch);
         _core_map.clear();
         int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
         int64_t batch_size_per_thread = batch_size / _num_threads;
@@ -445,20 +445,23 @@ template <typename T> class OnlineBatchScheduler {
             auto task = &(_batch_info->find_tasks->tasks[i]);
             task->type = FIND;
             task->batch_info = _batch_info;
-            task->info.find_info.start_index =  _batch_info->start_index + start_index;
-            task->info.find_info.end_index =  _batch_info->start_index + end_index;
+            task->info.find_info.start_index = _batch_info->start_index + start_index;
+            task->info.find_info.end_index = _batch_info->start_index + end_index;
             tasks.push(task);
         }
     }
     void add_execute_tasks() {
         if (_batch_info->prev_batch != nullptr) {
             auto prev_batch = _batch_info->prev_batch;
-            while (!prev_batch->is_done()) {}
-            printf("Execute tasks done for batch %lu\n", prev_batch->epoch);
+            while (!prev_batch->is_done()) {
+	      usleep(10);
+	      //                printf("prev_batch num done: %ld\n", prev_batch->execute_tasks->num_done);
+            }
+	    //            printf("Execute tasks done for batch %lu\n", prev_batch->epoch);
         }
         // previous batch is done.
 
-        printf("Adding execute tasks for batch %lu\n", _batch_info->epoch);
+	printf("Adding execute tasks for batch %lu\n", _batch_info->epoch);
         for (uint64_t i = 0; i < _num_threads; i++) {
             auto task = &(_batch_info->execute_tasks->tasks[i]);
             task->type = EXECUTE;
@@ -467,7 +470,7 @@ template <typename T> class OnlineBatchScheduler {
         }
     }
     void add_union_tasks() {
-        printf("Adding union tasks for batch %lu\n", _batch_info->epoch);
+      //        printf("Adding union tasks for batch %lu\n", _batch_info->epoch);
         int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
         int64_t batch_size_per_thread = batch_size / _num_threads;
         for (uint64_t i = 0; i < _num_threads; i++) {
@@ -478,7 +481,7 @@ template <typename T> class OnlineBatchScheduler {
             task->type = UNION;
             task->batch_info = _batch_info;
             task->info.union_info.start_index = _batch_info->start_index + start_index;
-            task->info.union_info.end_index =  _batch_info->start_index + end_index;
+            task->info.union_info.end_index = _batch_info->start_index + end_index;
             tasks.push(task);
         }
     }

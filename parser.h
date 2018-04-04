@@ -62,4 +62,5 @@ DECLARE_bool(pre_schedule_txns);
 DECLARE_uint32(scheduler_delay);
 DECLARE_string(scheduler_type);
 DECLARE_uint32(scheduler_batch_size);
+DECLARE_bool(scheduler_batch_sync);
 #endif //SYSTEM_PARSER_H__

@@ -849,10 +849,7 @@ void UnionFindPartitioner::Union(DataNodeInfo *p, DataNodeInfo *q) {
 
 ParallelUnionFindPartitioner::ParallelUnionFindPartitioner(uint32_t num_threads,
                                                            uint32_t num_clusters)
-    : BasePartitioner(num_clusters), _rand(num_threads), _num_threads(num_threads) {
-    for (uint32_t i = 0; i < num_threads; i++) {
-        _rand.seed(i, FLAGS_seed + 124 + i);
-    }
+    : BasePartitioner(num_clusters), _round_robin(0), _num_threads(num_threads) {
 }
 
 void ParallelUnionFindPartitioner::do_partition() {
@@ -976,8 +973,15 @@ int64_t ParallelUnionFindPartitioner::get_core(DataNodeInfo *cc) {
     int64_t core = -1;
     auto iter = _core_map.find(cc);
     if (iter == _core_map.end()) {
-        core = _rand.nextInt64(0) % _num_clusters;
+        pthread_mutex_lock(&mutex);
+        core = _round_robin % _num_clusters;
         auto res = _core_map.insert(std::pair<DataNodeInfo*, int64_t>(cc, core));
+        if(res.second) {
+            // success then increment round_robin count
+            _round_robin++;
+        }
+        pthread_mutex_unlock(&mutex);
+
         if(res.second) {
             return core;
         } else {

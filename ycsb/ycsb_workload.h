@@ -39,7 +39,7 @@ public:
 protected:
 	YCSBDatabase _db;
 	YCSBWorkloadLoader _loader;
-	OnlineBatchScheduler<ycsb_params>* _scheduler;
+	IScheduler<ycsb_params>* _scheduler;
 };
 
 

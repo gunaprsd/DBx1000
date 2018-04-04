@@ -167,11 +167,13 @@ YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &fold
     // Load workload in parallel
     _loader.load();
 
-    _scheduler =
-        new OnlineBatchScheduler<ycsb_params>(num_threads, FLAGS_scheduler_batch_size, &_db);
+    if(FLAGS_scheduler_type == "online_batch") {
+	    _scheduler = new OnlineBatchScheduler<ycsb_params>(num_threads, FLAGS_scheduler_batch_size, &_db);
+    } else {
+    	_scheduler = new OnlineScheduler<ycsb_params>(num_threads, &_db);
+    }
 }
 
 void YCSBExecutor::execute() { _scheduler->schedule(&_loader); }
 
-void YCSBExecutor::release() { //_loader.release();
-}
+void YCSBExecutor::release() {}

@@ -101,7 +101,6 @@ void Stats::abort(uint64_t thd_id) {
 }
 
 void Stats::print() {
-
     uint64_t total_txn_cnt = 0;
     uint64_t total_abort_cnt = 0;
     double total_run_time = 0;

@@ -14,9 +14,15 @@
 #include "txn.h"
 #include "vll.h"
 
-template <typename T> class Scheduler {
+template<typename T>
+class IScheduler {
+public:
+    virtual void schedule(ParallelWorkloadLoader<T> *loader) = 0;
+};
+
+template <typename T> class OnlineScheduler : public IScheduler<T> {
   public:
-    Scheduler(uint64_t num_threads, Database *db)
+    OnlineScheduler(uint64_t num_threads, Database *db)
         : _num_threads(num_threads), _db(db), _threads(nullptr), _loader(nullptr),
           _txn_queue(nullptr) {
         _threads = new Thread<T>[_num_threads];
@@ -130,7 +136,7 @@ template <typename T> class Scheduler {
     static void *execute_helper(void *ptr) {
         // Threads must be initialize before
         auto data = (ThreadLocalData *)ptr;
-        auto executor = (Scheduler<T> *)data->fields[0];
+        auto executor = (OnlineScheduler<T> *)data->fields[0];
         auto thread_id = data->fields[1];
         set_affinity(thread_id);
         if (FLAGS_abort_buffer) {
@@ -143,7 +149,7 @@ template <typename T> class Scheduler {
     static void *submit_helper(void *ptr) {
         // Threads must be initialize before
         auto data = (ThreadLocalData *)ptr;
-        auto executor = (Scheduler<T> *)data->fields[0];
+        auto executor = (OnlineScheduler<T> *)data->fields[0];
         executor->submit_queries();
         return nullptr;
     }

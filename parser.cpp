@@ -62,3 +62,4 @@ DEFINE_bool(pre_schedule_txns, true, "Schedule all txns before starting workers"
 DEFINE_uint32(scheduler_delay, 1000, "Delay between scheduler and worker");
 DEFINE_string(scheduler_type, "simple_parallel_queues", "Options: simple_parallel_queues, parallel_queues, shared_queue, transaction_queue");
 DEFINE_uint32(scheduler_batch_size, 1000000, "Batch size for scheduling");
+DEFINE_bool(scheduler_batch_sync, true, "Synchronization across batches for online batch scheduler");

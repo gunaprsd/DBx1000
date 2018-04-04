@@ -32,7 +32,6 @@
 #endif
 
 #define SELECTIVE_CC true
-//#define PRINT_CLUSTERED_FILE
 using namespace std;
 
 class mem_alloc;

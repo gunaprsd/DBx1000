@@ -21,21 +21,22 @@ DEFINE_bool(ycsb_key_order, YCSB_KEY_ORDER, "YCSB: Order key access?");
 /*
  * TPCC Command Line Arguments
  */
-DEFINE_uint32(tpcc_num_wh, TPCC_NUM_WH, "TPCC: Number of Warehouses");
 DEFINE_bool(tpcc_wh_update, TPCC_WH_UPDATE, "TPCC: Update warehouse on payments?");
-DEFINE_double(tpcc_perc_payment, TPCC_PERC_PAYMENT, "TPCC: Percentage of payement read_txns");
+DEFINE_uint32(tpcc_num_wh, TPCC_NUM_WH, "TPCC: Number of Warehouses");
 DEFINE_uint64(tpcc_max_items, TPCC_MAX_ITEMS, "TPCC: Max number of items");
 DEFINE_uint64(tpcc_cust_per_dist, TPCC_CUST_PER_DIST, "TPCC: Customers per district");
 DEFINE_uint64(tpcc_dist_per_wh, TPCC_DIST_PER_WH, "TPCC: Districts per warehouse");
+DEFINE_double(tpcc_perc_payment, TPCC_PERC_PAYMENT, "TPCC: Percentage of payment read_txns");
 DEFINE_double(tpcc_by_last_name_percent, TPCC_BY_LAST_NAME_PERC, "TPCC: Percent of payment read_txns with query by last name");
 DEFINE_double(tpcc_remote_payment_percent, TPCC_REMOTE_PAYMENT_PERC, "TPCC: Percent of payment read_txns where customer is remote");
+
 /*
  * General Command Line Arguments
  */
 DEFINE_uint32(seed, 123, "Seed for generation");
 DEFINE_string(task, "generate", "Choose task type: generate, partition, execute");
 DEFINE_uint32(load_parallelism, INIT_PARALLELISM, "Parallelism for loading database");
-DEFINE_uint64(size_per_thread, 256 * 1024, "Size Per Thread");
+DEFINE_uint64(size_per_thread, (256 * 1024), "Size Per Thread");
 DEFINE_string(benchmark, "ycsb", "Benchmark to run on:ycsb, tpcc");
 DEFINE_string(tag, "foo", "Tag for the benchmark");
 DEFINE_string(input_folder, "data", "Folder to access workload from");
@@ -49,17 +50,19 @@ DEFINE_uint32(abort_penalty, ABORT_PENALTY, "Penalty in mus");
 /*
  * Partitioner/Execution Command Line Arguments
  */
-DEFINE_string(parttype, "access_graph", "Options: access_graph, approx, conflict_graph");
 DEFINE_bool(unit_weights, false, "Unit weights or conflict weights?");
-DEFINE_string(partitioner, "access_graph", "Options: access_graph, conflict_graph");
-DEFINE_string(output_folder, "data", "Output folder for partitioner");
+DEFINE_bool(stdev_partitioner, false, "Partition based on std of savings?");
 DEFINE_uint32(ufactor, 5, "Load imbalance tolerance for METIS (1 + x/1000)");
 DEFINE_uint32(iterations, 5, "Number of iterations");
-DEFINE_bool(stdev_partitioner, false, "Partition based on std of savings?");
 DEFINE_uint32(kmeans_dim, 100, "Dimensions for K-Means clustering");
+DEFINE_string(parttype, "access_graph", "Options: access_graph, approx, conflict_graph");
+DEFINE_string(partitioner, "access_graph", "Options: access_graph, conflict_graph");
+DEFINE_string(output_folder, "data", "Output folder for partitioner");
 
+
+DEFINE_bool(generate_partitioned, false, "Generate Partitioned Workload");
 DEFINE_bool(pre_schedule_txns, true, "Schedule all txns before starting workers");
-DEFINE_uint32(scheduler_delay, 1000, "Delay between scheduler and worker");
-DEFINE_string(scheduler_type, "simple_parallel_queues", "Options: simple_parallel_queues, parallel_queues, shared_queue, transaction_queue");
-DEFINE_uint32(scheduler_batch_size, 1000000, "Batch size for scheduling");
 DEFINE_bool(scheduler_batch_sync, true, "Synchronization across batches for online batch scheduler");
+DEFINE_uint32(scheduler_delay, 1000, "Delay between scheduler and worker");
+DEFINE_uint32(scheduler_batch_size, 1000000, "Batch size for scheduling");
+DEFINE_string(scheduler_type, "simple_parallel_queues", "Options: simple_parallel_queues, parallel_queues, shared_queue, transaction_queue");

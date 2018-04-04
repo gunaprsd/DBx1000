@@ -27,9 +27,6 @@
 #include "pthread.h"
 #include "stats.h"
 #include "parser.h"
-#ifndef NOGRAPHITE
-#include "carbon_user.h"
-#endif
 
 #define SELECTIVE_CC true
 using namespace std;

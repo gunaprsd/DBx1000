@@ -15,6 +15,10 @@ public:
 	double time_index;
 	double time_wait;
 	double time_abort;
+	double time_union;
+	double time_find;
+	double time_blocked;
+	double time_execute;
 	double time_cleanup;
 	uint64_t time_ts_alloc;
 	double time_query;

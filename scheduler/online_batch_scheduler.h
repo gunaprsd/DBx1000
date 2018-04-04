@@ -251,8 +251,8 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
   public:
     OnlineBatchScheduler(uint32_t num_threads, uint32_t max_batch_size, Database *db)
         : _num_threads(num_threads), _max_batch_size(max_batch_size), _db(db), tasks(), _core_map(),
-          _round_robin(0), done(false) {
-
+          _rand(1), _round_robin(0),  done(false) {
+    	_rand.seed(0, FLAGS_seed + 125);
         // Initialize threads
         _threads = new OnlineBatchExecutor<T>[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
@@ -292,7 +292,7 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
     Database *_db;
     tbb::concurrent_queue<Task *> tasks;
     tbb::concurrent_unordered_map<long, long> _core_map;
-    // RandomNumberGenerator _rand;
+    RandomNumberGenerator _rand;
     uint64_t _round_robin;
     pthread_mutex_t mutex;
     volatile bool done;
@@ -619,13 +619,13 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
         long core = -1;
         auto iter = _core_map.find(word);
         if (iter == _core_map.end()) {
-            pthread_mutex_lock(&mutex);
-            core = static_cast<long>(_round_robin % _num_threads);
+            //pthread_mutex_lock(&mutex);
+            core = static_cast<long>(_rand.nextInt64(0) % _num_threads);
             auto res = _core_map.insert(std::pair<long, long>(word, core));
-            if (res.second) {
-                _round_robin++;
-            }
-            pthread_mutex_unlock(&mutex);
+            //if (res.second) {
+            //    _round_robin++;
+            //}
+            //pthread_mutex_unlock(&mutex);
             if (res.second) {
                 return core;
             } else {

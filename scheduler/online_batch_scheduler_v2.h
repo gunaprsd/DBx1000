@@ -8,14 +8,13 @@
 #include <unordered_map>
 using namespace std;
 
-template<typename K, typename V>
-using ConcurrentHashMap = tbb::concurrent_unordered_map<K, V>;
+template <typename K, typename V> using ConcurrentHashMap = tbb::concurrent_unordered_map<K, V>;
 
-template<typename T>
-using ConcurrentQueue = tbb::concurrent_queue<T>;
+template <typename T> using ConcurrentQueue = tbb::concurrent_queue<T>;
 
 template <typename T> class TransactionExecutor {
-    typedef ConcurrentQueue<Query<T>*> QueryQueue;
+    typedef ConcurrentQueue<Query<T> *> QueryQueue;
+
   public:
     void initialize(uint32_t id, Database *db) {
         this->thread_id = id;
@@ -26,7 +25,7 @@ template <typename T> class TransactionExecutor {
         glob_manager->set_txn_man(manager);
         stats.init(thread_id);
     }
-    void run(QueryQueue* queries) {
+    void run(QueryQueue *queries) {
         auto rc = RCOK;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
         auto done = false;
@@ -118,7 +117,7 @@ template <typename T> class TransactionExecutor {
 };
 
 template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
-    typedef ConcurrentQueue<Query<T>*> QueryQueue;
+    typedef ConcurrentQueue<Query<T> *> QueryQueue;
     enum Phase { UNION, FIND, EXECUTE };
 
     struct TransactionBatch {
@@ -166,7 +165,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         _current_batch.end_index =
             (_current_batch.end_index > _max_size) ? _max_size : _current_batch.end_index;
         _current_batch.phase = UNION;
-        counter.Set((long)_num_threads, _epoch);
+        counter.Set(_epoch, (long)_num_threads);
 
         execute();
 
@@ -184,8 +183,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     DataInfo *_data_info;
     short _epoch;
     TransactionBatch _current_batch;
-    ConcurrentHashMap<long, QueryQueue*> _core_map;
-    ConcurrentQueue<QueryQueue*> _worklists;
+    ConcurrentHashMap<long, QueryQueue *> _core_map;
+    ConcurrentQueue<QueryQueue *> _worklists;
 
     // Synchronization primitives
     EpochValue counter;
@@ -236,7 +235,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     }
 
     void compute_read_write_set(uint64_t thread_id) {
-        uint64_t size_per_thread = _max_size / _num_threads;
+        double size_approx = _max_size / _num_threads;
+        uint64_t size_per_thread = ceil(size_approx);
         uint64_t start_index = thread_id * size_per_thread;
         uint64_t end_index = (thread_id + 1) * size_per_thread;
         end_index = (end_index > _max_size) ? _max_size : end_index;
@@ -297,7 +297,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     }
 
     void do_union(uint64_t thread_id, TransactionBatch batch) {
-        uint64_t size_per_thread = (batch.end_index - batch.start_index) / _num_threads;
+        double size_approx = (batch.end_index - batch.start_index) / _num_threads;
+        uint64_t size_per_thread = ceil(size_approx);
         uint64_t start_index = batch.start_index + (thread_id * size_per_thread);
         uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
         end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
@@ -321,9 +322,9 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     }
 
     void do_find(uint64_t thread_id, TransactionBatch batch) {
-        unordered_map<long, QueryQueue*> local_core_map;
-
-        uint64_t size_per_thread = (batch.end_index - batch.start_index) / _num_threads;
+        unordered_map<long, QueryQueue *> local_core_map;
+        double size_approx = (batch.end_index - batch.start_index) / _num_threads;
+        uint64_t size_per_thread = ceil(size_approx);
         uint64_t start_index = batch.start_index + (thread_id * size_per_thread);
         uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
         end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
@@ -335,7 +336,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             auto key = rwset->accesses[0].key;
             auto data_info = &(_data_info[key]);
             auto cc = Find(data_info);
-            QueryQueue* query_queue = nullptr;
+            QueryQueue *query_queue = nullptr;
             auto iter = local_core_map.find(cc);
             if (iter == local_core_map.end()) {
                 query_queue = GetQueue(cc);
@@ -343,7 +344,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             } else {
                 query_queue = iter->second;
             }
-            query_queue->push( &(_batch[t]) );
+            query_queue->push(&(_batch[t]));
         }
 
         auto end_time = get_server_clock();
@@ -352,8 +353,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     }
 
     void do_execute(uint64_t thread_id) {
-        QueryQueue* query_queue;
-        while(_worklists.try_pop(query_queue)) {
+        QueryQueue *query_queue;
+        while (_worklists.try_pop(query_queue)) {
             _executors[thread_id].run(query_queue);
         }
     }
@@ -369,7 +370,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             move_to_next_phase();
 
             // create the next word with (e+1, n)
-            EpochValue next_phase_word((short) (old_epoch + 1), (long)_num_threads);
+            EpochValue next_phase_word((short)(old_epoch + 1), (long)_num_threads);
 
             // replace counter value from (e, 0) to (e+1, n)
             auto success = counter.AtomicCompareAndSwap(current, next_phase_word);
@@ -391,6 +392,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         switch (_current_batch.phase) {
         case UNION:
             _core_map.clear();
+            assert(_worklists.empty());
             _current_batch.phase = FIND;
             break;
         case FIND:
@@ -404,6 +406,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
                 _current_batch.end_index =
                     (_current_batch.end_index > _max_size) ? _max_size : _current_batch.end_index;
                 _current_batch.phase = UNION;
+
             } else {
                 done = true;
                 return;
@@ -475,14 +478,14 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         Union(p, q);
     }
 
-    QueryQueue* GetQueue(long word) {
+    QueryQueue *GetQueue(long word) {
         auto iter = _core_map.find(word);
         if (iter != _core_map.end()) {
             return iter->second;
         } else {
             auto query_queue = new QueryQueue();
-            auto status = _core_map.insert(std::pair<long, QueryQueue*>(word, query_queue));
-            if(status.second) {
+            auto status = _core_map.insert(std::pair<long, QueryQueue *>(word, query_queue));
+            if (status.second) {
                 _worklists.push(query_queue);
                 return query_queue;
             } else {

@@ -14,86 +14,7 @@
 
 #include <tbb/concurrent_queue.h>
 
-struct Task;
-struct BatchInfo;
-enum SchedulerTaskType { UNION, FIND, EXECUTE };
-struct UnionTaskInfo {
-    int64_t start_index;
-    int64_t end_index;
-};
-struct FindTaskInfo {
-    int64_t start_index;
-    int64_t end_index;
-};
-struct ExecuteTaskInfo {
-    tbb::concurrent_queue<BaseQuery *> *queries;
-};
-union SchedulerTaskInfo {
-    UnionTaskInfo union_info;
-    FindTaskInfo find_info;
-    ExecuteTaskInfo execute_info;
-};
-struct Task {
-    BatchInfo *batch_info;
-    SchedulerTaskType type;
-    SchedulerTaskInfo info;
-};
-struct TaskList {
-    Task *tasks;
-    int64_t num_tasks;
-    volatile int64_t num_done;
 
-    TaskList(int64_t num_tasks) : tasks(nullptr), num_tasks(num_tasks), num_done(num_tasks) {
-        tasks = new Task[num_tasks];
-    }
-    ~TaskList() { delete[] tasks; }
-    bool notify_completion() { return __sync_fetch_and_sub(&num_done, 1) == 1; }
-    bool is_done() { return num_done == 0; }
-};
-struct BatchInfo {
-    BatchInfo *prev_batch;
-    uint64_t epoch;
-    int64_t start_index;
-    int64_t end_index;
-    int64_t parallelism;
-    TaskList *union_tasks;
-    TaskList *find_tasks;
-    TaskList *execute_tasks;
-
-    BatchInfo(BatchInfo *_prev_batch, uint64_t _epoch, int64_t _start_index, int64_t _end_index,
-              int64_t _parallelism)
-        : prev_batch(_prev_batch), epoch(_epoch), start_index(_start_index), end_index(_end_index),
-          parallelism(_parallelism) {
-        union_tasks = new TaskList(parallelism);
-        find_tasks = new TaskList(parallelism);
-        execute_tasks = new TaskList(parallelism);
-        for (int64_t i = 0; i < parallelism; i++) {
-            execute_tasks->tasks[i].info.execute_info.queries =
-                new tbb::concurrent_queue<BaseQuery *>();
-        }
-    }
-    ~BatchInfo() {
-        for (int64_t i = 0; i < parallelism; i++) {
-            delete execute_tasks->tasks[i].info.execute_info.queries;
-        }
-        delete union_tasks;
-        delete find_tasks;
-        delete execute_tasks;
-    }
-    bool is_done() { return execute_tasks->is_done(); }
-    bool notify_completion(SchedulerTaskType type) {
-        switch (type) {
-        case UNION:
-            return union_tasks->notify_completion();
-        case FIND:
-            return find_tasks->notify_completion();
-        case EXECUTE:
-            return execute_tasks->notify_completion();
-        default:
-            return false;
-        }
-    }
-};
 template <typename T> class OnlineBatchExecutor {
   public:
     void initialize(uint32_t id, Database *db) {
@@ -248,11 +169,91 @@ template <typename T> class OnlineBatchExecutor {
     txn_man *manager;
 };
 template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
+	struct Task;
+	struct BatchInfo;
+	enum SchedulerTaskType { UNION, FIND, EXECUTE };
+	struct UnionTaskInfo {
+		int64_t start_index;
+		int64_t end_index;
+	};
+	struct FindTaskInfo {
+		int64_t start_index;
+		int64_t end_index;
+	};
+	struct ExecuteTaskInfo {
+		tbb::concurrent_queue<BaseQuery *> *queries;
+	};
+	union SchedulerTaskInfo {
+		UnionTaskInfo union_info;
+		FindTaskInfo find_info;
+		ExecuteTaskInfo execute_info;
+	};
+	struct Task {
+		BatchInfo *batch_info;
+		SchedulerTaskType type;
+		SchedulerTaskInfo info;
+	};
+	struct TaskList {
+		Task *tasks;
+		int64_t num_tasks;
+		volatile int64_t num_done;
+
+		TaskList(int64_t num_tasks) : tasks(nullptr), num_tasks(num_tasks), num_done(num_tasks) {
+			tasks = new Task[num_tasks];
+		}
+		~TaskList() { delete[] tasks; }
+		bool notify_completion() { return __sync_fetch_and_sub(&num_done, 1) == 1; }
+		bool is_done() { return num_done == 0; }
+	};
+	struct BatchInfo {
+		BatchInfo *prev_batch;
+		uint64_t epoch;
+		int64_t start_index;
+		int64_t end_index;
+		int64_t parallelism;
+		TaskList *union_tasks;
+		TaskList *find_tasks;
+		TaskList *execute_tasks;
+
+		BatchInfo(BatchInfo *_prev_batch, uint64_t _epoch, int64_t _start_index, int64_t _end_index,
+		          int64_t _parallelism)
+				: prev_batch(_prev_batch), epoch(_epoch), start_index(_start_index), end_index(_end_index),
+				  parallelism(_parallelism) {
+			union_tasks = new TaskList(parallelism);
+			find_tasks = new TaskList(parallelism);
+			execute_tasks = new TaskList(parallelism);
+			for (int64_t i = 0; i < parallelism; i++) {
+				execute_tasks->tasks[i].info.execute_info.queries =
+						new tbb::concurrent_queue<BaseQuery *>();
+			}
+		}
+		~BatchInfo() {
+			for (int64_t i = 0; i < parallelism; i++) {
+				delete execute_tasks->tasks[i].info.execute_info.queries;
+			}
+			delete union_tasks;
+			delete find_tasks;
+			delete execute_tasks;
+		}
+		bool is_done() { return execute_tasks->is_done(); }
+		bool notify_completion(SchedulerTaskType type) {
+			switch (type) {
+				case UNION:
+					return union_tasks->notify_completion();
+				case FIND:
+					return find_tasks->notify_completion();
+				case EXECUTE:
+					return execute_tasks->notify_completion();
+				default:
+					return false;
+			}
+		}
+	};
   public:
     OnlineBatchScheduler(uint32_t num_threads, uint32_t max_batch_size, Database *db)
         : _num_threads(num_threads), _max_batch_size(max_batch_size), _db(db), tasks(), _core_map(),
-          _rand(1), _round_robin(0),  done(false) {
-    	_rand.seed(0, FLAGS_seed + 125);
+          _rand(1), _round_robin(0), done(false) {
+        _rand.seed(0, FLAGS_seed + 125);
         // Initialize threads
         _threads = new OnlineBatchExecutor<T>[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
@@ -438,7 +439,6 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
         }
     }
 
-  private:
     void add_find_tasks() {
         _core_map.clear();
         int64_t batch_size = (_batch_info->end_index - _batch_info->start_index);
@@ -561,23 +561,24 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
         INC_STATS(thread_id, time_find, duration);
     }
 
+  private:
     long Find(DataNodeInfo *info) {
-        EpochAddress old_val;
-        EpochAddress new_val;
+        EpochWord old_val;
+        EpochWord new_val;
         old_val.word = info->root_ptr.word;
 
         // ensure we are in the new epoch!
         if (!old_val.IsEpoch(_epoch)) {
             do {
-                EpochAddress self;
-                self.Set(info, _epoch);
+                EpochWord self;
+                self.Set(reinterpret_cast<long>(info), _epoch);
                 __sync_bool_compare_and_swap(&info->root_ptr.word, old_val.word, self.word);
                 old_val.word = info->root_ptr.word;
             } while (!old_val.IsEpoch(_epoch));
         }
 
         // find with path compression
-        auto current_root = static_cast<DataNodeInfo *>(old_val.GetAddress());
+        auto current_root = reinterpret_cast<DataNodeInfo *>(old_val.GetWord());
         if (current_root != info) {
             new_val.word = Find(current_root);
             if (old_val.word != new_val.word) {
@@ -590,15 +591,15 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
     }
 
     void Union(DataNodeInfo *p, DataNodeInfo *q) {
-        EpochAddress info1, info2;
+        EpochWord info1, info2;
         info1.word = Find(p);
         info2.word = Find(q);
         if (info1.word == info2.word) {
             return;
         }
 
-        auto root1 = static_cast<DataNodeInfo *>(info1.GetAddress());
-        auto root2 = static_cast<DataNodeInfo *>(info2.GetAddress());
+        auto root1 = reinterpret_cast<DataNodeInfo *>(info1.GetWord());
+        auto root2 = reinterpret_cast<DataNodeInfo *>(info2.GetWord());
 
         if (root1->size < root2->size) {
             if (__sync_bool_compare_and_swap(&root1->root_ptr.word, info1.word, info2.word)) {
@@ -619,13 +620,13 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
         long core = -1;
         auto iter = _core_map.find(word);
         if (iter == _core_map.end()) {
-            //pthread_mutex_lock(&mutex);
+            // pthread_mutex_lock(&mutex);
             core = static_cast<long>(_rand.nextInt64(0) % _num_threads);
             auto res = _core_map.insert(std::pair<long, long>(word, core));
-            //if (res.second) {
+            // if (res.second) {
             //    _round_robin++;
             //}
-            //pthread_mutex_unlock(&mutex);
+            // pthread_mutex_unlock(&mutex);
             if (res.second) {
                 return core;
             } else {

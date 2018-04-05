@@ -157,7 +157,7 @@ protected:
 private:
 	DataNodeInfo* Find(DataNodeInfo* p);
 	void Union(DataNodeInfo* p, DataNodeInfo* q);
-	int64_t get_core(DataNodeInfo* p);
+	int64_t GetOrAllocateCore(DataNodeInfo *p);
 	uint64_t _round_robin;
 	uint32_t _num_threads;
 	tbb::concurrent_unordered_map<DataNodeInfo*, int64_t> _core_map;

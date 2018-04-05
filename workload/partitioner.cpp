@@ -863,11 +863,10 @@ void ParallelUnionFindPartitioner::do_partition() {
     for (auto i = 0u; i < _num_threads; i++) {
         data[i].fields[0] = (uint64_t)this;
         data[i].fields[1] = (uint64_t)i;
-        data[i].fields[2] = i * num_txn_nodes_per_thread;
-        data[i].fields[3] = min((i + 1) * num_txn_nodes_per_thread, num_txn_nodes);
+        data[i].fields[2] = static_cast<uint64_t>(i * num_txn_nodes_per_thread);
+        data[i].fields[3] = (uint64_t) min((i + 1) * num_txn_nodes_per_thread, num_txn_nodes);
         pthread_create(&threads[i], nullptr, union_helper, reinterpret_cast<void *>(&data[i]));
     }
-
     for (auto i = 0u; i < _num_threads; i++) {
         pthread_join(threads[i], nullptr);
     }
@@ -880,8 +879,8 @@ void ParallelUnionFindPartitioner::do_partition() {
     for (auto i = 0u; i < _num_threads; i++) {
         data[i].fields[0] = (uint64_t)this;
         data[i].fields[1] = (uint64_t)i;
-        data[i].fields[2] = i * num_txn_nodes_per_thread;
-        data[i].fields[3] = min((i + 1) * num_txn_nodes_per_thread, num_txn_nodes);
+        data[i].fields[2] = static_cast<uint64_t>(i * num_txn_nodes_per_thread);
+        data[i].fields[3] = (uint64_t) min((i + 1) * num_txn_nodes_per_thread, num_txn_nodes);
         pthread_create(&threads[i], nullptr, find_helper, reinterpret_cast<void *>(&data[i]));
     }
 
@@ -960,7 +959,7 @@ void ParallelUnionFindPartitioner::do_find(int64_t start, int64_t end) {
         info->iteration = iteration;
         auto iter = local_core_map.find(cc);
         if (iter == local_core_map.end()) {
-            auto core = get_core(cc);
+            auto core = GetOrAllocateCore(cc);
             local_core_map[cc] = core;
             info->assigned_core = core;
         } else {
@@ -969,7 +968,7 @@ void ParallelUnionFindPartitioner::do_find(int64_t start, int64_t end) {
     }
 }
 
-int64_t ParallelUnionFindPartitioner::get_core(DataNodeInfo *cc) {
+int64_t ParallelUnionFindPartitioner::GetOrAllocateCore(DataNodeInfo *cc) {
     int64_t core = -1;
     auto iter = _core_map.find(cc);
     if (iter == _core_map.end()) {
@@ -985,7 +984,7 @@ int64_t ParallelUnionFindPartitioner::get_core(DataNodeInfo *cc) {
         if(res.second) {
             return core;
         } else {
-            return get_core(cc);
+            return GetOrAllocateCore(cc);
         }
     } else {
         core = iter->second;
@@ -1056,7 +1055,7 @@ void DummyPartitioner::do_partition() {
     assign_and_compute_cluster_info();
 }
 
-ostream &operator<<(ostream &os, const EpochAddress &ap) {
-	os << "[" << ap.GetEpoch() << ", " << (long)ap.GetAddress() << "]";
+ostream &operator<<(ostream &os, const EpochWord &ap) {
+	os << "[" << ap.GetEpoch() << ", " << (long) ap.GetWord() << "]";
 	return os;
 }

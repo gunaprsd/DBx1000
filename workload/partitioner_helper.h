@@ -5,31 +5,31 @@
 #include <cstring>
 #include <metis.h>
 #include <system/query.h>
-struct EpochAddress {
+struct EpochWord {
     long word;
-    static const int word_size = 64;
+    static const int total_size = 64;
     static const int epoch_size = 16;
-    static const int address_size = word_size - epoch_size;
-    static const int epoch_shift = address_size;
-    static const long address_mask = (1L << address_size) - 1L;
-    static const long epoch_mask = ~address_mask;
+    static const int word_size = total_size - epoch_size;
+    static const int epoch_shift = word_size;
+    static const long word_mask = (1L << word_size) - 1L;
+    static const long epoch_mask = ~word_mask;
 
 public:
-    EpochAddress() {
+    EpochWord() {
         word = 0;
     }
-    void Set(void *ptr, uint64_t epoch) {
-        SetAddress(ptr);
+    void Set(long wrd, uint64_t epoch) {
+        SetWord(wrd);
         SetEpoch(epoch);
     }
-    void SetAddress(void *ptr) {
-        auto ptr_word = (long)ptr & address_mask;
-        word &= ~(address_mask);
+    void SetWord(long wrd) {
+        auto ptr_word = wrd & word_mask;
+        word &= ~(word_mask);
         word |= ptr_word;
     }
-    void *GetAddress() const {
-        auto ptr_word = (word & address_mask);
-        return (void *)ptr_word;
+    long GetWord() const {
+        auto wrd = (word & word_mask);
+        return wrd;
     }
     void SetEpoch(uint64_t epoch) {
         auto epoch_short = static_cast<short>(epoch);
@@ -41,14 +41,14 @@ public:
         auto epoch_short = static_cast<short>(iteration);
         return (epoch_short == GetEpoch());
     }
-    friend ostream &operator<<(ostream &os, const EpochAddress &ap);
+    friend ostream &operator<<(ostream &os, const EpochWord &ap);
 };
 
 
 struct DataNodeInfo {
     idx_t id;
     DataNodeInfo* root;
-    EpochAddress root_ptr;
+    EpochWord root_ptr;
     idx_t size;
     uint32_t tid;
     uint64_t epoch;
@@ -63,7 +63,7 @@ struct DataNodeInfo {
 
     void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
         id = _id;
-        root_ptr.Set(this, _epoch);
+        root_ptr.Set(reinterpret_cast<long>(this), _epoch);
         size = 1;
         tid = _table_id;
         epoch = _epoch;

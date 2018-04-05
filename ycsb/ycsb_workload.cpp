@@ -2,7 +2,7 @@
 
 #include "ycsb_workload.h"
 #include "parser.h"
-
+#include "online_batch_scheduler_v2.h"
 #include <algorithm>
 
 YCSBWorkloadGenerator::YCSBWorkloadGenerator(const YCSBBenchmarkConfig &_config,
@@ -174,6 +174,8 @@ YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &fold
 
     if(FLAGS_scheduler_type == "online_batch") {
 	    _scheduler = new OnlineBatchScheduler<ycsb_params>(num_threads, FLAGS_scheduler_batch_size, &_db);
+    } else if(FLAGS_scheduler_type == "online_batch_v2") {
+	    _scheduler = new OnlineBatchSchedulerV2<ycsb_params>(num_threads, FLAGS_scheduler_batch_size, &_db);
     } else {
     	_scheduler = new OnlineScheduler<ycsb_params>(num_threads, &_db);
     }

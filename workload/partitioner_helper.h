@@ -41,6 +41,18 @@ public:
         auto epoch_short = static_cast<short>(iteration);
         return (epoch_short == GetEpoch());
     }
+    void AtomicReset(uint64_t epoch, long reset_value) {
+	    EpochWord old_val;
+	    old_val.word = word;
+	    while(!old_val.IsEpoch(epoch)) {
+		    EpochWord self;
+		    self.Set(reset_value, epoch);
+		    if(__sync_bool_compare_and_swap(&word, old_val.word, self.word)) {
+			    //done!
+		    }
+		    old_val.word = word;
+	    }
+    }
     friend ostream &operator<<(ostream &os, const EpochWord &ap);
 };
 

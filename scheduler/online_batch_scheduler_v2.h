@@ -174,7 +174,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
   public:
     OnlineBatchSchedulerV2(uint64_t num_threads, uint64_t max_batch_size, Database *db)
         : _num_threads(num_threads), _max_batch_size(max_batch_size), _db(db), _epoch(0),
-          round_robin(0), done(false) {
+          _core_map(), round_robin(0), done(false) {
+
         auto num_data_items = AccessIterator<T>::get_max_key();
         _data_info = new DataInfo[num_data_items];
         for (uint64_t i = 0; i < num_data_items; i++) {
@@ -190,7 +191,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         // compute read write sets
         prepare();
 
-        phaseCounter.Set(static_cast<long>(3 * _num_threads + 3), _epoch);
+        counter.Set(0, _num_threads);
 
         execute();
 
@@ -199,7 +200,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         }
     }
 
-    ~OnlineBatchSchedulerV2() { }
+    ~OnlineBatchSchedulerV2() {}
 
   protected:
     const uint64_t _num_threads;
@@ -208,12 +209,10 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     DataInfo *_data_info;
     uint64_t _epoch;
     TransactionBatch _current_batch;
-	tbb::concurrent_unordered_map<long, long> _core_map;
+    tbb::concurrent_unordered_map<long, long> _core_map;
 
     // Synchronization primitives
-    //pthread_cond_t cv;
-    //pthread_mutex_t mutex;
-    EpochWord phaseCounter;
+    EpochWord counter;
 
     // Used for allocation of cores
     int64_t round_robin;
@@ -228,7 +227,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     volatile bool done;
 
     // Executors for each thread
-	TransactionExecutor<T>* _executors;
+    TransactionExecutor<T> *_executors;
 
     void prepare() {
         // create data structure for all read write sets
@@ -236,6 +235,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
 
         pthread_t worker_threads[_num_threads];
         ThreadLocalData data[_num_threads];
+
         auto start_time = get_server_clock();
         for (uint64_t i = 0; i < _num_threads; i++) {
             data[i].fields[0] = (uint64_t)this;
@@ -263,8 +263,9 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         uint64_t size_per_thread = _max_size / _num_threads;
         uint64_t start_index = thread_id * size_per_thread;
         uint64_t end_index = (thread_id + 1) * size_per_thread;
-        end_index = end_index > _max_size ? _max_size : end_index;
+        end_index = (end_index > _max_size) ? _max_size : end_index;
 
+        // computing read write set
         for (auto i = start_index; i < end_index; i++) {
             _batch[i].obtain_rw_set(&(_rwset_info[i]));
         }
@@ -329,9 +330,9 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
 
         for (uint64_t t = start_index; t < end_index; t++) {
             ReadWriteSet *rwset = &(_rwset_info[t]);
-            for (uint32_t i = 0; i < (rwset->num_accesses - 1); i++) {
-                auto key1 = rwset->accesses[i].key;
-                auto key2 = rwset->accesses[i+1].key;
+            for (uint32_t i = 1; i < rwset->num_accesses; i++) {
+                auto key1 = rwset->accesses[i - 1].key;
+                auto key2 = rwset->accesses[i].key;
                 auto data_info1 = &(_data_info[key1]);
                 auto data_info2 = &(_data_info[key2]);
                 Union(data_info1, data_info2);
@@ -366,7 +367,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             } else {
                 core = iter->second;
             }
-            _executors[core].add_query(& _batch[t]);
+            _executors[core].add_query(&_batch[t]);
         }
 
         auto end_time = get_server_clock();
@@ -374,19 +375,43 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         INC_STATS(thread_id, time_find, duration);
     }
 
-    void do_execute(uint64_t thread_id) {
-        _executors[thread_id].run();
-    }
+    void do_execute(uint64_t thread_id) { _executors[thread_id].run(); }
 
     void done_wait(uint64_t thread_id) {
-    	// TODO 
+        EpochWord current;
+        current.word = __sync_sub_and_fetch(&counter.word, 1);
+        auto old_epoch = current.GetEpoch();
+        auto old_counter = current.GetWord();
+        if (old_counter == 0) {
+            // move to the next phase
+            move_to_next_phase();
+
+            // create the next word with (e+1, n)
+            EpochWord next_phase_word;
+            next_phase_word.Set((long)_num_threads, static_cast<uint64_t>(old_epoch + 1));
+
+            // replace counter value from (e, 0) to (e+1, n)
+            auto success =
+                __sync_bool_compare_and_swap(&counter.word, current.word, next_phase_word.word);
+            assert(success);
+        } else {
+            auto start_time = get_server_clock();
+            // wait until epoch value has been updated
+            while (current.GetEpoch() == old_epoch) {
+                usleep(1);
+                current.word = counter.word;
+            }
+            auto end_time = get_server_clock();
+            auto duration = (end_time - start_time);
+            INC_STATS(thread_id, time_blocked, duration);
+        }
     }
 
     void move_to_next_phase() {
 
         switch (_current_batch.phase) {
         case UNION:
-        	_core_map.clear();
+            _core_map.clear();
             _current_batch.phase = FIND;
             break;
         case FIND:
@@ -394,6 +419,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             break;
         case EXECUTE:
             if (_current_batch.end_index < _max_size) {
+            	_epoch++;
                 _current_batch.start_index += _max_batch_size;
                 _current_batch.end_index += _max_batch_size;
                 _current_batch.end_index =
@@ -406,25 +432,20 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         default:
             assert(false);
         }
-
-        // reset counter value
-        auto success = __sync_bool_compare_and_swap(&counter, 0, _num_threads);
-        assert(success);
     }
 
   private:
-
     long Find(DataInfo *info) {
-        EpochWord old_root, new_root;
+        EpochWord old_root;
         old_root.word = info->root.word;
-
-        if(!old_root.IsEpoch(_epoch)) {
-            EpochReset(& (info->root), _epoch, reinterpret_cast<long>(info));
+        if (!old_root.IsEpoch(_epoch)) {
+            info->root.AtomicReset(_epoch, reinterpret_cast<long>(info));
             old_root.word = info->root.word;
         }
 
-        auto current_root_info = reinterpret_cast<DataInfo*>(old_root.GetWord());
+        auto current_root_info = reinterpret_cast<DataInfo *>(old_root.GetWord());
         if (current_root_info != info) {
+        	EpochWord new_root;
             new_root.word = Find(current_root_info);
             if (old_root.word != new_root.word) {
                 __sync_bool_compare_and_swap(&(info->root.word), old_root.word, new_root.word);
@@ -448,13 +469,13 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         auto root2 = reinterpret_cast<DataInfo *>(info2.GetWord());
 
         // reset size for current epoch
-        if(!root1->size.IsEpoch(_epoch)) {
-            EpochReset(&(root1->size), _epoch, 1);
+        if (!root1->size.IsEpoch(_epoch)) {
+            root1->size.AtomicReset(_epoch, 1);
         }
 
         // reset size for current epoch
-        if(!root2->size.IsEpoch(_epoch)) {
-            EpochReset(&(root2->size), _epoch, 1);
+        if (!root2->size.IsEpoch(_epoch)) {
+            root2->size.AtomicReset(_epoch, 1);
         }
 
         // merge two nodes based on size
@@ -464,13 +485,13 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         if (root1_size < root2_size) {
             // make root2, root1's root
             if (__sync_bool_compare_and_swap(&(root1->root.word), info1.word, info2.word)) {
-                __sync_fetch_and_add(& (root2->size.word), root1_size);
+                __sync_fetch_and_add(&(root2->size.word), root1_size);
                 return;
             }
         } else {
             // make root1, root2's root
             if (__sync_bool_compare_and_swap(&root2->root.word, info2.word, info1.word)) {
-                __sync_fetch_and_add(& (root1->size.word), root2_size);
+                __sync_fetch_and_add(&(root1->size.word), root2_size);
                 return;
             }
         }
@@ -484,26 +505,13 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         if (iter == _core_map.end()) {
             pthread_mutex_lock(& core_allocation_mutex);
             core = (static_cast<long>(round_robin % _num_threads));
-	        _core_map.insert(std::pair<long, long>(word, core));
+            _core_map.insert(std::pair<long, long>(word, core));
             round_robin++;
-	        pthread_mutex_unlock(& core_allocation_mutex);
+            pthread_mutex_unlock(& core_allocation_mutex);
         } else {
             core = iter->second;
         }
         return core;
-    }
-
-    void EpochReset(EpochWord* epoch_word, uint64_t epoch, long reset_value) {
-        EpochWord old_val;
-        old_val.word = epoch_word->word;
-        while(!old_val.IsEpoch(epoch)) {
-            EpochWord self;
-            self.Set(reset_value, epoch);
-            if(__sync_bool_compare_and_swap(&(epoch_word->word), old_val.word, self.word)) {
-                //done!
-            }
-            old_val.word = epoch_word->word;
-        }
     }
 };
 

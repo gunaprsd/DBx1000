@@ -191,7 +191,12 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         // compute read write sets
         prepare();
 
-        counter.Set(0, _num_threads);
+        _current_batch.start_index = 0;
+        _current_batch.end_index = _max_batch_size;
+        _current_batch.end_index =
+            (_current_batch.end_index > _max_size) ? _max_size : _current_batch.end_index;
+        _current_batch.phase = UNION;
+        counter.Set((long) _num_threads, _epoch);
 
         execute();
 
@@ -419,7 +424,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             break;
         case EXECUTE:
             if (_current_batch.end_index < _max_size) {
-            	_epoch++;
+                _epoch++;
                 _current_batch.start_index += _max_batch_size;
                 _current_batch.end_index += _max_batch_size;
                 _current_batch.end_index =
@@ -445,7 +450,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
 
         auto current_root_info = reinterpret_cast<DataInfo *>(old_root.GetWord());
         if (current_root_info != info) {
-        	EpochWord new_root;
+            EpochWord new_root;
             new_root.word = Find(current_root_info);
             if (old_root.word != new_root.word) {
                 __sync_bool_compare_and_swap(&(info->root.word), old_root.word, new_root.word);
@@ -503,11 +508,11 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         long core = -1;
         auto iter = _core_map.find(word);
         if (iter == _core_map.end()) {
-            pthread_mutex_lock(& core_allocation_mutex);
+            pthread_mutex_lock(&core_allocation_mutex);
             core = (static_cast<long>(round_robin % _num_threads));
             _core_map.insert(std::pair<long, long>(word, core));
             round_robin++;
-            pthread_mutex_unlock(& core_allocation_mutex);
+            pthread_mutex_unlock(&core_allocation_mutex);
         } else {
             core = iter->second;
         }

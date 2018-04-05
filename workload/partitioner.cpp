@@ -1055,7 +1055,7 @@ void DummyPartitioner::do_partition() {
     assign_and_compute_cluster_info();
 }
 
-ostream &operator<<(ostream &os, const EpochWord &ap) {
-	os << "[" << ap.GetEpoch() << ", " << (long) ap.GetWord() << "]";
+ostream &operator<<(ostream &os, const EpochValue &ap) {
+	os << "[" << ap.GetEpoch() << ", " << (long) ap.GetValue() << "]";
 	return os;
 }

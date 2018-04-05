@@ -5,62 +5,81 @@
 #include <cstring>
 #include <metis.h>
 #include <system/query.h>
-struct EpochWord {
+struct EpochValue {
     long word;
     static const int total_size = 64;
     static const int epoch_size = 16;
     static const int word_size = total_size - epoch_size;
     static const int epoch_shift = word_size;
-    static const long word_mask = (1L << word_size) - 1L;
-    static const long epoch_mask = ~word_mask;
+    static const long value_mask = (1L << word_size) - 1L;
+    static const long epoch_mask = ~value_mask;
 
 public:
-    EpochWord() {
+    EpochValue() {
         word = 0;
     }
-    void Set(long wrd, uint64_t epoch) {
-        SetWord(wrd);
+
+    EpochValue(short epoch, long value) {
+    	word = 0;
+    	Set(epoch, value);
+    }
+
+    EpochValue(EpochValue& other) {
+    	this->word = other.word;
+    }
+
+    void Set(short epoch, long value) {
+	    SetValue(value);
         SetEpoch(epoch);
     }
-    void SetWord(long wrd) {
-        auto ptr_word = wrd & word_mask;
-        word &= ~(word_mask);
-        word |= ptr_word;
+
+    void Set(long word) {
+    	this->word = word;
     }
-    long GetWord() const {
-        auto wrd = (word & word_mask);
-        return wrd;
+
+    void SetValue(long value) {
+        word = (word & ~value_mask) | (value & value_mask);
     }
-    void SetEpoch(uint64_t epoch) {
-        auto epoch_short = static_cast<short>(epoch);
-        word &= ~(epoch_mask);
-        word |= ((long)epoch_short << epoch_shift);
+
+    long GetValue() const {
+        return (word & value_mask);
     }
+
+    void SetEpoch(short epoch) {
+        word = (word & ~epoch_mask) | ((long)epoch << epoch_shift);
+    }
+
     short GetEpoch() const { return static_cast<short>(word >> epoch_shift); }
-    bool IsEpoch(uint64_t iteration) {
-        auto epoch_short = static_cast<short>(iteration);
-        return (epoch_short == GetEpoch());
+
+	// Other useful functions
+    bool IsEpoch(short epoch) {
+        return (epoch == GetEpoch());
     }
-    void AtomicReset(uint64_t epoch, long reset_value) {
-	    EpochWord old_val;
-	    old_val.word = word;
+
+    void AtomicCopy(const EpochValue &other) {
+		this->word = other.word;
+    }
+
+    void AtomicReset(short epoch, long reset_value) {
+	    EpochValue old_val(*this);
 	    while(!old_val.IsEpoch(epoch)) {
-		    EpochWord self;
-		    self.Set(reset_value, epoch);
-		    if(__sync_bool_compare_and_swap(&word, old_val.word, self.word)) {
-			    //done!
-		    }
-		    old_val.word = word;
+		    EpochValue self(epoch, reset_value);
+		    AtomicCompareAndSwap(old_val, self);
+		    old_val.AtomicCopy(*this);
 	    }
     }
-    friend ostream &operator<<(ostream &os, const EpochWord &ap);
-};
 
+	bool AtomicCompareAndSwap(EpochValue expected, EpochValue desired) {
+		return __sync_bool_compare_and_swap(&word, expected.word, desired.word);
+	}
+
+	friend ostream &operator<<(ostream &os, const EpochValue &ap);
+};
 
 struct DataNodeInfo {
     idx_t id;
     DataNodeInfo* root;
-    EpochWord root_ptr;
+    EpochValue root_ptr;
     idx_t size;
     uint32_t tid;
     uint64_t epoch;
@@ -75,7 +94,7 @@ struct DataNodeInfo {
 
     void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
         id = _id;
-        root_ptr.Set(reinterpret_cast<long>(this), _epoch);
+        root_ptr.Set(_epoch, reinterpret_cast<long>(this));
         size = 1;
         tid = _table_id;
         epoch = _epoch;
@@ -87,8 +106,6 @@ struct DataNodeInfo {
         memset(&core_weights, 0, sizeof(uint64_t) * MAX_NUM_CORES);
     }
 };
-
-
 
 struct TxnNodeInfo {
     idx_t id;

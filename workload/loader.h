@@ -47,6 +47,7 @@ template <typename T> class ParallelWorkloadLoader {
     virtual QueryIterator<T> *get_queries_list(uint64_t thread_id) {
         return new QueryIterator<T>(_queries[thread_id], _array_sizes[thread_id]);
     }
+
     virtual QueryMatrix<T> *get_queries_matrix() {
         // Can create a query matrix only with equal number of elements in each
         // array
@@ -57,6 +58,7 @@ template <typename T> class ParallelWorkloadLoader {
 
         return new QueryMatrix<T>(_queries, _num_threads, size);
     }
+
     virtual void get_queries(Query<T> *&batch, uint64_t &batch_size) {
         // copy everything into a single array
         batch_size = 0;

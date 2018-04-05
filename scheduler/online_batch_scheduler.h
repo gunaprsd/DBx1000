@@ -563,14 +563,14 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
 
   private:
     long Find(DataNodeInfo *info) {
-        EpochWord old_val;
-        EpochWord new_val;
+        EpochValue old_val;
+        EpochValue new_val;
         old_val.word = info->root_ptr.word;
 
         // ensure we are in the new epoch!
         if (!old_val.IsEpoch(_epoch)) {
             do {
-                EpochWord self;
+                EpochValue self;
                 self.Set(reinterpret_cast<long>(info), _epoch);
                 __sync_bool_compare_and_swap(&info->root_ptr.word, old_val.word, self.word);
                 old_val.word = info->root_ptr.word;
@@ -578,7 +578,7 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
         }
 
         // find with path compression
-        auto current_root = reinterpret_cast<DataNodeInfo *>(old_val.GetWord());
+        auto current_root = reinterpret_cast<DataNodeInfo *>(old_val.GetValue());
         if (current_root != info) {
             new_val.word = Find(current_root);
             if (old_val.word != new_val.word) {
@@ -591,15 +591,15 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
     }
 
     void Union(DataNodeInfo *p, DataNodeInfo *q) {
-        EpochWord info1, info2;
+        EpochValue info1, info2;
         info1.word = Find(p);
         info2.word = Find(q);
         if (info1.word == info2.word) {
             return;
         }
 
-        auto root1 = reinterpret_cast<DataNodeInfo *>(info1.GetWord());
-        auto root2 = reinterpret_cast<DataNodeInfo *>(info2.GetWord());
+        auto root1 = reinterpret_cast<DataNodeInfo *>(info1.GetValue());
+        auto root2 = reinterpret_cast<DataNodeInfo *>(info2.GetValue());
 
         if (root1->size < root2->size) {
             if (__sync_bool_compare_and_swap(&root1->root_ptr.word, info1.word, info2.word)) {

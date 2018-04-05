@@ -3,6 +3,7 @@
 
 #include "partitioner_helper.h"
 #include "scheduler.h"
+#include "abort_buffer.h"
 #include <tbb/concurrent_unordered_map.h>
 #include <unordered_map>
 using namespace std;
@@ -56,7 +57,7 @@ template <typename T> class TransactionExecutor {
         }
     }
     void run_with_abort_buffer() {
-        RC rc;
+      /* RC rc;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
         auto done = false;
         while (!done) {
@@ -98,7 +99,7 @@ template <typename T> class TransactionExecutor {
                 INC_STATS(thread_id, abort_cnt, 1);
                 stats.abort(thread_id);
             }
-        }
+	    }*/
     }
 
   protected:
@@ -152,7 +153,7 @@ template <typename T> class TransactionExecutor {
     uint64_t thread_txn_id;
     ts_t current_timestamp;
     Database *db;
-    TimedAbortBuffer<T> abort_buffer;
+    //TimedAbortBuffer<T> abort_buffer;
     tbb::concurrent_queue<Query<T> *> queries;
     txn_man *manager;
 };
@@ -182,11 +183,20 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             _data_info[i].root.Set(reinterpret_cast<long>(&(_data_info[i])), _epoch);
             _data_info[i].size.Set(1, _epoch);
         }
+
+	_executors = new TransactionExecutor<ycsb_params>[_num_threads];
+	for(uint64_t i = 0; i < _num_threads; i++) {
+	  _executors[i].initialize(i, _db);
+	}
+
+	pthread_mutex_init(&core_allocation_mutex, NULL);
     }
 
     void schedule(ParallelWorkloadLoader<T> *loader) {
         loader->get_queries(_batch, _max_size);
         loader->release();
+
+	printf("Batch Size: %lu\n", _max_size);
 
         // compute read write sets
         prepare();
@@ -331,6 +341,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
         end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
 
+	//printf("[tid=%lu] union start=%lu, end=%lu\n", thread_id, start_index, end_index);
+
         auto start_time = get_server_clock();
 
         for (uint64_t t = start_index; t < end_index; t++) {
@@ -338,6 +350,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             for (uint32_t i = 1; i < rwset->num_accesses; i++) {
                 auto key1 = rwset->accesses[i - 1].key;
                 auto key2 = rwset->accesses[i].key;
+		//printf("(%lu, %lu)\n", key1, key2);
                 auto data_info1 = &(_data_info[key1]);
                 auto data_info2 = &(_data_info[key2]);
                 Union(data_info1, data_info2);
@@ -347,6 +360,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         auto end_time = get_server_clock();
         auto duration = (end_time - start_time);
         INC_STATS(thread_id, time_union, duration);
+
+	//printf("[tid=%lu] union done\n", thread_id);
     }
 
     void do_find(uint64_t thread_id, TransactionBatch batch) {
@@ -356,6 +371,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         uint64_t start_index = batch.start_index + (thread_id * size_per_thread);
         uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
         end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
+
+	//printf("[tid=%lu] find start=%lu, end=%lu\n", thread_id, start_index, end_index);
 
         auto start_time = get_server_clock();
 
@@ -434,6 +451,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
                 done = true;
                 return;
             }
+	    break;
         default:
             assert(false);
         }

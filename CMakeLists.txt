@@ -6,9 +6,8 @@ SET(CMAKE_CXX_STANDARD 11)
 
 ADD_DEFINITIONS(-DNOGRAPHITE=1)
 SET (CMAKE_CXX_FLAGS "-Werror -Wall -std=c++0x" CACHE INTERNAL "compiler options" FORCE)
-SET (CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE INTERNAL "compiler options" FORCE)
+SET (CMAKE_CXX_FLAGS_DEBUG "-O0 -pg" CACHE INTERNAL "compiler options" FORCE)
 SET (CMAKE_CXX_FLAGS_RELEASE "-O3" CACHE INTERNAL "compiler options" FORCE)
-SET (CMAKE_EXE_LINKER_FLAGS " -p" CACHE INTERNAL "linker options" FORCE)
 SET (CMAKE_BUILD_TYPE "Release")
 IF (NOT CMAKE_BUILD_TYPE)
     SET (CMAKE_BUILD_TYPE "Debug")
@@ -116,7 +115,8 @@ SET(SRC_LIST cc/occ.h
         scheduler/scheduler_tree.h
         scheduler/queues.h
         scheduler/scheduler_tree_v1.h
-        scheduler/online_batch_scheduler.h scheduler/online_batch_scheduler_v2.h)
+        scheduler/online_batch_scheduler.h
+	scheduler/online_batch_scheduler_v2.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})

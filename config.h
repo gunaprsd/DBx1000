@@ -22,20 +22,14 @@
 
 // # of transactions to run for warmup
 #define WARMUP 0
-// YCSB or TPCC
-//#define WORKLOAD						YCSB
-// print the transaction latency distribution
 #define PRT_LAT_DISTR false
 #define STATS_ENABLE true
 #define TIME_ENABLE true
-
 #define MEM_ALLIGN 8
-
 // [THREAD_ALLOC]
 #define THREAD_ALLOC false
 #define THREAD_ARENA_SIZE (1UL << 22)
 #define MEM_PAD true
-
 // [PART_ALLOC]
 #define PART_ALLOC false
 #define MEM_SIZE (1UL << 30)
@@ -46,7 +40,6 @@
 /***********************************************/
 // WAIT_DIE, NO_WAIT, DL_DETECT, TIMESTAMP, MVCC, HEKATON, HSTORE, OCC, VLL,
 // TICTOC, SILO
-// TODO TIMESTAMP does not work at this moment
 #define CC_ALG NONE
 #define ISOLATION_LEVEL SERIALIZABLE
 

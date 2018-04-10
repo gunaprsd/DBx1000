@@ -14,71 +14,55 @@ struct EpochValue {
     static const long value_mask = (1L << word_size) - 1L;
     static const long epoch_mask = ~value_mask;
 
-public:
-    EpochValue() {
-        word = 0;
-    }
+  public:
+    EpochValue() { word = 0; }
 
     EpochValue(short epoch, long value) {
-    	word = 0;
-    	Set(epoch, value);
+        word = 0;
+        Set(epoch, value);
     }
 
-    EpochValue(EpochValue& other) {
-    	this->word = other.word;
-    }
+    EpochValue(EpochValue &other) { this->word = other.word; }
 
     void Set(short epoch, long value) {
-	    SetValue(value);
+        SetValue(value);
         SetEpoch(epoch);
     }
 
-    void Set(long word) {
-    	this->word = word;
-    }
+    void Set(long word) { this->word = word; }
 
-    void SetValue(long value) {
-        word = (word & ~value_mask) | (value & value_mask);
-    }
+    void SetValue(long value) { word = (word & ~value_mask) | (value & value_mask); }
 
-    long GetValue() const {
-        return (word & value_mask);
-    }
+    long GetValue() const { return (word & value_mask); }
 
-    void SetEpoch(short epoch) {
-        word = (word & ~epoch_mask) | ((long)epoch << epoch_shift);
-    }
+    void SetEpoch(short epoch) { word = (word & ~epoch_mask) | ((long)epoch << epoch_shift); }
 
     short GetEpoch() const { return static_cast<short>(word >> epoch_shift); }
 
-	// Other useful functions
-    bool IsEpoch(short epoch) {
-        return (epoch == GetEpoch());
-    }
+    // Other useful functions
+    bool IsEpoch(short epoch) { return (epoch == GetEpoch()); }
 
-    void AtomicCopy(const EpochValue &other) {
-		this->word = other.word;
-    }
+    void AtomicCopy(const EpochValue &other) { this->word = other.word; }
 
     void AtomicReset(short epoch, long reset_value) {
-	    EpochValue old_val(*this);
-	    while(!old_val.IsEpoch(epoch)) {
-		    EpochValue self(epoch, reset_value);
-		    AtomicCompareAndSwap(old_val, self);
-		    old_val.AtomicCopy(*this);
-	    }
+        EpochValue old_val(*this);
+        while (!old_val.IsEpoch(epoch)) {
+            EpochValue self(epoch, reset_value);
+            AtomicCompareAndSwap(old_val, self);
+            old_val.AtomicCopy(*this);
+        }
     }
 
-	bool AtomicCompareAndSwap(EpochValue expected, EpochValue desired) {
-		return __sync_bool_compare_and_swap(&word, expected.word, desired.word);
-	}
+    bool AtomicCompareAndSwap(EpochValue expected, EpochValue desired) {
+        return __sync_bool_compare_and_swap(&word, expected.word, desired.word);
+    }
 
-	friend ostream &operator<<(ostream &os, const EpochValue &ap);
+    friend ostream &operator<<(ostream &os, const EpochValue &ap);
 };
 
 struct DataNodeInfo {
     idx_t id;
-    DataNodeInfo* root;
+    DataNodeInfo *root;
     EpochValue root_ptr;
     idx_t size;
     uint32_t tid;
@@ -88,18 +72,22 @@ struct DataNodeInfo {
     bool single_core;
     uint64_t core_weights[MAX_NUM_CORES];
     std::vector<idx_t> read_txns;
+    uint64_t num_read_txns;
     std::vector<idx_t> write_txns;
+    uint64_t num_write_txns;
 
     DataNodeInfo() {}
 
     void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
         id = _id;
-	root = this;
+        root = this;
         root_ptr.Set(_epoch, reinterpret_cast<long>(this));
         size = 1;
         tid = _table_id;
         epoch = _epoch;
         iteration = 0;
+        num_read_txns = 0;
+        num_write_txns = 0;
         assigned_core = UINT64_MAX;
         single_core = false;
         read_txns.clear();
@@ -156,16 +144,6 @@ struct TableInfo {
     void print(string name) {
         printf("%s-%-25s: %lu\n", name.c_str(), "Total-Accesses", num_total_accesses);
         printf("%s-%-25s: %lu\n", name.c_str(), "Num-Accessed-Data", num_accessed_data);
-        /*for (; stop_index > 0u; stop_index--) {
-            if (txn_cross_access_histogram[stop_index - 1] > 0) {
-                break;
-            }
-        }
-        for (uint64_t i = 0; i < stop_index; i++) {
-            printf("%lu, ", txn_cross_access_histogram[i]);
-        }
-        printf("\n");*/
-
         printf("%s-%-25s: ", name.c_str(), "Data-Core-Degree-Histogram");
         uint64_t stop_index = MAX_NUM_CORES;
         for (; stop_index > 0u; stop_index--) {

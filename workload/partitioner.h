@@ -32,7 +32,7 @@ class BasePartitioner {
 };
 
 /*
- * Construct the conflict graph and use METIS graph partitioner
+ * Construct the conflict graph and use METIS graph _partitioner
  * library to cluster the transaction nodes with the size constraints
  */
 class ConflictGraphPartitioner : public BasePartitioner {
@@ -108,7 +108,7 @@ class HeuristicPartitioner3 : public HeuristicPartitioner1 {
 };
 
 /*
- * A k-means partitioner that represents each transaction in a d-dimensional
+ * A k-means _partitioner that represents each transaction in a d-dimensional
  * space and clusters them based on k-means clustering.
  */
 class KMeansPartitioner : public BasePartitioner {

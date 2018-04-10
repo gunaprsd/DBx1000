@@ -27,12 +27,12 @@ protected:
   RandomNumberGenerator _random;
 };
 
-typedef ParallelWorkloadLoader<ycsb_params> YCSBWorkloadLoader;
+typedef WorkloadLoader<ycsb_params> YCSBWorkloadLoader;
 
 
 class YCSBExecutor {
 public:
-	YCSBExecutor(const YCSBBenchmarkConfig &_config, const string &folder_path,
+	YCSBExecutor(const YCSBBenchmarkConfig &_config, const string &input_file,
 	             uint64_t num_threads);
 	void execute();
 	void release();

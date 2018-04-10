@@ -7,6 +7,8 @@
 #define MAX_NUM_ACCESSES 30
 #define MAX_NUM_CORES 30
 #define MAX_NUM_TABLES 6
+#define MAX_NUM_THREADS 120
+
 #define NOGRAPHITE 1
 #define THREAD_CNT 4
 #define PART_CNT 2

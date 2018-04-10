@@ -152,9 +152,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         pthread_mutex_init(&core_allocation_mutex, NULL);
     }
 
-    void schedule(ParallelWorkloadLoader<T> *loader) {
+    void schedule(WorkloadLoader<T> *loader) {
         loader->get_queries(_batch, _max_size);
-        loader->release();
 
         printf("Batch Size: %lu\n", _max_size);
         prepare();

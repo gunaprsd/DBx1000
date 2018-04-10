@@ -110,6 +110,10 @@ string get_workload_file_name(const string & base_file_name, uint32_t thread_id)
   return output;
 }
 
+string get_workload_file_name(const string & base_file_name) {
+  string output = base_file_name + ".dat";
+  return output;
+}
 /*string get_benchmark_path(const string & base, bool partitioned) {
   string path = base;
   path += "/";
@@ -125,7 +129,7 @@ string get_workload_file_name(const string & base_file_name, uint32_t thread_id)
   path += to_string(FLAGS_threads);
   path += "-";
   if(partitioned) {
-    path += "partitioner-u";
+    path += "_partitioner-u";
     path += to_string(g_ufactor);
   } else {
     path += "raw";

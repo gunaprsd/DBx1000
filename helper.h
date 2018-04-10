@@ -259,6 +259,7 @@ inline void set_affinity(uint64_t thd_id) {
 }
 
 string get_workload_file_name(const string & folder_path, uint32_t thread_id);
+string get_workload_file_name(const string & base_file_name);
 
 #define DURATION(e, s) ((double)e - (double)s) / 1000.0 / 1000.0 / 1000.0
 

@@ -14,7 +14,7 @@ class ParMETISGraphPartitioner;
 struct ParMETIS_CSRGraph;
 
 struct METIS_CSRGraph {
-  // Inputs to the partitioner
+  // Inputs to the _partitioner
   idx_t nvtxs;
   idx_t ncon;
   idx_t adjncy_size;

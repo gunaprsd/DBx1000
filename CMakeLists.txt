@@ -106,7 +106,7 @@ SET(SRC_LIST cc/occ.h
         workload/partitioner.h
         workload/loader.h
         ycsb/ycsb.cpp
-        scheduler/offline_scheduler.h
+        scheduler/offline_partitioner.h
         parser.h
         workload/partitioner_helper.h
         workload/partitioner.cpp

@@ -17,7 +17,7 @@
 template<typename T>
 class IScheduler {
 public:
-    virtual void schedule(ParallelWorkloadLoader<T> *loader) = 0;
+    virtual void schedule(WorkloadLoader<T> *loader) = 0;
 };
 
 template <typename T> class OnlineScheduler : public IScheduler<T> {
@@ -44,7 +44,7 @@ template <typename T> class OnlineScheduler : public IScheduler<T> {
             _threads[i].initialize(i, db, _txn_queue);
         }
     }
-    void schedule(ParallelWorkloadLoader<T> *loader) {
+    void schedule(WorkloadLoader<T> *loader) {
         _loader = loader;
         run_workers();
         // Print the stats
@@ -158,7 +158,7 @@ template <typename T> class OnlineScheduler : public IScheduler<T> {
     uint64_t _num_threads;
     Database *_db;
     Thread<T> *_threads;
-    ParallelWorkloadLoader<T> *_loader;
+    WorkloadLoader<T> *_loader;
     ITransactionQueue<T> *_txn_queue;
 };
 

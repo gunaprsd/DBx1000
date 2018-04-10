@@ -181,7 +181,36 @@ extern string g_data_folder;
 template <typename T>
 string get_table_name(uint32_t id);
 
+struct WorkloadMetaData {
+    static const long max_array_size = (MAX_NUM_THREADS + 1);
+    uint64_t num_threads;
+    uint64_t index[max_array_size];
 
+    void print() {
+      cout << num_threads << endl;
+      for (uint64_t i = 0; i < num_threads + 1; i++) {
+        cout << index[i] << endl;
+      }
+    }
+    void read(FILE *file) {
+      fseek(file, 0, SEEK_SET);
+      auto num = fread(this, sizeof(WorkloadMetaData), 1, file);
+      assert(num == 1);
+    }
+    void write(FILE *file) {
+      fseek(file, 0, SEEK_SET);
+      fwrite(this, sizeof(WorkloadMetaData), 1, file);
+    }
+    uint64_t get_total_num_queries() {
+    	return index[num_threads] - index[0];
+    }
+    uint64_t get_start_index(uint64_t thread_id) {
+        return index[thread_id];
+    }
+    uint64_t get_num_queries(uint64_t thread_id) {
+        return (index[thread_id + 1] - index[thread_id]);
+    }
+};
 
 
 #endif

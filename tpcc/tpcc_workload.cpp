@@ -151,10 +151,10 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thread_id, tpcc_query
     num_order_txns[thread_id] += 1;
 }
 
-TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config, const string &folder_path,
+TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config, const string &input_file,
                            uint64_t num_threads)
     : _db(config),
-      _loader(folder_path, num_threads) {
+      _loader(input_file) {
 
     // Build database in parallel
     _db.initialize(FLAGS_load_parallelism);
@@ -171,6 +171,4 @@ void TPCCExecutor::execute() {
     _scheduler->schedule(&_loader);
 }
 
-void TPCCExecutor::release() {
-    _loader.release();
-}
+void TPCCExecutor::release() {}

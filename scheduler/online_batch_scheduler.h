@@ -272,10 +272,9 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
         _current_batch_index = 0;
         _batch_info = nullptr;
     }
-    void schedule(ParallelWorkloadLoader<T> *loader) {
+    void schedule(WorkloadLoader<T> *loader) {
         _loader = loader;
         _loader->get_queries(_batch, _max_size);
-        _loader->release();
 
         prepare();
         move_to_next_batch();
@@ -298,15 +297,15 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
     pthread_mutex_t mutex;
     volatile bool done;
     OnlineBatchExecutor<T> *_threads;
-    ParallelWorkloadLoader<T> *_loader;
+    WorkloadLoader<T> *_loader;
     DataNodeInfo *_data_info;
 
-    // current batch info
+    // current _batch info
     uint64_t _epoch;
     uint64_t _current_batch_index;
     BatchInfo *_batch_info;
 
-    // Input batch of all transactions
+    // Input _batch of all transactions
     uint64_t _max_size;
     Query<T> *_batch;
     ReadWriteSet *_rwset_info;
@@ -457,7 +456,7 @@ template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
     }
 
     void add_execute_tasks() {
-        printf("Adding execute tasks for batch %lu\n", _batch_info->epoch);
+        printf("Adding execute tasks for _batch %lu\n", _batch_info->epoch);
         for (uint64_t i = 0; i < _num_threads; i++) {
             auto task = &(_batch_info->execute_tasks->tasks[i]);
             task->type = EXECUTE;

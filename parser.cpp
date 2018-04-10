@@ -39,7 +39,7 @@ DEFINE_uint32(load_parallelism, INIT_PARALLELISM, "Parallelism for loading datab
 DEFINE_uint64(size_per_thread, (256 * 1024), "Size Per Thread");
 DEFINE_string(benchmark, "ycsb", "Benchmark to run on:ycsb, tpcc");
 DEFINE_string(tag, "foo", "Tag for the benchmark");
-DEFINE_string(input_folder, "data", "Folder to access workload from");
+DEFINE_string(input_file, "data", "file to ");
 DEFINE_uint32(threads, 4, "Number of threads");
 DEFINE_bool(pin_threads, true, "Pin threads?");
 DEFINE_bool(hyperthreading, false, "Enable hyper-threading?");
@@ -57,12 +57,12 @@ DEFINE_uint32(iterations, 5, "Number of iterations");
 DEFINE_uint32(kmeans_dim, 100, "Dimensions for K-Means clustering");
 DEFINE_string(parttype, "access_graph", "Options: access_graph, approx, conflict_graph");
 DEFINE_string(partitioner, "access_graph", "Options: access_graph, conflict_graph");
-DEFINE_string(output_folder, "data", "Output folder for partitioner");
+DEFINE_string(output_file, "data", "Output folder for partitioner");
 
 
 DEFINE_bool(generate_partitioned, false, "Generate Partitioned Workload");
 DEFINE_bool(pre_schedule_txns, true, "Schedule all txns before starting workers");
-DEFINE_bool(scheduler_batch_sync, true, "Synchronization across batches for online batch scheduler");
+DEFINE_bool(scheduler_batch_sync, true, "Synchronization across batches for online _batch scheduler");
 DEFINE_uint32(scheduler_delay, 1000, "Delay between scheduler and worker");
 DEFINE_uint32(scheduler_batch_size, 1000000, "Batch size for scheduling");
 DEFINE_string(scheduler_type, "simple_parallel_queues", "Options: simple_parallel_queues, parallel_queues, shared_queue, transaction_queue");

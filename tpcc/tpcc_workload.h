@@ -6,7 +6,7 @@
 #include "generator.h"
 #include "global.h"
 #include "loader.h"
-#include "offline_scheduler.h"
+#include "offline_partitioner.h"
 #include "tpcc_database.h"
 #include "tpcc_utility.h"
 #include "scheduler.h"
@@ -28,11 +28,11 @@ class TPCCWorkloadGenerator : public ParallelWorkloadGenerator<tpcc_params> {
     uint64_t *num_order_txns;
 };
 
-typedef ParallelWorkloadLoader<tpcc_params> TPCCWorkloadLoader;
+typedef WorkloadLoader<tpcc_params> TPCCWorkloadLoader;
 
 class TPCCExecutor {
   public:
-    TPCCExecutor(const TPCCBenchmarkConfig &config, const string &folder_path,
+    TPCCExecutor(const TPCCBenchmarkConfig &config, const string &input_file,
                  uint64_t num_threads);
 
 	void execute();

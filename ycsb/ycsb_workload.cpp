@@ -161,9 +161,9 @@ void YCSBWorkloadGenerator::gen_multi_partition_requests(uint64_t thread_id, ycs
     }
 }
 
-YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &folder_path,
+YCSBExecutor::YCSBExecutor(const YCSBBenchmarkConfig &config, const string &input_file,
                            uint64_t num_threads)
-    : _db(config), _loader(folder_path, num_threads) {
+    : _db(config), _loader(input_file) {
 
     // Build database in parallel
     _db.initialize(FLAGS_load_parallelism);

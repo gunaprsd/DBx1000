@@ -43,9 +43,9 @@ template <typename T> class TransactionExecutor {
             thread_txn_id++;
             manager->reset(global_txn_id);
 
-            auto start_time = get_sys_clock();
+            auto start_time = get_server_clock();
             rc = run_query(chosen_query);
-            auto end_time = get_sys_clock();
+            auto end_time = get_server_clock();
             auto duration = end_time - start_time;
 
             // update general statistics
@@ -92,6 +92,7 @@ template <typename T> class TransactionExecutor {
 #endif
         return rc;
     }
+
     ts_t get_next_ts() {
         if (g_ts_batch_alloc) {
             if (current_timestamp % g_ts_batch_num == 0) {
@@ -156,8 +157,6 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         loader->release();
 
         printf("Batch Size: %lu\n", _max_size);
-
-        // compute read write sets
         prepare();
 
         _current_batch.start_index = 0;

@@ -94,6 +94,7 @@ struct DataNodeInfo {
 
     void reset(idx_t _id, uint64_t _epoch, uint32_t _table_id) {
         id = _id;
+	root = this;
         root_ptr.Set(_epoch, reinterpret_cast<long>(this));
         size = 1;
         tid = _table_id;

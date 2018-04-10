@@ -6,12 +6,10 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes =  [10000, 100000, 200000, 500000]
+sizes = [3000000]
 for cores in [30]:
     for parts in [30]:
         for size_per_thread in sizes:
-            if parts != cores:
-                continue
             config = ' -benchmark=ycsb \\\n'
             config += ' -ycsb_zipf_theta=0.9 \\\n'
             config += ' -ycsb_read_percent=0.5 \\\n'
@@ -43,8 +41,8 @@ def generate(start, end):
             os.system("echo " + command + " >> " + log_file)
             os.system(command)
 
-def partition(start, end, type_tag):
-    log_file = "ycsb_partition_" + type_tag + "_" + str(start) + "_" + str(end) + ".txt"
+def partition(start, end):
+    log_file = "ycsb_partition_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -54,18 +52,16 @@ def partition(start, end, type_tag):
             seed_tag = tag + '_s' + str(num)
             command += ' -tag=' + seed_tag + ' \\\n'
             command += ' -input_folder=' + data_folder + "/" + seed_tag + '_raw \\\n'
-            command += ' -output_folder=' + data_folder + "/" + seed_tag + '_' + type_tag + ' \\\n'
+            command += ' -output_folder=' + data_folder + "/" + seed_tag + '_partitioned \\\n'
             command += ' -task=partition \\\n'
-            command += ' -parttype=' + type_tag + '\\\n'
-            command += ' -ufactor=100 \\\n'
-            command += ' -iterations=30 \\\n'
+            command += ' -parttype=union_find\\\n'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)
             os.system(command)
 
 def execute(start, end, type_tag, scheduler_tag):
-    log_file = "ycsb_execution_occ_" + type_tag + "_" + scheduler_tag + "_" + str(start) + "_" + str(end) + ".txt"
+    log_file = "ycsb_execution_" + type_tag + "_" + scheduler_tag + "_" + str(start) + "_" + str(end) + ".txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -81,7 +77,7 @@ def execute(start, end, type_tag, scheduler_tag):
             command += ' -scheduler_type=' + scheduler_tag + ' \\\n'
             command += ' -abort_buffer \\\n'
             command += ' >> ' + log_file
-            for i in xrange(0, 10):
+            for i in xrange(0, 5):
                 print(command)
                 os.system("echo " + command + " >> " + log_file)
                 os.system(command)
@@ -92,8 +88,7 @@ if __name__ == "__main__":
     elif sys.argv[1] == "generate":
         generate(int(sys.argv[2]), int(sys.argv[3]))
     elif sys.argv[1] == "partition":
-        assert(len(sys.argv) == 5)
-        partition(int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])
+        partition(int(sys.argv[2]), int(sys.argv[3]))
     elif sys.argv[1] == "execute":
         assert(len(sys.argv) == 6)
         execute(int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], sys.argv[5])

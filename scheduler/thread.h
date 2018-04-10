@@ -8,8 +8,7 @@
 #include "txn.h"
 #include "vll.h"
 
-template <typename T>
-class Thread {
+template <typename T> class Thread {
   public:
     void initialize(uint32_t id, Database *db, ITransactionQueue<T> *scheduler_tree) {
         this->thread_id = id;
@@ -24,6 +23,7 @@ class Thread {
     }
     void notify_complete() { this->submitted_all_queries = true; }
     void run() {
+        auto begin_time = get_server_clock();
         auto rc = RCOK;
         auto chosen_query = static_cast<Query<T> *>(nullptr);
         auto done = false;
@@ -50,7 +50,7 @@ class Thread {
             auto duration = end_time - start_time;
 
             // update general statistics
-            INC_STATS(thread_id, run_time, duration);
+            INC_STATS(thread_id, time_execute, duration);
             INC_STATS(thread_id, latency, duration);
             if (rc == RCOK) {
                 INC_STATS(thread_id, txn_cnt, 1);
@@ -61,9 +61,13 @@ class Thread {
                 stats.abort(thread_id);
             }
         }
+        auto final_time = get_server_clock();
+        auto runtime_duration = (final_time - begin_time);
+        INC_STATS(thread_id, run_time, runtime_duration);
     }
     void run_with_abort_buffer() {
         RC rc;
+        auto begin_time = get_server_clock();
         auto chosen_query = static_cast<Query<T> *>(nullptr);
         auto done = false;
         while (!done) {
@@ -90,7 +94,7 @@ class Thread {
             auto duration = end_time - start_time;
 
             // update general statistics
-            INC_STATS(thread_id, run_time, duration);
+            INC_STATS(thread_id, time_execute, duration);
             INC_STATS(thread_id, latency, duration);
             if (rc == RCOK) {
                 // update commit statistics
@@ -106,6 +110,9 @@ class Thread {
                 stats.abort(thread_id);
             }
         }
+        auto final_time = get_server_clock();
+        auto runtime_duration = (final_time - begin_time);
+        INC_STATS(thread_id, run_time, runtime_duration);
     }
 
   protected:

@@ -254,6 +254,7 @@ struct ClusterInfo {
 };
 
 struct RuntimeInfo {
+	double load_duration;
     double rwset_duration;
     double preprocessing_duration;
     double partition_duration;
@@ -264,10 +265,12 @@ struct RuntimeInfo {
         preprocessing_duration = 0;
         partition_duration = 0;
         rwset_duration = 0;
+        load_duration = 0;
     }
 
     void print() {
-        PRINT_INFO(-10lf, "ReadWriteSet-Duration", rwset_duration);
+	    PRINT_INFO(-10lf, "Load-Duration", load_duration);
+    	PRINT_INFO(-10lf, "ReadWriteSet-Duration", rwset_duration);
         PRINT_INFO(-10lf, "PreProcessing-Duration", preprocessing_duration);
         PRINT_INFO(-10lf, "Partition-Duration", partition_duration);
     }

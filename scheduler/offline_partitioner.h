@@ -27,17 +27,17 @@ template <typename T> class OfflinePartitioner {
         } else if (FLAGS_parttype == "bfs") {
             _partitioner = new BreadthFirstSearchPartitioner(num_threads);
         } else if (FLAGS_parttype == "union_find") {
+	        create_data_txns_map = false;
             _partitioner = new UnionFindPartitioner(num_threads);
-            create_data_txns_map = false;
         } else if (FLAGS_parttype == "parallel_union_find") {
+	        create_data_txns_map = false;
             _partitioner = new ParallelUnionFindPartitioner(num_threads, num_threads);
-            create_data_txns_map = false;
         } else if (FLAGS_parttype == "random") {
+	        create_data_txns_map = false;
             _partitioner = new RandomPartitioner(num_threads);
-            create_data_txns_map = false;
         } else if (FLAGS_parttype == "dummy") {
+	        create_data_txns_map = false;
             _partitioner = new DummyPartitioner(num_threads);
-            create_data_txns_map = false;
         } else {
             assert(false);
         }
@@ -132,13 +132,12 @@ template <typename T> class OfflinePartitioner {
             }
         }
 
-        for (size_t i = 0; i < graph_info->num_data_nodes; i++) {
-            auto info = &graph_info->data_info[graph_info->data_inv_idx[i]];
-            auto data_degree = info->read_txns.size() + info->write_txns.size();
+        for(auto key: graph_info->data_inv_idx) {
+            auto info = &(graph_info->data_info[key]);
+            auto data_degree = info->num_read_txns + info->num_write_txns;
             ACCUMULATE_MIN(graph_info->min_data_degree, data_degree);
             ACCUMULATE_MAX(graph_info->max_data_degree, data_degree);
         }
-
         auto end_time = get_server_clock();
         runtime_info->rwset_duration += DURATION(end_time, start_time);
     }

@@ -818,7 +818,6 @@ void UnionFindPartitioner::do_partition() {
 
     uint64_t end_time = get_server_clock();
     runtime_info->partition_duration += DURATION(end_time, start_time);
-
     assign_and_compute_cluster_info();
 }
 

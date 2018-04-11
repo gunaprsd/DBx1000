@@ -1,11 +1,11 @@
 // Copyright[2017] <Guna Prasaad>
 
+#ifndef __PARALLEL_WORKLOAD_GENERATOR_H__
+#define __PARALLEL_WORKLOAD_GENERATOR_H__
+
 #include "global.h"
 #include "helper.h"
 #include "query.h"
-
-#ifndef __PARALLEL_WORKLOAD_GENERATOR_H__
-#define __PARALLEL_WORKLOAD_GENERATOR_H__
 
 template <typename T> class ParallelWorkloadGenerator {
   public:
@@ -16,9 +16,6 @@ template <typename T> class ParallelWorkloadGenerator {
         _queries = new Query<T> *[_num_threads];
         for (uint32_t i = 0; i < _num_threads; i++) {
             _queries[i] = new Query<T>[_num_queries_per_thread];
-            for (uint64_t j = 0; j < _num_queries_per_thread; j++) {
-                _queries[i][j].is_data_node = false;
-            }
         }
     }
 
@@ -31,31 +28,21 @@ template <typename T> class ParallelWorkloadGenerator {
         for (uint32_t i = 0; i < _num_threads; i++) {
             delete[] _queries[i];
         }
-        delete _queries;
+        delete[] _queries;
     }
 
   protected:
     void write_to_file() {
         // Create a file
-        auto file_name = get_workload_file_name(_file_name);
-        FILE *file = fopen(file_name.c_str(), "w");
+        FILE *file = fopen(_file_name.c_str(), "w");
         if (file == nullptr) {
-            printf("Error opening file: %s\n", file_name.c_str());
+            printf("Error opening file: %s\n", _file_name.c_str());
             exit(0);
         }
 
         // Write all queries sequentially
-        WorkloadMetaData metadata;
-        metadata.num_threads = (long)_num_threads;
-        metadata.index[0] = 0L;
-        for (uint64_t i = 0; i < _num_threads; i++) {
-            metadata.index[i + 1] = static_cast<long>(metadata.index[i] + _num_queries_per_thread);
-        }
+        WorkloadMetaData metadata(_num_threads, _num_queries_per_thread);
         metadata.write(file);
-        for (uint64_t i = 0; i < metadata.num_threads; i++) {
-            fwrite(_queries[i], sizeof(Query<T>), _num_queries_per_thread, file);
-        }
-
         fflush(file);
         fclose(file);
     }
@@ -83,7 +70,6 @@ template <typename T> class ParallelWorkloadGenerator {
         delete[] data;
     }
 
-    // Data fields
     const uint64_t _num_threads;
     const uint64_t _num_queries_per_thread;
     const string _file_name;

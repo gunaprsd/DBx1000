@@ -147,48 +147,39 @@ template <typename T> class OfflinePartitioner {
     }
 
     void write_to_file() {
-        // shuffle back pointers using clusters array
         auto clusters = new vector<Query<T>*>[_num_threads];
         for (uint64_t i = 0; i < _batch_size; i++) {
-            auto query = &_batch[i];
-            clusters[graph_info->txn_info[i].assigned_core].push_back(query);
+            auto query = &(_batch[i]);
+            auto txn_info = &(graph_info->txn_info[i]);
+            auto core = txn_info->assigned_core;
+            clusters[core].push_back(query);
         }
 
-        // create contiguous query arrays
+        vector<uint64_t> sizes;
         auto queries = new Query<T> *[_num_threads];
-        auto sizes = new uint64_t[_num_threads];
         for (uint32_t i = 0; i < _num_threads; i++) {
-            sizes[i] = clusters[i].size();
+            sizes.push_back(clusters[i].size());
             queries[i] = reinterpret_cast<Query<T> *>(_mm_malloc(sizeof(Query<T>) * sizes[i], 64));
             uint32_t coffset = 0;
             for (auto query : clusters[i]) {
-                auto tquery = reinterpret_cast<Query<T> *>(query);
+                auto tquery = reinterpret_cast<Query<T>*>(query);
                 memcpy(&queries[i][coffset], tquery, sizeof(Query<T>));
                 coffset++;
             }
         }
 
-        // create output file
-        auto file_name = get_workload_file_name(_output_file);
-        FILE *file = fopen(file_name.c_str(), "w");
+        FILE *file = fopen(_output_file.c_str(), "w");
         if (file == nullptr) {
-            printf("Error opening file: %s\n", file_name.c_str());
+            printf("Error opening file: %s\n", _output_file.c_str());
             exit(0);
         }
 
-        // Write all queries sequentially
-        WorkloadMetaData metadata;
-        metadata.num_threads = _num_threads;
-        metadata.index[0] = 0;
-        for (uint64_t i = 0; i < _num_threads; i++) {
-            metadata.index[i + 1] = static_cast<long>(metadata.index[i] + sizes[i]);
-        }
+        WorkloadMetaData metadata(_num_threads, sizes);
         metadata.write(file);
         for (uint64_t i = 0; i < metadata.num_threads; i++) {
             fwrite(queries[i], sizeof(Query<T>), sizes[i], file);
         }
 
-        // Flush and close
         fflush(file);
         fclose(file);
     }

@@ -168,6 +168,7 @@ template <typename T> class OnlineBatchExecutor {
     TimedAbortBuffer<T> abort_buffer;
     txn_man *manager;
 };
+
 template <typename T> class OnlineBatchScheduler : public IScheduler<T> {
 	struct Task;
 	struct BatchInfo;

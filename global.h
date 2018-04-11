@@ -186,6 +186,24 @@ struct WorkloadMetaData {
     uint64_t num_threads;
     uint64_t index[max_array_size];
 
+    WorkloadMetaData() {}
+
+    WorkloadMetaData(uint64_t num_threads, uint64_t num_queries_per_thread) {
+        num_threads = (long)num_threads;
+        index[0] = 0L;
+        for (uint64_t i = 0; i < num_threads; i++) {
+            index[i + 1] = index[i] + num_queries_per_thread;
+        }
+    }
+
+    WorkloadMetaData(uint64_t num_threads, const vector<uint64_t> &sizes) {
+        num_threads = (long)num_threads;
+        index[0] = 0L;
+        for (uint64_t i = 0; i < num_threads; i++) {
+            index[i + 1] = index[i] + sizes[i];
+        }
+    }
+
     void print() {
       cout << num_threads << endl;
       for (uint64_t i = 0; i < num_threads + 1; i++) {
@@ -210,6 +228,7 @@ struct WorkloadMetaData {
     uint64_t get_num_queries(uint64_t thread_id) {
         return (index[thread_id + 1] - index[thread_id]);
     }
+
 };
 
 

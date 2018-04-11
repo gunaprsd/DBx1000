@@ -81,7 +81,6 @@ void BasePartitioner::assign_and_compute_cluster_info(idx_t *parts) {
         cluster_info->objective += ((sum_c * sum_c) - sum_c_sq) / 2;
 
         // Update data information - core and if single-core-only
-        info->single_core = (num_c == 1);
         info->assigned_core = chosen_c;
 
         // update table wise info

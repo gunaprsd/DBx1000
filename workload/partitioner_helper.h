@@ -69,7 +69,6 @@ struct DataNodeInfo {
     uint64_t epoch;
     uint64_t iteration;
     idx_t assigned_core;
-    bool single_core;
     uint64_t core_weights[MAX_NUM_CORES];
     std::vector<idx_t> read_txns;
     uint64_t num_read_txns;
@@ -89,7 +88,6 @@ struct DataNodeInfo {
         num_read_txns = 0;
         num_write_txns = 0;
         assigned_core = UINT64_MAX;
-        single_core = false;
         read_txns.clear();
         write_txns.clear();
         memset(&core_weights, 0, sizeof(uint64_t) * MAX_NUM_CORES);

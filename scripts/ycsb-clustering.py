@@ -6,7 +6,7 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes = [100000]
+sizes = [3000000]
 for cores in [30]:
     for parts in [30]:
         for size_per_thread in sizes:
@@ -42,7 +42,7 @@ def generate(start, end):
             os.system(command)
 
 def partition(start, end):
-    log_file = "ycsb_partition_" + str(start) + "_" + str(end) + ".txt"
+    log_file = "ycsb_partition.txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -54,14 +54,14 @@ def partition(start, end):
             command += ' -input_file=' + data_folder + "/" + seed_tag + '_raw.dat \\\n'
             command += ' -output_file=' + data_folder + "/" + seed_tag + '_partitioned.dat \\\n'
             command += ' -task=partition \\\n'
-            command += ' -parttype=parallel_union_find \\\n'
+            command += ' -parttype=union_find \\\n'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)
             os.system(command)
 
 def execute(start, end, type_tag, scheduler_tag):
-    log_file = "ycsb_execution_" + type_tag + "_" + scheduler_tag + "_" + str(start) + "_" + str(end) + ".txt"
+    log_file = "ycsb_execution.txt"
     for pr in configs:
         tag = pr['tag']
         config = pr['config']
@@ -73,11 +73,11 @@ def execute(start, end, type_tag, scheduler_tag):
             base_command += ' -task=execute \\\n'
             # raw command
             command = base_command
-            command += ' -input_folder=' + data_folder + "/" + seed_tag + '_' + type_tag + ' \\\n'
+            command += ' -input_file=' + data_folder + "/" + seed_tag + '_' + type_tag + '.dat \\\n'
             command += ' -scheduler_type=' + scheduler_tag + ' \\\n'
-            command += ' -abort_buffer \\\n'
+            command += ' -noabort_buffer \\\n'
             command += ' >> ' + log_file
-            for i in xrange(0, 5):
+            for i in xrange(0, 10):
                 print(command)
                 os.system("echo " + command + " >> " + log_file)
                 os.system(command)

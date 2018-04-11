@@ -262,7 +262,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         }
         auto end_time = get_server_clock();
         auto duration = DURATION(end_time, start_time);
-        printf("Total Runtime: %lf secs\n", duration);
+        printf("Total Runtime : %lf secs\n", duration);
     }
 
     static void *execute_helper(void *ptr) {

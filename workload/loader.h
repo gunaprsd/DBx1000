@@ -5,12 +5,14 @@
 
 template <typename T> class WorkloadLoader {
   public:
-    WorkloadLoader(const string &file_path) : _file_path(file_path), _meta_data() {}
+    WorkloadLoader(const string &file_path)
+        : _file_path(file_path), _queries(nullptr), _meta_data() {}
 
-    virtual ~WorkloadLoader() { delete[] _queries; }
+    ~WorkloadLoader() { delete[] _queries; }
 
     void load() {
         if (_queries == nullptr) {
+	  auto start_time = get_server_clock();
             FILE *file = fopen(_file_path.c_str(), "r");
             if (file == nullptr) {
                 printf("Error opening workload file: %s\n", _file_path.c_str());
@@ -27,6 +29,9 @@ template <typename T> class WorkloadLoader {
                 printf("Workload file corrupt or incomplete!\n");
                 exit(0);
             }
+	    auto end_time = get_server_clock();
+	    auto duration = DURATION(end_time, start_time);
+	    printf("Workload loading completed in %lf secs\n", duration);
         } else {
             printf("Workload already read into memory!\n");
             exit(0);

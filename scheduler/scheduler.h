@@ -14,9 +14,8 @@
 #include "txn.h"
 #include "vll.h"
 
-template<typename T>
-class IScheduler {
-public:
+template <typename T> class IScheduler {
+  public:
     virtual void schedule(WorkloadLoader<T> *loader) = 0;
 };
 
@@ -35,7 +34,7 @@ template <typename T> class OnlineScheduler : public IScheduler<T> {
         } else if (FLAGS_scheduler_type.compare("scheduler_tree") == 0) {
             _txn_queue = new SchedulerTree<T>(static_cast<int32_t>(_num_threads));
         } else if (FLAGS_scheduler_type.compare("scheduler_tree_v1") == 0) {
-	        _txn_queue = new SchedulerTreeV1<T>(static_cast<int32_t>(_num_threads));
+            _txn_queue = new SchedulerTreeV1<T>(static_cast<int32_t>(_num_threads));
         } else {
             assert(false);
         }
@@ -67,11 +66,11 @@ template <typename T> class OnlineScheduler : public IScheduler<T> {
         if (FLAGS_pre_schedule_txns) {
             printf("Pre-submit transactions\n");
             // submit all queries synchronously
-	    start_time = get_server_clock();
-	    submit_queries();
-	    end_time = get_server_clock();
-	    auto duration = DURATION(end_time, start_time);
-	    printf("Submission Time: %f\n", duration);
+            start_time = get_server_clock();
+            submit_queries();
+            end_time = get_server_clock();
+            auto duration = DURATION(end_time, start_time);
+            printf("Submission Time: %f\n", duration);
 
             // notify that all queries are submitted to workers
             for (uint32_t i = 0; i < _num_threads; i++) {

@@ -52,7 +52,6 @@ template <typename T> class OfflinePartitioner {
     }
 
   protected:
-
     void print_stats() {
         printf("*** Input Information ***\n");
         graph_info->print();
@@ -69,15 +68,13 @@ template <typename T> class OfflinePartitioner {
         _loader->load();
         _loader->get_queries(_batch, _batch_size);
 
-        if(_loader->get_num_threads() != _num_threads) {
-        	printf("Workload arity does not match!\n");
-        	exit(0);
+        if (_loader->get_num_threads() != _num_threads) {
+            printf("Workload arity does not match!\n");
+            exit(0);
         }
     }
 
-    void partition() {
-        _partitioner->partition(1, graph_info, cluster_info, runtime_info);
-    }
+    void partition() { _partitioner->partition(1, graph_info, cluster_info, runtime_info); }
 
     /*
      * If create_data_txns_map is set, then the read_txns and write_txns are created.
@@ -147,7 +144,7 @@ template <typename T> class OfflinePartitioner {
     }
 
     void write_to_file() {
-        auto clusters = new vector<Query<T>*>[_num_threads];
+        auto clusters = new vector<Query<T> *>[_num_threads];
         for (uint64_t i = 0; i < _batch_size; i++) {
             auto query = &(_batch[i]);
             auto txn_info = &(graph_info->txn_info[i]);
@@ -162,7 +159,7 @@ template <typename T> class OfflinePartitioner {
             queries[i] = reinterpret_cast<Query<T> *>(_mm_malloc(sizeof(Query<T>) * sizes[i], 64));
             uint32_t coffset = 0;
             for (auto query : clusters[i]) {
-                auto tquery = reinterpret_cast<Query<T>*>(query);
+                auto tquery = reinterpret_cast<Query<T> *>(query);
                 memcpy(&queries[i][coffset], tquery, sizeof(Query<T>));
                 coffset++;
             }
@@ -189,7 +186,7 @@ template <typename T> class OfflinePartitioner {
     const string _output_file;
     const uint32_t _num_threads;
     BasePartitioner *_partitioner;
-    WorkloadLoader<T>* _loader;
+    WorkloadLoader<T> *_loader;
     Query<T> *_batch;
     uint64_t _batch_size;
     GraphInfo *graph_info;

@@ -6,7 +6,7 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes = [3000000]
+sizes = [100000]
 for cores in [30]:
     for parts in [30]:
         for size_per_thread in sizes:
@@ -33,7 +33,7 @@ def generate(start, end):
             command += config
             seed_tag = tag + '_s' + str(num)
             command += ' -tag=' + seed_tag + ' \\\n'
-            command += ' -output_folder=' + data_folder + '/' + seed_tag + '_raw \\\n'
+            command += ' -output_file=' + data_folder + '/' + seed_tag + '_raw.dat\\\n'
             command += ' -task=generate \\\n'
             command += ' -seed=' + str(num) + ' \\\n'
             command += ' >> ' + log_file
@@ -51,10 +51,10 @@ def partition(start, end):
             command += config
             seed_tag = tag + '_s' + str(num)
             command += ' -tag=' + seed_tag + ' \\\n'
-            command += ' -input_folder=' + data_folder + "/" + seed_tag + '_raw \\\n'
-            command += ' -output_folder=' + data_folder + "/" + seed_tag + '_partitioned \\\n'
+            command += ' -input_file=' + data_folder + "/" + seed_tag + '_raw.dat \\\n'
+            command += ' -output_file=' + data_folder + "/" + seed_tag + '_partitioned.dat \\\n'
             command += ' -task=partition \\\n'
-            command += ' -parttype=union_find\\\n'
+            command += ' -parttype=parallel_union_find \\\n'
             command += ' >> ' + log_file
             print(command)
             os.system("echo " + command + " >> " + log_file)

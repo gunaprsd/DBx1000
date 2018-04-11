@@ -188,16 +188,16 @@ struct WorkloadMetaData {
 
     WorkloadMetaData() {}
 
-    WorkloadMetaData(uint64_t num_threads, uint64_t num_queries_per_thread) {
-        num_threads = (long)num_threads;
+    WorkloadMetaData(uint64_t _num_threads, uint64_t num_queries_per_thread) {
+        num_threads = _num_threads;
         index[0] = 0L;
         for (uint64_t i = 0; i < num_threads; i++) {
             index[i + 1] = index[i] + num_queries_per_thread;
         }
     }
 
-    WorkloadMetaData(uint64_t num_threads, const vector<uint64_t> &sizes) {
-        num_threads = (long)num_threads;
+    WorkloadMetaData(uint64_t _num_threads, const vector<uint64_t> &sizes) {
+        num_threads = _num_threads;
         index[0] = 0L;
         for (uint64_t i = 0; i < num_threads; i++) {
             index[i + 1] = index[i] + sizes[i];
@@ -212,12 +212,12 @@ struct WorkloadMetaData {
     }
     void read(FILE *file) {
       fseek(file, 0, SEEK_SET);
-      auto num = fread(this, sizeof(WorkloadMetaData), 1, file);
+      auto num = fread((void*)this, sizeof(WorkloadMetaData), 1, file);
       assert(num == 1);
     }
     void write(FILE *file) {
       fseek(file, 0, SEEK_SET);
-      fwrite(this, sizeof(WorkloadMetaData), 1, file);
+      fwrite((void*)this, sizeof(WorkloadMetaData), 1, file);
     }
     uint64_t get_total_num_queries() {
     	return index[num_threads] - index[0];

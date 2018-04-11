@@ -43,6 +43,10 @@ template <typename T> class ParallelWorkloadGenerator {
         // Write all queries sequentially
         WorkloadMetaData metadata(_num_threads, _num_queries_per_thread);
         metadata.write(file);
+        for (uint64_t i = 0; i < _num_threads; i++) {
+            fwrite(_queries[i], sizeof(Query<T>), _num_queries_per_thread, file);
+        }
+
         fflush(file);
         fclose(file);
     }

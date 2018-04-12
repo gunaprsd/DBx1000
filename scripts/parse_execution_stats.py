@@ -21,7 +21,7 @@ def parse_file(filename):
     for line in f:
         if line.startswith('Total Runtime'):
             perf_dict.clear()
-            exec_time = line.split(' ')[2]
+            exec_time = line.split(' ')[3]
             perf_dict['execution_time'] = exec_time
         elif line.startswith('[summary]'):
             kvpairs_list_str = line[9:]
@@ -30,9 +30,6 @@ def parse_file(filename):
 	        tokens = pair.split('=')
 	        perf_dict[tokens[0].strip()] = tokens[1].strip()
             pretty_print(perf_dict)
-            cnt += 1
-            if cnt % 10 == 0:
-	        print("")
 
     f.close()
 

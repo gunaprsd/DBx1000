@@ -35,7 +35,6 @@ struct AccessRecord {
 struct ReadWriteSet {
     uint32_t num_accesses;
     AccessRecord accesses[MAX_NUM_ACCESSES];
-    ReadWriteSet() : num_accesses(0) {}
     void add_access(uint32_t tid, uint64_t key, access_t access_type) {
         accesses[num_accesses].table_id = tid;
         accesses[num_accesses].key = key;

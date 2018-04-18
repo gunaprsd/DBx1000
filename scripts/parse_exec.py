@@ -10,6 +10,10 @@ def get_value(s):
 def parse_info(filename):
     all_info = {}
     current_run_info = {}
+    current_run_info["union"] = 0.0
+    current_run_info["find"] = 0.0
+    current_run_info["blocked"] = 0.0
+    current_run_info["execute"] = 0.0
     run = 1
     for line in open(filename, 'r'):
         if(line.startswith("[tid=")):
@@ -19,13 +23,21 @@ def parse_info(filename):
             tf = pairs[4]
             tb = pairs[5]
             te = pairs[6]
-            current_run_info["union"] = float(get_value(tu))
-            current_run_info["find"] = float(get_value(tf))
-            current_run_info["blocked"] = float(get_value(tb))
-            current_run_info["execute"] = float(get_value(te))
+            current_run_info["union"] += float(get_value(tu))
+            current_run_info["find"] += float(get_value(tf))
+            current_run_info["blocked"] += float(get_value(tb))
+            current_run_info["execute"] += float(get_value(te))
             if int(tid) == 29:
+                current_run_info["union"] /= 30.0
+                current_run_info["find"] /= 30.0
+                current_run_info["blocked"] /= 30.0
+                current_run_info["execute"] /= 30.0
                 all_info[run] = current_run_info
                 current_run_info = {}
+                current_run_info["union"] = 0.0
+                current_run_info["find"] = 0.0
+                current_run_info["blocked"] = 0.0
+                current_run_info["execute"] = 0.0
                 run += 1
     return all_info
 
@@ -50,5 +62,12 @@ def find_stats(all_info):
 
 
 if __name__ == "__main__":
-    info = parse_info(sys.argv[1])
-    find_stats(info)
+    all_info = parse_info(sys.argv[1])
+    for key in all_info:
+        info = all_info[key]
+        s = ""
+        s += str(info["union"]) + ", "
+        s += str(info["find"]) + ", "
+        s += str(info["blocked"]) + ", "
+        s += str(info["execute"])
+        print s

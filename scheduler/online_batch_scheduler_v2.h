@@ -413,7 +413,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             timer.Start();
             // wait until epoch value has been updated
             while (current.GetEpoch() == old_epoch) {
-                usleep(1);
+                usleep(5);
                 current.AtomicCopy(counter);
             }
             timer.Stop();

@@ -2,10 +2,17 @@
 #define DBX1000_ONLINE_BATCH_SCHEDULER_V2_H
 
 #include "abort_buffer.h"
+#include "custom_timer.h"
 #include "partitioner_helper.h"
 #include "scheduler.h"
+#include <algorithm>
+#include <mm_malloc.h>
 #include <tbb/concurrent_unordered_map.h>
 #include <unordered_map>
+#include <vector>
+//#define DEBUGGING
+#define BILLION (1000 * 1000 * 1000)
+#define CACHE_LINE_SIZE 64
 using namespace std;
 
 template <typename K, typename V> using ConcurrentHashMap = tbb::concurrent_unordered_map<K, V>;
@@ -129,6 +136,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     struct DataInfo {
         EpochValue root;
         EpochValue size;
+        char padding[48];
     };
 
   public:
@@ -137,7 +145,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
           _core_map(), round_robin(0), done(false) {
 
         auto num_data_items = AccessIterator<T>::get_max_key();
-        _data_info = new DataInfo[num_data_items];
+        _data_info = (DataInfo *)_mm_malloc(sizeof(DataInfo) * num_data_items, CACHE_LINE_SIZE);
         for (uint64_t i = 0; i < num_data_items; i++) {
             _data_info[i].root.Set(_epoch, reinterpret_cast<long>(&_data_info[i]));
             _data_info[i].size.Set(_epoch, 1L);
@@ -149,6 +157,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         }
 
         pthread_mutex_init(&core_allocation_mutex, NULL);
+        num_chunks = 0;
+        num_total_chunks = 5 * num_threads;
     }
 
     void schedule(WorkloadLoader<T> *loader) {
@@ -172,7 +182,7 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     }
 
     ~OnlineBatchSchedulerV2() {
-        delete[] _data_info;
+        _mm_free(_data_info);
         delete[] _rwset_info;
     }
 
@@ -185,7 +195,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     TransactionBatch _current_batch;
     ConcurrentHashMap<long, QueryQueue *> _core_map;
     ConcurrentQueue<QueryQueue *> _worklists;
-
+    uint64_t num_chunks;
+    uint64_t num_total_chunks;
     // Synchronization primitives
     EpochValue counter;
 
@@ -211,7 +222,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         pthread_t worker_threads[_num_threads];
         ThreadLocalData data[_num_threads];
 
-        auto start_time = get_server_clock();
+        CustomTimer timer;
+        timer.Start();
         for (uint64_t i = 0; i < _num_threads; i++) {
             data[i].fields[0] = (uint64_t)this;
             data[i].fields[1] = (uint64_t)i;
@@ -220,9 +232,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         for (uint32_t i = 0; i < _num_threads; i++) {
             pthread_join(worker_threads[i], nullptr);
         }
-        auto end_time = get_server_clock();
-        auto duration = DURATION(end_time, start_time);
-        printf("Preparation Time: %lf secs\n", duration);
+        timer.Stop();
+        printf("Preparation Time: %lf secs\n", timer.DurationInSecs());
     }
 
     static void *prepare_helper(void *ptr) {
@@ -249,7 +260,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
 
     void execute() {
         printf("Starting workers...\n");
-        auto start_time = get_server_clock();
+        CustomTimer timer;
+        timer.Start();
         pthread_t worker_threads[_num_threads];
         ThreadLocalData data[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
@@ -262,9 +274,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         for (uint32_t i = 0; i < _num_threads; i++) {
             pthread_join(worker_threads[i], nullptr);
         }
-        auto end_time = get_server_clock();
-        auto duration = DURATION(end_time, start_time);
-        printf("Total Runtime : %lf secs\n", duration);
+        timer.Stop();
+        printf("Total Runtime : %lf secs\n", timer.DurationInSecs());
     }
 
     static void *execute_helper(void *ptr) {
@@ -277,7 +288,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
     }
 
     void run(uint64_t thread_id) {
-        auto start_time = get_server_clock();
+        CustomTimer timer;
+        timer.Start();
         while (!done) {
             do_union(thread_id, _current_batch);
 
@@ -291,51 +303,54 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
 
             done_wait(thread_id);
         }
-        auto end_time = get_server_clock();
-        auto duration = (end_time - start_time);
-        INC_STATS(thread_id, run_time, duration);
+        timer.Stop();
+        INC_STATS(thread_id, run_time, timer.DurationInNanoSecs());
     }
 
     void do_union(uint64_t thread_id, TransactionBatch batch) {
-        double size_approx = (batch.end_index - batch.start_index) / _num_threads;
-        uint64_t size_per_thread = ceil(size_approx);
-        uint64_t start_index = batch.start_index + (thread_id * size_per_thread);
-        uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
-        end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
+        CustomTimer timer;
+        timer.Start();
+        uint64_t chunk_id = __sync_fetch_and_add(&num_chunks, 1);
+        while (chunk_id < num_total_chunks) {
+            double size_approx =
+                (double)(batch.end_index - batch.start_index) / (double)num_total_chunks;
+            uint64_t size_per_chunk = ceil(size_approx);
+            uint64_t start_index = batch.start_index + (chunk_id * size_per_chunk);
+            uint64_t end_index = batch.start_index + ((chunk_id + 1) * size_per_chunk);
+            end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
 
-        auto start_time = get_server_clock();
-
-        for (uint64_t t = start_index; t < end_index; t++) {
-            ReadWriteSet *rwset = &(_rwset_info[t]);
-            for (uint32_t i = 1; i < rwset->num_accesses; i++) {
-                auto key1 = rwset->accesses[i - 1].key;
-                auto key2 = rwset->accesses[i].key;
-                auto data_info1 = &(_data_info[key1]);
-                auto data_info2 = &(_data_info[key2]);
-                Union(data_info1, data_info2);
+            for (uint64_t t = start_index; t < end_index; t++) {
+                ReadWriteSet *rwset = &(_rwset_info[t]);
+                for (uint32_t i = 1; i < rwset->num_accesses; i++) {
+                    auto key1 = rwset->accesses[i - 1].key;
+                    auto key2 = rwset->accesses[i].key;
+                    auto data_info1 = &(_data_info[key1]);
+                    auto data_info2 = &(_data_info[key2]);
+                    Union(data_info1, data_info2, thread_id);
+                }
             }
+            chunk_id = __sync_fetch_and_add(&num_chunks, 1);
         }
-
-        auto end_time = get_server_clock();
-        auto duration = (end_time - start_time);
-        INC_STATS(thread_id, time_union, duration);
+        timer.Stop();
+        // printf("$ %d, %lu, %lf\n", (int)_epoch, thread_id, (double)duration / (double)BILLION);
+        INC_STATS(thread_id, time_union, timer.DurationInNanoSecs());
     }
 
     void do_find(uint64_t thread_id, TransactionBatch batch) {
         unordered_map<long, QueryQueue *> local_core_map;
-        double size_approx = (batch.end_index - batch.start_index) / _num_threads;
+        double size_approx = (double)(batch.end_index - batch.start_index) / (double)_num_threads;
         uint64_t size_per_thread = ceil(size_approx);
         uint64_t start_index = batch.start_index + (thread_id * size_per_thread);
         uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
         end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
 
-        auto start_time = get_server_clock();
-
+        CustomTimer timer;
+        timer.Start();
         for (uint64_t t = start_index; t < end_index; t++) {
             auto rwset = &(_rwset_info[t]);
             auto key = rwset->accesses[0].key;
             auto data_info = &(_data_info[key]);
-            auto cc = Find(data_info);
+            auto cc = SimpleFind(data_info);
             QueryQueue *query_queue = nullptr;
             auto iter = local_core_map.find(cc);
             if (iter == local_core_map.end()) {
@@ -347,9 +362,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             query_queue->push(&(_batch[t]));
         }
 
-        auto end_time = get_server_clock();
-        auto duration = (end_time - start_time);
-        INC_STATS(thread_id, time_find, duration);
+        timer.Stop();
+        INC_STATS(thread_id, time_find, timer.DurationInNanoSecs());
     }
 
     void do_execute(uint64_t thread_id) {
@@ -369,6 +383,25 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             // move to the next phase
             move_to_next_phase();
 
+#ifdef DEBUGGING
+            if (_current_batch.phase == EXECUTE) {
+                size_t num_cc = _worklists.unsafe_size();
+                vector<size_t> counts;
+                for (size_t i = 0; i < num_cc; i++) {
+                    QueryQueue *worklist;
+                    if (_worklists.try_pop(worklist)) {
+                        counts.push_back(worklist->unsafe_size());
+                        _worklists.push(worklist);
+                    }
+                }
+                std::sort(counts.begin(), counts.end());
+                std::string s;
+                for (auto cnt : counts) {
+                    s += std::to_string(cnt) + ", ";
+                }
+                printf("! epoch (%d): [%s]\n", _epoch, s.c_str());
+            }
+#endif
             // create the next word with (e+1, n)
             EpochValue next_phase_word((short)(old_epoch + 1), (long)_num_threads);
 
@@ -376,15 +409,15 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             auto success = counter.AtomicCompareAndSwap(current, next_phase_word);
             assert(success);
         } else {
-            auto start_time = get_server_clock();
+            CustomTimer timer;
+            timer.Start();
             // wait until epoch value has been updated
             while (current.GetEpoch() == old_epoch) {
                 usleep(1);
                 current.AtomicCopy(counter);
             }
-            auto end_time = get_server_clock();
-            auto duration = (end_time - start_time);
-            INC_STATS(thread_id, time_blocked, duration);
+            timer.Stop();
+            INC_STATS(thread_id, time_blocked, timer.DurationInNanoSecs());
         }
     }
 
@@ -400,13 +433,14 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             break;
         case EXECUTE:
             if (_current_batch.end_index < _max_size) {
-                __sync_fetch_and_add(&_epoch, 1);
+                num_chunks = 0;
                 _current_batch.start_index += _max_batch_size;
                 _current_batch.end_index += _max_batch_size;
                 _current_batch.end_index =
                     (_current_batch.end_index > _max_size) ? _max_size : _current_batch.end_index;
                 _current_batch.phase = UNION;
-
+                __sync_synchronize();
+                __sync_fetch_and_add(&_epoch, 1);
             } else {
                 done = true;
                 return;
@@ -436,11 +470,26 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
         }
     }
 
-    void Union(DataInfo *p, DataInfo *q) {
+    long SimpleFind(DataInfo *info) {
+        EpochValue old_root(info->root);
+        if (old_root.IsEpoch(_epoch)) {
+            auto current_root_info = reinterpret_cast<DataInfo *>(old_root.GetValue());
+            if (current_root_info != info) {
+                return SimpleFind(current_root_info);
+            } else {
+                return old_root.word;
+            }
+        } else {
+            info->root.AtomicReset(_epoch, reinterpret_cast<long>(info));
+            return info->root.word;
+        }
+    }
+
+    void Union(DataInfo *p, DataInfo *q, uint64_t thread_id) {
         // Find the roots of p and q
         EpochValue info1, info2;
-        info1.Set(Find(p));
-        info2.Set(Find(q));
+        info1.Set(SimpleFind(p));
+        info2.Set(SimpleFind(q));
 
         if (info1.word == info2.word) {
             return;
@@ -475,7 +524,8 @@ template <typename T> class OnlineBatchSchedulerV2 : public IScheduler<T> {
             }
         }
 
-        Union(p, q);
+        INC_STATS(thread_id, debug1, 1);
+        Union(p, q, thread_id);
     }
 
     QueryQueue *GetQueue(long word) {
@@ -509,27 +559,25 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
     struct DataInfo {
         long epoch;
         long size;
-        DataInfo* root;
+        DataInfo *root;
         pthread_mutex_t lock_mutex;
 
-        DataInfo() {
-            pthread_mutex_init(&lock_mutex, NULL);
-        }
+        DataInfo() { pthread_mutex_init(&lock_mutex, NULL); }
 
         void Reset(long _epoch) {
             size = 1;
-            root = this; 
+            root = this;
             epoch = _epoch;
         }
 
-        DataInfo* Find(long _epoch) {
-            if(epoch != _epoch) {
+        DataInfo *Find(long _epoch) {
+            if (epoch != _epoch) {
                 AcquireLock();
                 Reset(_epoch);
                 ReleaseLock();
             } else {
                 auto local_root = root;
-                if(local_root->root != local_root) {
+                if (local_root->root != local_root) {
                     local_root = local_root->Find(_epoch);
                     AcquireLock();
                     root = local_root;
@@ -539,18 +587,18 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
             return root;
         }
 
-        static void Union(DataInfo* info1, DataInfo* info2, long epoch) {
+        static void Union(DataInfo *info1, DataInfo *info2, long epoch) {
             auto root1 = info1->Find(epoch);
             auto root2 = info2->Find(epoch);
-            if(root1 == root2) {
-                //Beyond a point most unions should take this path
+            if (root1 == root2) {
+                // Beyond a point most unions should take this path
                 return;
             }
 
             // Order the roots to prevent deadlock
-            DataInfo* oroot1;
-            DataInfo* oroot2;
-            if((long)root1 < (long)root2) {
+            DataInfo *oroot1;
+            DataInfo *oroot2;
+            if ((long)root1 < (long)root2) {
                 oroot1 = root1;
                 oroot2 = root2;
             } else {
@@ -558,18 +606,18 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
                 oroot2 = root1;
             }
 
-            // Acquire locks in order 
+            // Acquire locks in order
             oroot1->AcquireLock();
             oroot2->AcquireLock();
 
-            if(oroot1->root != oroot1 || oroot2->root != oroot2) {
-                // Roots have changed since our last read, 
+            if (oroot1->root != oroot1 || oroot2->root != oroot2) {
+                // Roots have changed since our last read,
                 // release locks in reverse order and retry
                 oroot2->ReleaseLock();
                 oroot1->ReleaseLock();
             } else {
                 // Balanced merge
-                if(oroot1->size >= oroot2->size) {
+                if (oroot1->size >= oroot2->size) {
                     oroot2->root = oroot1;
                     oroot1->size += oroot2->size;
                 } else {
@@ -588,14 +636,10 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
 
         ~DataInfo() { pthread_mutex_destroy(&lock_mutex); }
 
-    protected:
-        void AcquireLock() {
-            pthread_mutex_lock(& lock_mutex);
-        }
+      protected:
+        void AcquireLock() { pthread_mutex_lock(&lock_mutex); }
 
-        void ReleaseLock() {
-            pthread_mutex_unlock(& lock_mutex);
-        }
+        void ReleaseLock() { pthread_mutex_unlock(&lock_mutex); }
     };
 
   public:
@@ -649,7 +693,7 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
     DataInfo *_data_info;
     short _epoch;
     TransactionBatch _current_batch;
-    ConcurrentHashMap<DataInfo*, QueryQueue *> _core_map;
+    ConcurrentHashMap<DataInfo *, QueryQueue *> _core_map;
     ConcurrentQueue<QueryQueue *> _worklists;
 
     // Synchronization primitives
@@ -677,7 +721,8 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
         pthread_t worker_threads[_num_threads];
         ThreadLocalData data[_num_threads];
 
-        auto start_time = get_server_clock();
+        CustomTimer timer;
+        timer.Start();
         for (uint64_t i = 0; i < _num_threads; i++) {
             data[i].fields[0] = (uint64_t)this;
             data[i].fields[1] = (uint64_t)i;
@@ -686,9 +731,8 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
         for (uint32_t i = 0; i < _num_threads; i++) {
             pthread_join(worker_threads[i], nullptr);
         }
-        auto end_time = get_server_clock();
-        auto duration = DURATION(end_time, start_time);
-        printf("Preparation Time: %lf secs\n", duration);
+        timer.Stop();
+        printf("Preparation Time: %lf secs\n", timer.DurationInSecs());
     }
 
     static void *prepare_helper(void *ptr) {
@@ -715,7 +759,8 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
 
     void execute() {
         printf("Starting workers...\n");
-        auto start_time = get_server_clock();
+        CustomTimer timer;
+        timer.Start();
         pthread_t worker_threads[_num_threads];
         ThreadLocalData data[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
@@ -728,9 +773,8 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
         for (uint32_t i = 0; i < _num_threads; i++) {
             pthread_join(worker_threads[i], nullptr);
         }
-        auto end_time = get_server_clock();
-        auto duration = DURATION(end_time, start_time);
-        printf("Total Runtime : %lf secs\n", duration);
+        timer.Stop();
+        printf("Total Runtime : %lf secs\n", timer.DurationInSecs());
     }
 
     static void *execute_helper(void *ptr) {
@@ -743,7 +787,8 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
     }
 
     void run(uint64_t thread_id) {
-        auto start_time = get_server_clock();
+        CustomTimer timer;
+        timer.Start();
         while (!done) {
             do_union(thread_id, _current_batch);
 
@@ -757,9 +802,8 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
 
             done_wait(thread_id);
         }
-        auto end_time = get_server_clock();
-        auto duration = (end_time - start_time);
-        INC_STATS(thread_id, run_time, duration);
+        timer.Stop();
+        INC_STATS(thread_id, run_time, timer.DurationInNanoSecs());
     }
 
     void do_union(uint64_t thread_id, TransactionBatch batch) {
@@ -769,8 +813,8 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
         uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
         end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
 
-        auto start_time = get_server_clock();
-
+        CustomTimer timer;
+        timer.Start();
         for (uint64_t t = start_index; t < end_index; t++) {
             ReadWriteSet *rwset = &(_rwset_info[t]);
             for (uint32_t i = 1; i < rwset->num_accesses; i++) {
@@ -781,22 +825,20 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
                 DataInfo::Union(data_info1, data_info2, _epoch);
             }
         }
-
-        auto end_time = get_server_clock();
-        auto duration = (end_time - start_time);
-        INC_STATS(thread_id, time_union, duration);
+        timer.Stop();
+        INC_STATS(thread_id, time_union, timer.DurationInNanoSecs());
     }
 
     void do_find(uint64_t thread_id, TransactionBatch batch) {
-        unordered_map<DataInfo*, QueryQueue *> local_core_map;
+        unordered_map<DataInfo *, QueryQueue *> local_core_map;
         double size_approx = (batch.end_index - batch.start_index) / _num_threads;
         uint64_t size_per_thread = ceil(size_approx);
         uint64_t start_index = batch.start_index + (thread_id * size_per_thread);
         uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
         end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
 
-        auto start_time = get_server_clock();
-
+        CustomTimer timer;
+        timer.Start();
         for (uint64_t t = start_index; t < end_index; t++) {
             auto rwset = &(_rwset_info[t]);
             auto key = rwset->accesses[0].key;
@@ -812,10 +854,8 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
             }
             query_queue->push(&(_batch[t]));
         }
-
-        auto end_time = get_server_clock();
-        auto duration = (end_time - start_time);
-        INC_STATS(thread_id, time_find, duration);
+        timer.Stop();
+        INC_STATS(thread_id, time_find, timer.DurationInNanoSecs());
     }
 
     void do_execute(uint64_t thread_id) {
@@ -835,6 +875,12 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
             // move to the next phase
             move_to_next_phase();
 
+#ifdef DEBUGGING
+            if (_current_batch.phase == EXECUTE) {
+                printf("epoch: %d, num_connected_comps: %lu\n", (int)_epoch,
+                       _worklists.unsafe_size());
+            }
+#endif
             // create the next word with (e+1, n)
             EpochValue next_phase_word((short)(old_epoch + 1), (long)_num_threads);
 
@@ -842,15 +888,15 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
             auto success = counter.AtomicCompareAndSwap(current, next_phase_word);
             assert(success);
         } else {
-            auto start_time = get_server_clock();
+            CustomTimer timer;
+            timer.Start();
             // wait until epoch value has been updated
             while (current.GetEpoch() == old_epoch) {
                 usleep(1);
                 current.AtomicCopy(counter);
             }
-            auto end_time = get_server_clock();
-            auto duration = (end_time - start_time);
-            INC_STATS(thread_id, time_blocked, duration);
+            timer.Stop();
+            INC_STATS(thread_id, time_blocked, timer.DurationInNanoSecs());
         }
     }
 
@@ -884,14 +930,13 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
     }
 
   private:
-
-    QueryQueue *GetQueue(DataInfo* word) {
+    QueryQueue *GetQueue(DataInfo *word) {
         auto iter = _core_map.find(word);
         if (iter != _core_map.end()) {
             return iter->second;
         } else {
             auto query_queue = new QueryQueue();
-            auto status = _core_map.insert(std::pair<DataInfo*, QueryQueue *>(word, query_queue));
+            auto status = _core_map.insert(std::pair<DataInfo *, QueryQueue *>(word, query_queue));
             if (status.second) {
                 _worklists.push(query_queue);
                 return query_queue;

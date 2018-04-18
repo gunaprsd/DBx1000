@@ -182,7 +182,7 @@ void Stats::print() {
            ", deadlock_cnt=%ld, cycle_detect=%ld, dl_detect_time=%f, "
            "dl_wait_time=%f"
            ", time_query=%f, "
-           "time_union=%f, time_find=%f, time_execute=%f, time_blocked=%f\n",
+           "time_union=%f, time_find=%f, time_execute=%f, time_blocked=%f, debug=%f\n",
            total_txn_cnt, total_abort_cnt, total_run_time / BILLION, total_throughput,
            total_time_wait / BILLION, total_time_ts_alloc / BILLION,
            (total_time_man - total_time_wait) / BILLION, total_time_index / BILLION,
@@ -190,7 +190,8 @@ void Stats::print() {
            total_latency / BILLION / total_txn_cnt, deadlock, cycle_detect,
            dl_detect_time / BILLION, dl_wait_time / BILLION, total_time_query / BILLION,
            total_union / BILLION, total_find / BILLION, total_execute / BILLION,
-           total_blocked / BILLION);
+           total_blocked / BILLION, 
+           total_debug1);
     if (g_prt_lat_distr)
         print_lat_distr();
 }

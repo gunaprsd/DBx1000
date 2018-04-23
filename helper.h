@@ -252,7 +252,7 @@ inline void set_affinity(uint64_t thd_id) {
   //pid_t pid = getpid();
   sched_getaffinity(0, sizeof(cpu_set_t), &in_mask);
   CPU_ZERO(&out_mask);
-  CPU_SET(2 * thd_id, &out_mask);
+  CPU_SET(60 + thd_id, &out_mask);
   sched_setaffinity(0, sizeof(cpu_set_t), &out_mask);
 #endif
   return;

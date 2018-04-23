@@ -84,6 +84,7 @@ template <typename T> class ParallelWorkloadGenerator {
         auto data = reinterpret_cast<ThreadLocalData *>(ptr);
         auto generator = reinterpret_cast<ParallelWorkloadGenerator *>(data->fields[0]);
         auto thread_id = (uint32_t)((uint64_t)data->fields[1]);
+        set_affinity(thread_id);
         generator->per_thread_generate(thread_id);
         return nullptr;
     }

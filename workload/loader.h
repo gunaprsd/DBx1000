@@ -92,6 +92,7 @@ template <typename T> class WorkloadLoader {
         auto data = reinterpret_cast<ThreadLocalData *>(ptr);
         auto loader = reinterpret_cast<WorkloadLoader<T> *>(data->fields[0]);
         auto thread_id = (uint32_t)((uint64_t)data->fields[1]);
+        set_affinity(thread_id);
         loader->per_thread_load(thread_id);
         return nullptr;
     }

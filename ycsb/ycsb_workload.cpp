@@ -13,10 +13,10 @@ YCSBWorkloadGenerator::YCSBWorkloadGenerator(const YCSBBenchmarkConfig &_config,
                                _config.zipfian_theta),
       _random(num_threads) {
     for (uint64_t i = 0; i < config.num_partitions; i++) {
-        zipfian.seed(i, i + 1);
+        zipfian.seed(i, FLAGS_seed + 20 * i);
     }
     for (uint64_t i = 0; i < _num_threads; i++) {
-        _random.seed(i, 3 * i + 1);
+        _random.seed(i, FLAGS_seed + i);
     }
 }
 
@@ -46,7 +46,7 @@ void YCSBWorkloadGenerator::gen_single_partition_requests(uint64_t thread_id, yc
         part_id = static_cast<uint32_t>(_random.nextInt64(thread_id) % config.num_partitions);
     }
     uint64_t req_id = 0;
-    for (uint32_t tmp = 0; tmp < YCSB_NUM_REQUESTS; tmp++) {
+    while(req_id < YCSB_NUM_REQUESTS) {
         ycsb_request *req = &(query->params.requests[req_id]);
 
         // Choose the access type based on random sequence from partition

@@ -116,7 +116,8 @@ SET(SRC_LIST cc/occ.h
         scheduler/queues.h
         scheduler/scheduler_tree_v1.h
         scheduler/online_batch_scheduler.h
-	scheduler/online_batch_scheduler_v2.h)
+	    scheduler/online_batch_scheduler_v2.h
+        scheduler/online_batch_scheduler_v4.h)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})

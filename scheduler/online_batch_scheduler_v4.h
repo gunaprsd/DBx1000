@@ -5,7 +5,7 @@
 
 template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
     typedef ConcurrentQueue<Query<T> *> QueryQueue;
-    enum Phase { UNION, FIND, EXECUTE };
+    enum Phase { WRITE_FUSION, READ_FUSION, ALLOCATE, EXECUTE };
 
     struct TransactionBatch {
         Phase phase;
@@ -33,7 +33,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
 
         _executors = new TransactionExecutor<T>[_num_threads];
         for (uint64_t i = 0; i < _num_threads; i++) {
-            _executors[i].initialize(i, _db);
+            _executors[i].initialize(static_cast<uint32_t>(i), _db);
         }
 
         pthread_mutex_init(&core_allocation_mutex, NULL);
@@ -44,14 +44,14 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
     void schedule(WorkloadLoader<T> *loader) {
         loader->get_queries(_batch, _max_size);
 
-        printf("Batch Size: %lu\n", _max_size);
+        printf("Batch Size: %lu\n", static_cast<unsigned long>(_max_size));
         prepare();
 
         _current_batch.start_index = 0;
         _current_batch.end_index = _max_batch_size;
         _current_batch.end_index =
             (_current_batch.end_index > _max_size) ? _max_size : _current_batch.end_index;
-        _current_batch.phase = UNION;
+        _current_batch.phase = WRITE_FUSION;
         counter.Set(_epoch, (long)_num_threads);
 
         execute();
@@ -61,7 +61,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
         }
     }
 
-    ~OnlineBatchSchedulerV2() {
+    ~OnlineBatchSchedulerV4() {
         _mm_free(_data_info);
         delete[] _rwset_info;
     }
@@ -118,7 +118,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
 
     static void *prepare_helper(void *ptr) {
         auto data = (ThreadLocalData *)ptr;
-        auto scheduler = (OnlineBatchSchedulerV2<T> *)data->fields[0];
+        auto scheduler = (OnlineBatchSchedulerV4<T> *)data->fields[0];
         auto thread_id = data->fields[1];
         set_affinity(thread_id);
         scheduler->compute_read_write_set(thread_id);
@@ -127,7 +127,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
 
     void compute_read_write_set(uint64_t thread_id) {
         double size_approx = _max_size / _num_threads;
-        uint64_t size_per_thread = ceil(size_approx);
+        uint64_t size_per_thread = static_cast<uint64_t>(ceil(size_approx));
         uint64_t start_index = thread_id * size_per_thread;
         uint64_t end_index = (thread_id + 1) * size_per_thread;
         end_index = (end_index > _max_size) ? _max_size : end_index;
@@ -160,7 +160,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
 
     static void *execute_helper(void *ptr) {
         auto data = (ThreadLocalData *)ptr;
-        auto scheduler = (OnlineBatchSchedulerV2<T> *)data->fields[0];
+        auto scheduler = (OnlineBatchSchedulerV4<T> *)data->fields[0];
         auto thread_id = data->fields[1];
         set_affinity(thread_id);
         scheduler->run(thread_id);
@@ -171,11 +171,15 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
         CustomTimer timer;
         timer.Start();
         while (!done) {
-            do_union(thread_id, _current_batch);
+	        do_write_fusion(thread_id, _current_batch);
 
             done_wait(thread_id);
 
-            do_find(thread_id, _current_batch);
+            do_read_fusion(thread_id, _current_batch);
+
+            done_wait(thread_id);
+
+	        do_allocate(thread_id, _current_batch);
 
             done_wait(thread_id);
 
@@ -187,39 +191,99 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
         INC_STATS(thread_id, run_time, timer.DurationInNanoSecs());
     }
 
-    void do_union(uint64_t thread_id, TransactionBatch batch) {
+    void do_write_fusion(uint64_t thread_id, TransactionBatch batch) {
         CustomTimer timer;
         timer.Start();
         uint64_t chunk_id = __sync_fetch_and_add(&num_chunks, 1);
         while (chunk_id < num_total_chunks) {
             double size_approx =
                 (double)(batch.end_index - batch.start_index) / (double)num_total_chunks;
-            uint64_t size_per_chunk = ceil(size_approx);
+            uint64_t size_per_chunk = static_cast<uint64_t>(ceil(size_approx));
             uint64_t start_index = batch.start_index + (chunk_id * size_per_chunk);
             uint64_t end_index = batch.start_index + ((chunk_id + 1) * size_per_chunk);
             end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
 
+	        std::vector<DataInfo*> candidates;
+	        candidates.reserve(MAX_NUM_ACCESSES);
             for (uint64_t t = start_index; t < end_index; t++) {
                 ReadWriteSet *rwset = &(_rwset_info[t]);
-                for (uint32_t i = 1; i < rwset->num_accesses; i++) {
-                    auto key1 = rwset->accesses[i - 1].key;
-                    auto key2 = rwset->accesses[i].key;
-                    auto data_info1 = &(_data_info[key1]);
-                    auto data_info2 = &(_data_info[key2]);
-                    Union(data_info1, data_info2, thread_id);
+				candidates.clear();
+				// filter only writes
+                for(uint32_t i = 0; i  < rwset->num_accesses; i++) {
+                	if(rwset->accesses[i].access_type == WR) {
+		                auto key = rwset->accesses[i].key;
+		                auto data_info = &(_data_info[key]);
+						candidates.push_back(data_info);
+                	}
+                }
+                // merge all candidates together
+                for(size_t i = 1; i < candidates.size(); i++) {
+	                auto data_info1 = candidates[i-1];
+	                auto data_info2 = candidates[i];
+	                Union(data_info1, data_info2, thread_id);
                 }
             }
+
             chunk_id = __sync_fetch_and_add(&num_chunks, 1);
         }
         timer.Stop();
-        // printf("$ %d, %lu, %lf\n", (int)_epoch, thread_id, (double)duration / (double)BILLION);
         INC_STATS(thread_id, time_union, timer.DurationInNanoSecs());
     }
 
-    void do_find(uint64_t thread_id, TransactionBatch batch) {
+	void do_read_fusion(uint64_t thread_id, TransactionBatch batch) {
+		CustomTimer timer;
+		timer.Start();
+		uint64_t chunk_id = __sync_fetch_and_add(&num_chunks, 1);
+		while (chunk_id < num_total_chunks) {
+			double size_approx =
+					(double)(batch.end_index - batch.start_index) / (double)num_total_chunks;
+			uint64_t size_per_chunk = static_cast<uint64_t>(ceil(size_approx));
+			uint64_t start_index = batch.start_index + (chunk_id * size_per_chunk);
+			uint64_t end_index = batch.start_index + ((chunk_id + 1) * size_per_chunk);
+			end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
+
+			std::vector<DataInfo*> candidates;
+			candidates.reserve(MAX_NUM_ACCESSES);
+			for (uint64_t t = start_index; t < end_index; t++) {
+				ReadWriteSet *rwset = &(_rwset_info[t]);
+				candidates.clear();
+
+				// filter read accesses to CC of cardinality > 1 and the first write
+				bool first_write = true;
+				for(uint32_t i = 0; i  < rwset->num_accesses; i++) {
+					auto key = rwset->accesses[i].key;
+					auto data_info = &(_data_info[key]);
+					if(rwset->accesses[i].access_type == WR && first_write) {
+						candidates.push_back(data_info);
+						first_write = false;
+					} else if(rwset->accesses[i].access_type == RD) {
+						EpochValue root_word;
+						root_word.word = SimpleFind(data_info);
+						auto root_info1 = reinterpret_cast<DataInfo*>(root_word.GetValue());
+						if(root_info1->size.IsEpoch(_epoch) && root_info1->size.GetValue() > 1) {
+							candidates.push_back(data_info);
+						}
+					}
+				}
+
+				// merge all candidates together
+				for(size_t i = 1; i < candidates.size(); i++) {
+					auto data_info1 = candidates[i-1];
+					auto data_info2 = candidates[i];
+					Union(data_info1, data_info2, thread_id);
+				}
+			}
+
+			chunk_id = __sync_fetch_and_add(&num_chunks, 1);
+		}
+		timer.Stop();
+		INC_STATS(thread_id, time_union, timer.DurationInNanoSecs());
+	}
+
+	void do_allocate(uint64_t thread_id, TransactionBatch batch) {
         unordered_map<long, QueryQueue *> local_core_map;
         double size_approx = (double)(batch.end_index - batch.start_index) / (double)_num_threads;
-        uint64_t size_per_thread = ceil(size_approx);
+        uint64_t size_per_thread = static_cast<uint64_t>(ceil(size_approx));
         uint64_t start_index = batch.start_index + (thread_id * size_per_thread);
         uint64_t end_index = batch.start_index + ((thread_id + 1) * size_per_thread);
         end_index = (end_index > batch.end_index) ? batch.end_index : end_index;
@@ -228,9 +292,25 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
         timer.Start();
         for (uint64_t t = start_index; t < end_index; t++) {
             auto rwset = &(_rwset_info[t]);
-            auto key = rwset->accesses[0].key;
-            auto data_info = &(_data_info[key]);
-            auto cc = SimpleFind(data_info);
+            // find the cc from either a write or read with > 1 size
+            long cc = reinterpret_cast<long>(rwset);
+	        for(uint32_t i = 0; i  < rwset->num_accesses; i++) {
+		        auto key = rwset->accesses[i].key;
+		        auto data_info = &(_data_info[key]);
+		        if(rwset->accesses[i].access_type == WR) {
+			        cc = SimpleFind(data_info);
+			        break;
+		        } else if(rwset->accesses[i].access_type == RD) {
+			        EpochValue root_word;
+			        root_word.word = SimpleFind(data_info);
+			        auto root_info1 = reinterpret_cast<DataInfo*>(root_word.GetValue());
+			        if(root_info1->size.IsEpoch(_epoch) && root_info1->size.GetValue() > 1) {
+				        cc = root_word.word;
+				        break;
+			        }
+		        }
+	        }
+
             QueryQueue *query_queue = nullptr;
             auto iter = local_core_map.find(cc);
             if (iter == local_core_map.end()) {
@@ -303,12 +383,16 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
 
     void move_to_next_phase() {
         switch (_current_batch.phase) {
-        case UNION:
+        case WRITE_FUSION:
             _core_map.clear();
             assert(_worklists.empty());
-            _current_batch.phase = FIND;
+            _current_batch.phase = READ_FUSION;
+            num_chunks = 0;
             break;
-        case FIND:
+        case READ_FUSION:
+	        _current_batch.phase = ALLOCATE;
+	        break;
+        case ALLOCATE:
             _current_batch.phase = EXECUTE;
             break;
         case EXECUTE:
@@ -318,7 +402,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
                 _current_batch.end_index += _max_batch_size;
                 _current_batch.end_index =
                     (_current_batch.end_index > _max_size) ? _max_size : _current_batch.end_index;
-                _current_batch.phase = UNION;
+                _current_batch.phase = WRITE_FUSION;
                 __sync_synchronize();
                 __sync_fetch_and_add(&_epoch, 1);
             } else {

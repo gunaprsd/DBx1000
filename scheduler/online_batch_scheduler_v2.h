@@ -875,12 +875,12 @@ template <typename T> class OnlineBatchSchedulerV3 : public IScheduler<T> {
             // move to the next phase
             move_to_next_phase();
 
-#ifdef DEBUGGING
+        #ifdef DEBUGGING
             if (_current_batch.phase == EXECUTE) {
                 printf("epoch: %d, num_connected_comps: %lu\n", (int)_epoch,
                        _worklists.unsafe_size());
             }
-#endif
+        #endif
             // create the next word with (e+1, n)
             EpochValue next_phase_word((short)(old_epoch + 1), (long)_num_threads);
 

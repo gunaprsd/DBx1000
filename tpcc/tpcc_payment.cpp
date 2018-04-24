@@ -1,4 +1,5 @@
 #include "tpcc_database.h"
+#include "tpcc_workload.h"
 #include "config.h"
 #include "row.h"
 #include "table.h"

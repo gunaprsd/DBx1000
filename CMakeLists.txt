@@ -99,6 +99,8 @@ SET(SRC_LIST cc/occ.h
         tpcc/tpcc_database.cpp
         tpcc/tpcc_workload.cpp
         tpcc/tpcc_utility.cpp
+        tpcc/tpcc_payment.cpp
+        tpcc/tpcc_new_order.cpp
         workload/graph_partitioner.cpp
         ycsb/ycsb.cpp
         ycsb/ycsb_workload.cpp
@@ -117,7 +119,7 @@ SET(SRC_LIST cc/occ.h
         scheduler/scheduler_tree_v1.h
         scheduler/online_batch_scheduler.h
 	    scheduler/online_batch_scheduler_v2.h
-        scheduler/online_batch_scheduler_v4.h)
+        scheduler/online_batch_scheduler_v4.h tpcc/tpcc_new_order.cpp)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 ADD_EXECUTABLE(rundb ${SRC_LIST})

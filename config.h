@@ -4,7 +4,7 @@
 /***********************************************/
 // Simulation + Hardware
 /***********************************************/
-#define MAX_NUM_ACCESSES 30
+#define MAX_NUM_ACCESSES 40
 #define MAX_NUM_CORES 30
 #define MAX_NUM_TABLES 6
 #define MAX_NUM_THREADS 120
@@ -149,12 +149,13 @@
 #define TPCC_SMALL false
 #define TPCC_WH_UPDATE true
 #define TPCC_NUM_WH 4
-#define TPCC_MAX_NUM_ORDERS 10
 #define TPCC_PERC_PAYMENT 0.5
 #define TPCC_DIST_PER_WH 10
 #define TPCC_BY_LAST_NAME_PERC 0
 #define TPCC_REMOTE_PAYMENT_PERC 0
 #define TPCC_NUM_ORDERS_RANDOM false
+#define TPCC_MIN_NUM_ORDERS 5
+#define TPCC_MAX_NUM_ORDERS 15
 
 #if TPCC_SMALL
 #define TPCC_MAX_ITEMS 10000;

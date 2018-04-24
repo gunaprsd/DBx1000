@@ -40,7 +40,7 @@ class TPCCExecutor {
   protected:
     TPCCDatabase _db;
     TPCCWorkloadLoader _loader;
-    OnlineScheduler<tpcc_params> *_scheduler;
+    IScheduler<tpcc_params> *_scheduler;
 };
 
 #endif // TPCC_TPCC_WORKLOAD_GENERATOR_H_

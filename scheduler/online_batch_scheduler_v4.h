@@ -3,8 +3,7 @@
 
 #include "distributions.h"
 #include "online_batch_scheduler_v2.h"
-#include <unordered_map>
-#define SAMPLE_ACCESSES
+//#define SAMPLE_ACCESSES
 
 template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
     typedef ConcurrentQueue<Query<T> *> QueryQueue;
@@ -310,7 +309,6 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
 
         CustomTimer timer;
         timer.Start();
-        std::unordered_map<long, long> counts;
         for (uint64_t t = start_index; t < end_index; t++) {
             auto rwset = &(_rwset_info[t]);
             // find the cc from either a write or read with > 1 size

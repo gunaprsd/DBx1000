@@ -48,7 +48,7 @@ TPCCExecutor::TPCCExecutor(const TPCCBenchmarkConfig &config, const string &inpu
       _loader(input_file) {
 
     // Build database in parallel
-    _db.initialize(FLAGS_load_parallelism);
+    _db.initialize(FLAGS_threads);
     _db.load();
 
     // Load workload in parallel

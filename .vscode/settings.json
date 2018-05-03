@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "__locale": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "memory": "cpp",
+        "utility": "cpp"
     }
 }

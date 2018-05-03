@@ -53,7 +53,7 @@
 #define CENTRAL_MAN false
 #define BUCKET_CNT 31
 #define ABORT_PENALTY 100000
-#define ABORT_BUFFER_SIZE 10
+#define ABORT_BUFFER_SIZE 1000
 #define ABORT_BUFFER_ENABLE true
 // [ INDEX ]
 #define ENABLE_LATCH false
@@ -123,7 +123,6 @@
 #define YCSB_TABLE_SIZE (10 * 1024 * 1024)
 #define YCSB_READ_PERCENT 0.9
 
-
 // ==== [EXPERIMENT] ===
 #define CONTENTION_PERC 1.0
 #define POS_IN_TXN 1
@@ -142,7 +141,6 @@
 #define REQ_PER_QUERY 16
 #define FIELD_PER_TUPLE 10
 
-
 // ==== [TPCC] ====
 // For large warehouse count, the tables do not fit in memory
 // small tpcc schemas shrink the table size.
@@ -152,7 +150,7 @@
 #define TPCC_PERC_PAYMENT 0.5
 #define TPCC_DIST_PER_WH 10
 #define TPCC_BY_LAST_NAME_PERC 0
-#define TPCC_REMOTE_PAYMENT_PERC 0
+#define TPCC_REMOTE_PAYMENT_PERC 15
 #define TPCC_NUM_ORDERS_RANDOM false
 #define TPCC_MIN_NUM_ORDERS 5
 #define TPCC_MAX_NUM_ORDERS 15
@@ -168,8 +166,6 @@
 #define FIRSTNAME_MINLEN 8
 #define FIRSTNAME_LEN 16
 #define LASTNAME_LEN 16
-
-
 
 /***********************************************/
 // TODO centralized CC management.

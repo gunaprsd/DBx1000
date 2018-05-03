@@ -27,7 +27,7 @@ void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id, tpcc_query *
     // Choose amount
     params->h_amount = helper.generateRandom(1, 5000, params->w_id - 1);
 
-/*
+
     auto x = (int)helper.generateRandom(1, 100, params->w_id - 1);
     if (x > FLAGS_tpcc_remote_payment_percent) {
         // home warehouse
@@ -58,7 +58,7 @@ void TPCCWorkloadGenerator::gen_payment_request(uint64_t thread_id, tpcc_query *
         params->c_id = helper.generateNonUniformRandom(1023, 1, config.customers_per_district,
                                                        params->w_id - 1);
     }
-*/
+
 
 }
 

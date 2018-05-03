@@ -67,3 +67,4 @@ DEFINE_uint32(scheduler_delay, 1000, "Delay between scheduler and worker");
 DEFINE_uint32(scheduler_batch_size, 1000000, "Batch size for scheduling");
 DEFINE_string(scheduler_type, "simple_parallel_queues", "Options: simple_parallel_queues, parallel_queues, shared_queue, transaction_queue");
 DEFINE_uint64(wait_time, 5, "Amount of time to wait before running the experiment!");
+DEFINE_double(sampling_perc, 10.0, "Sampling percentage for edges");

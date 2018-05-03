@@ -30,11 +30,13 @@ template <typename T> class Thread {
         int32_t tid = static_cast<int32_t>(thread_id);
         while (!done) {
             // get next query
-            if (!scheduler_tree->next(tid, chosen_query)) {
-                if (submitted_all_queries) {
-                    done = true;
+            if (chosen_query == nullptr) {
+                if (!scheduler_tree->next(tid, chosen_query)) {
+                    if (submitted_all_queries) {
+                        done = true;
+                    }
+                    continue;
                 }
-                continue;
             }
 
             assert(chosen_query != nullptr);
@@ -55,6 +57,7 @@ template <typename T> class Thread {
             if (rc == RCOK) {
                 INC_STATS(thread_id, txn_cnt, 1);
                 stats.commit(thread_id);
+                chosen_query = nullptr;
             } else if (rc == Abort) {
                 INC_STATS(thread_id, time_abort, duration);
                 INC_STATS(thread_id, abort_cnt, 1);

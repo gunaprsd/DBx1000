@@ -48,10 +48,10 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thread_id, tpcc_query
         } while (!unique);
 
         // 1% of ol items go remote
-        params->items[oid].ol_supply_w_id = params->w_id;
-        params->items[oid].ol_quantity = helper.generateRandom(1, 10, params->w_id - 1);
+        // params->items[oid].ol_supply_w_id = params->w_id;
+        // params->items[oid].ol_quantity = helper.generateRandom(1, 10, params->w_id - 1);
 
-        /*auto x = (uint32_t)helper.generateRandom(1, 100, params->w_id - 1);
+        auto x = (uint32_t)helper.generateRandom(1, 100, params->w_id - 1);
         if (x > 1 || config.num_warehouses == 1) {
             params->items[oid].ol_supply_w_id = params->w_id;
         } else {
@@ -59,8 +59,8 @@ void TPCCWorkloadGenerator::gen_new_order_request(uint64_t thread_id, tpcc_query
                         1, config.num_warehouses, params->w_id - 1)) == params->w_id) {
             }
             params->remote = true;
-            params->items[oid].ol_quantity = helper.generateRandom(1, 10, params->w_id - 1);
-        }*/
+        }
+        params->items[oid].ol_quantity = helper.generateRandom(1, 10, params->w_id - 1);
     }
 
     for (uint32_t i = 0; i < params->ol_cnt; i++) {

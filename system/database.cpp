@@ -160,7 +160,7 @@ void *Database::run_helper(void *ptr) {
   ThreadLocalData *data = (ThreadLocalData *)ptr;
   Database *database = (Database *)data->fields[0];
   uint32_t thread_id = (uint32_t)((uint64_t)data->fields[1]);
-  // set_affinity(thread_id);
+  set_affinity(thread_id);
   database->load_tables(thread_id);
   return NULL;
 }

@@ -66,4 +66,4 @@ DECLARE_bool(scheduler_batch_sync);
 DECLARE_bool(generate_partitioned);
 DECLARE_uint64(wait_time);
 DECLARE_double(sampling_perc);
-#endif //SYSTEM_PARSER_H__
+#endif // SYSTEM_PARSER_H__

@@ -41,7 +41,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
 
         pthread_mutex_init(&core_allocation_mutex, NULL);
         num_chunks = 0;
-        num_total_chunks = 5 * num_threads;
+        num_total_chunks = num_threads;
     }
 
     void schedule(WorkloadLoader<T> *loader) {
@@ -229,10 +229,9 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
                     if (choose < FLAGS_sampling_perc) {
                         Union(data_info1, data_info2, thread_id);
                     }
-#else 
-                        Union(data_info1, data_info2, thread_id);
+#else
+                    Union(data_info1, data_info2, thread_id);
 #endif
-
                 }
             }
 
@@ -282,12 +281,12 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
                 for (size_t i = 1; i < candidates.size(); i++) {
                     auto data_info1 = candidates[i - 1];
                     auto data_info2 = candidates[i];
-#ifdef SAMPLE_ACCESSES                    
+#ifdef SAMPLE_ACCESSES
                     auto choose = _rand.nextDouble(thread_id);
                     if (choose < FLAGS_sampling_perc) {
                         Union(data_info1, data_info2, thread_id);
                     }
-#else 
+#else
                     Union(data_info1, data_info2, thread_id);
 #endif
                 }
@@ -348,7 +347,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
     void do_execute(uint64_t thread_id) {
         QueryQueue *query_queue;
         while (_worklists.try_pop(query_queue)) {
-            //_executors[thread_id].run(query_queue);
+            _executors[thread_id].run(query_queue);
         }
     }
 
@@ -413,6 +412,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
             break;
         case ALLOCATE: {
             _current_batch.phase = EXECUTE;
+#ifdef SAMPLE_ACCESSES
             size_t cnt = _worklists.unsafe_size();
             printf("%lu, ", cnt);
             for (auto i = cnt; i > 0; i--) {
@@ -423,6 +423,7 @@ template <typename T> class OnlineBatchSchedulerV4 : public IScheduler<T> {
                 _worklists.push(_queue);
             }
             printf("\n");
+#endif
         } break;
         case EXECUTE:
             if (_current_batch.end_index < _max_size) {

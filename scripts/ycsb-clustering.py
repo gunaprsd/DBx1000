@@ -6,7 +6,7 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
-sizes = [1000000, 3000000, 5000000]
+sizes = [1048576]
 for cores in [15]:
     for parts in [15]:
         for size_per_thread in sizes:

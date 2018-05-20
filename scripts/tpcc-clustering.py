@@ -6,13 +6,14 @@ data_folder = "data"
 start_num = 4
 num_runs = 5
 configs = []
+bs = [1000, 1500, 2000, 3000]
 sps = [0.005, 0.01, 0.015, 0.02, 0.25]
 name = {0: 'order', 0.5: 'mixed', 1: 'pymnt'}
 for cores in [15]:
     for size_per_thread in [5000000]:
-        for perc_payment in [0.5]:
+        for perc_payment in [0]:
             for wh in [15]:
-                for sp in sps:
+                for batch_size in bs:
                     config = ' -benchmark=tpcc \\\n'
                     config += ' -tpcc_num_wh=' + str(wh) + ' \\\n'
                     config += ' -tpcc_wh_update \\\n'
@@ -21,7 +22,8 @@ for cores in [15]:
                     config += ' -threads=' + str(cores) + ' \\\n'
                     config += ' -size_per_thread=' + \
                         str(size_per_thread) + ' \\\n'
-                    config += ' -sampling_perc=' + str(sp) + ' \\\n'
+                    config += ' -scheduler_batch_size=' + \
+                        str(batch_size) + ' \\\n'
                     tag = 'tpcc'
                     tag += '_wh' + str(wh)
                     tag += '_c' + str(cores)
